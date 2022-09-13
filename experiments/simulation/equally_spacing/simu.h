@@ -41,6 +41,7 @@ class config {
     std::vector<int> chargesign;
     FPMat db_r;
     float distance_value;
+    float potential_value;
     std::vector<float> v_local;
 
     int chargeindex;
@@ -56,22 +57,27 @@ public:
 
     void potentials();
     void change_chargesign(int &i, int &j);
+    void change_chargesign_one(std::vector<int> &vector);
     void get_distance(int &i,int &j);
+    void get_potential(int &i,int &j);
     std::vector<float> laplace(std::vector<float> &vector_input, const float &f);
-    auto gradient(std::vector<float> &vector_input);
+    //auto gradient(std::vector<float> &vector_input);
     std::pair<std::vector<float>, int> step(std::vector<float> &vector_input);
     std::vector<int> search_same_distance(std::vector<int> &index_db);
-    void system_energy();
+    std::vector<int> search_same_potential(std::vector<int> &index_db);
+    float system_energy();
     void total_energy();
     std::vector<int> find_perturber();
+    std::vector<int> find_perturber_alternative();
     bool populationValid() const;
-    std::pair<int, std::vector<float>> populationValid_counter();
+    std::pair<int, std::vector<int>> populationValid_counter();
     void set_charge();
     std::pair<float, std::vector<int>> shortestPath(int &u, int &v, int &k);
 
+    FPMat v_ij;
 private:
 
-    FPMat v_ij;
+
 
 
 };

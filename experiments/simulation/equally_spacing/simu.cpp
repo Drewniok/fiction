@@ -25,7 +25,7 @@ struct Params {
     float epsilon_screen = 5.6;
     float k = 1 / (4*3.141592653 * epsilon * epsilon_screen);
     float e = 1.602 * std::pow(10,-19);
-    float mu = -0.32;
+    float mu = -0.25;
     float mu_p = mu - 0.59;
     float tf = 5 *  std::pow(10,-9);
     const float POP_STABILITY_ERR = 1E-6;
@@ -144,6 +144,56 @@ void Energyscr::get_distance(int &i, int &j)
     //std::cout << db_r(i,j) << std::endl;
 };
 
+
+void Energyscr::get_potential(int &i, int &j)
+{
+    potential_value = v_ij(i,j);
+    //std::cout << db_r(i,j) << std::endl;
+};
+
+std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
+{
+
+    for (int l =0; l<db_r.size1();l++) {
+        //std::cout << "k: " << k << std::endl;
+        //std::cout << "l: " << l << std::endl;
+        //std::cout << "distance: " << distance_value << std::endl;
+        //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
+        //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
+        float left = 0.7;
+        float right = 1.30;
+        int number_correct = 0;
+        //std::vector<int> possible_pos;
+        for (int n=0; n<index_db.size(); n++) {
+            //std::cout << "db_r(l,n): " << db_r(l, n) << std::endl;
+            //            if ((left * distance_value <= db_r(i, k)) && (db_r(i, k) <= right * distance_value) &&
+            //                (left * distance_value <= db_r(j, k)) && (db_r(j, k) <=  right * distance_value) && (left * distance_value <= db_r(i, l)) && (db_r(i, l) <=  right * distance_value) &&
+            //                (left * distance_value <= db_r(j, l)) && (db_r(j, l) <=  right * distance_value) &&
+            //                (left * distance_value <= db_r(k, l)) && (db_r(k, l) <=  right * distance_value)) {
+            //std::cout << "l: " << l << std::endl;
+            //std::cout << "n: " << index_db[n] << std::endl;
+            //std::cout << "db_r(l,n): " << db_r(l, index_db[n]) << std::endl;
+            //std::cout << "distance_value: " << potential_value << std::endl;
+            if (((left * potential_value <= v_ij(l, index_db[n])) && (v_ij(l, index_db[n]) <= right * potential_value) ) || ((v_ij(l, index_db[n]) <= left * potential_value) && (v_ij(l, index_db[n])!=0))) {
+                number_correct += 1;
+            }
+        }
+        //std::cout << "number correct: " << number_correct << std::endl;
+        //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
+
+        if (number_correct==index_db.size()) {
+            chargesign[l] = -1;
+            index_db.push_back(l);
+            //possible_pos.push_back(l);
+        }
+
+
+    }
+    return index_db;
+};
+
+
+
 std::vector<int> Energyscr::search_same_distance(std::vector<int> &index_db)
 {
 
@@ -157,7 +207,7 @@ std::vector<int> Energyscr::search_same_distance(std::vector<int> &index_db)
             float right = 1.30;
             int number_correct = 0;
             //std::vector<int> possible_pos;
-            for (int n = 0; n < index_db.size(); n++) {
+            for (int n=0; n<index_db.size(); n++) {
                 //std::cout << "db_r(l,n): " << db_r(l, n) << std::endl;
 //            if ((left * distance_value <= db_r(i, k)) && (db_r(i, k) <= right * distance_value) &&
 //                (left * distance_value <= db_r(j, k)) && (db_r(j, k) <=  right * distance_value) && (left * distance_value <= db_r(i, l)) && (db_r(i, l) <=  right * distance_value) &&
@@ -174,7 +224,7 @@ std::vector<int> Energyscr::search_same_distance(std::vector<int> &index_db)
             //std::cout << "number correct: " << number_correct << std::endl;
             //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
 
-            if (number_correct ==index_db.size()) {
+            if (number_correct==index_db.size()) {
                 chargesign[l] = -1;
                 index_db.push_back(l);
                 //possible_pos.push_back(l);
@@ -199,7 +249,7 @@ std::vector<int> Energyscr::find_perturber(){
     for (int i = 0; i<db_r.size1(); i++)
     {
         int c = 0;
-        float threas = 1.7 * std::pow(10,-9);
+        float threas = 3.3 * std::pow(10,-9);
         for (int j = 0; j<db_r.size1(); j++)
         {
             if (db_r(i,j)>threas && db_r(i,j)!=0)
@@ -207,7 +257,6 @@ std::vector<int> Energyscr::find_perturber(){
                 c+=1;
             }
         }
-        //std::cout << "c: " << c << std::endl;
         if (c == db_r.size1()-1)
         {
             chargesign[i] = -1;
@@ -216,6 +265,68 @@ std::vector<int> Energyscr::find_perturber(){
     }
     return perturber_collect;
 };
+
+
+std::vector<int> Energyscr::find_perturber_alternative(){
+    std::vector<int> perturber_collect;
+
+    for (int i = 0; i<db_r.size1(); i++)
+    {
+
+        int right = 0;
+        int left = 0;
+        int top = 0;
+        int bottom = 0;
+        int c = 0;
+        int d = 0;
+        float threas = 6 * std::pow(10,-9);
+        float threas1 = 1.8 * std::pow(10,-9);
+        std::vector<float> collect_index;
+        for (int j = 0; j<db_r.size1(); j++)
+        {
+
+            if ((db_r(i,j)<threas) && (db_r(i,j)!=0))
+            {
+                d +=1;
+                if (db_r(i,j)>threas1)
+                {
+                    c += 1;
+                }
+
+               if ((locationeuc[i][0] > locationeuc[j][0]))
+               {
+                   left +=1;
+               }
+
+               if ((locationeuc[i][0] < locationeuc[j][0]))
+               {
+                   right +=1;
+               }
+
+               if ((locationeuc[i][1] < locationeuc[j][1]))
+               {
+                   top +=1;
+               }
+
+               if (locationeuc[i][1] > locationeuc[j][1])
+               {
+                   bottom +=1;
+               }
+            }
+        }
+
+        //std::cout << "c: " << c << std::endl;
+        //std::cout << "left: " << left << std::endl;
+
+        if (((c == top) || (c == bottom) || (c == right) || (c == left)) && (c!=0) && (c == d))
+        {
+            chargesign[i] = -1;
+            perturber_collect.push_back(i);
+        }
+    }
+    return perturber_collect;
+};
+
 
 void Energyscr::set_charge() {
     float min = 10.0;
@@ -243,6 +354,16 @@ void Energyscr::change_chargesign(int &i,int &j)
     chargesign[j]=-1;
 };
 
+
+void Energyscr::change_chargesign_one(std::vector<int> &vector)
+{
+    for (auto it = vector.begin(); it!=vector.end(); it++)
+    {
+        chargesign[*it] = (chargesign[*it] == -1 ? 0 : -1);
+        //chargesign[*it] = -1;
+    }
+};
+
 bool Energyscr::populationValid() const
 {
     // Check whether v_local at each site meets population validity constraints
@@ -258,21 +379,42 @@ bool Energyscr::populationValid() const
                      && -v_local[i] + params.mu_p < -zero_equiv));
         collect_invalid += valid;
         if (!valid) {
+            //chargesign[i] == -1 ? 0 : -1;
             return false;
         }
     }
-    //std::cout << collect_invalid << std::endl;
+
+    auto hopDel = [this](const int &i, const int &j) {
+        int dn_i = (chargesign[i]==-1) ? 0 : -1;
+        int dn_j = - dn_i;
+        return  v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j);
+    };
+
+    for (unsigned int i=0; i<chargesign.size(); i++) {
+        // do nothing with DB+
+        if (chargesign[i] == 1)
+            continue;
+
+        for (unsigned int j=0; j<chargesign.size(); j++) {
+            // attempt hops from more negative charge states to more positive ones
+            float E_del = hopDel(i, j);
+            if ((chargesign[j] > chargesign[i]) && (E_del < -zero_equiv)) {
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
-std::pair<int, std::vector<float>> Energyscr::populationValid_counter()
+std::pair<int, std::vector<int>> Energyscr::populationValid_counter()
 {
     // Check whether v_local at each site meets population validity constraints
     // Note that v_local components have flipped signs from E_sys
 
     bool valid;
     int collect_invalid=0;
-    std::vector<float> data_collect;
+    std::vector<int> data_collect;
     const float &zero_equiv = params.POP_STABILITY_ERR;
     for (int i=0; i<chargesign.size(); i++) {
         valid = ((chargesign[i] == -1 && -v_local[i] + params.mu < -zero_equiv)   // DB- condition
@@ -281,8 +423,9 @@ std::pair<int, std::vector<float>> Energyscr::populationValid_counter()
                      && -v_local[i] + params.mu_p < -zero_equiv));
         if (valid!=1)
         {
-            data_collect.push_back(-v_local[i] + params.mu);
-            //chargesign[i] =
+            //data_collect.push_back(-v_local[i] + params.mu);
+            data_collect.push_back(i);
+            //chargesign[i] == -1 ? 0 : -1;
             collect_invalid += 1;}
     }
 
@@ -297,7 +440,15 @@ void Energyscr::potentials() {
 
         for (unsigned int j = i+1; j < v_ij.size2(); j++) {
             //std::cout << "i: " << i << " | j: " << j << std::endl;
-            v_ij(i, j) = energy_screened(db_r, i, j);
+            if (db_r(i,j) > 1000*std::pow(10,-9))
+            {
+                v_ij(i, j) = std::pow(10,-36);
+            }
+            else
+            {
+                v_ij(i, j) = energy_screened(db_r, i, j);
+            }
+
             v_ij(j, i) =  v_ij(i, j);
         }
     }
@@ -318,12 +469,12 @@ void Energyscr::total_energy(){
            collect += v_ij(j,i) * chargesign[j];
        }
        m[i] = collect;
-       //std::cout << "potential at " << i << ": " << collect << std::endl;
+       std::cout << "potential at " << i << ": " << collect << std::endl;
    }
    v_local = m;
 };
 
-void Energyscr::system_energy(){
+float Energyscr::system_energy(){
     float collect_all=0;
     for (unsigned int i = 0; i < v_ij.size1(); i++)
     {
@@ -336,7 +487,7 @@ void Energyscr::system_energy(){
         }
         //std::cout << "potential at " << i << ": " << collect << std::endl;
     }
-    std::cout << "system energy:" << collect_all << std::endl;
+    return collect_all;
 };
 
 //std::pair<float, std::vector<int>> Energyscr::shortestPath(int &u, int &v, int &k) {
