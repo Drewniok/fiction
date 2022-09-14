@@ -39,12 +39,13 @@ class config {
     std::vector<std::vector<unsigned long>> locationind;
     std::vector<DBeucCo> locationeuc;
     std::vector<int> chargesign;
+    int chargemax;
     FPMat db_r;
     float distance_value;
     float potential_value;
     std::vector<float> v_local;
 
-    int chargeindex;
+    int chargeindex=0;
 
     private:
 

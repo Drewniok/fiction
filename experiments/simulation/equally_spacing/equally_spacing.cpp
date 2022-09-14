@@ -43,8 +43,8 @@ int print_perturber_location = 1;
 
 int main()
 {
-    //const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_xor/hex_21_inputsdbp_xor_v1_01.sqd");
-    const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/OneDrive/Desktop/test9_1.sqd");
+    //const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/fontes18/majority.sqd");
+    const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/OneDrive/Desktop/test13.sqd");
 
     std::vector<std::vector<unsigned long>> location;
     std::vector<cell<sidb_cell_clk_lyt>> all_cells{};
@@ -78,6 +78,7 @@ int main()
 
 
 
+
 //    cell<sidb_cell_clk_lyt> c{89, 62};
 //
 //    std::cout << fmt::format("Position {} is {}a primary input", c, lyt.is_pi(c) ? "" : "not ") << std::endl;
@@ -87,10 +88,50 @@ int main()
 //    area(lyt, ps, &st);
 //    std::cout << fmt::format("The layout has an area of {} nm²", st.area) << std::endl;
 
+if (0==1)
+{
+    std::vector<int> initial_sign(location.size(), -1);
+    // std::vector<int> initial_sign = {-1,0,-1,0,-1,0,0,-1,0,-1};
+    Energyscr generalisation(location, initial_sign);
+    generalisation.toeuc();
+    generalisation.euctoindex(2);
+    generalisation.get_index();
+    generalisation.distance();
+    generalisation.potentials();
+    std::cout << "max: " << generalisation.chargemax << std::endl;
 
-    std::vector<int> initial_sign(location.size(),0);
-    Energyscr generalisation(location,initial_sign);
-    generalisation.toeuc();;
+    while (generalisation.chargeindex > 0)
+    {
+        // generalisation.indextoeuc(2);
+        generalisation.total_energy();
+        generalisation.get_chargesign();
+        std::cout << "correction: " << generalisation.populationValid() << std::endl;
+        std::cout << "Valid mistakes: " << generalisation.populationValid_counter().first << std::endl;
+        std::cout << "system energy: " << generalisation.system_energy() << std::endl;
+        std::cout << "correction: " << generalisation.populationValid() << std::endl;
+        generalisation.get_chargesign();
+        generalisation.increase_step();
+        generalisation.get_index();
+        // generalisation.euctoindex(2);
+        generalisation.indextoeuc(2);
+
+        std::cout << "_______________________________________" << std::endl;
+        // generalisation.get_chargesign();
+
+        // generalisation.euctoindex(2);
+    }
+}
+
+
+
+
+if (1==1)
+{
+
+    std::vector<int> initial_sign(location.size(), 0);
+    // std::vector<int> initial_sign = {-1,0,-1,0,-1,0,0,-1,0,-1};
+    Energyscr generalisation(location, initial_sign);
+    generalisation.toeuc();
     generalisation.distance();
     generalisation.potentials();
     generalisation.total_energy();
@@ -104,74 +145,76 @@ int main()
         }
     };
 
-// i and j are two indeces of SiDBs which are the start. Distance between these two os calculated.
-    float system_energy = 100000;
+    // i and j are two indeces of SiDBs which are the start. Distance between these two os calculated.
+    float            system_energy = 100000;
     std::vector<int> charge_config;
 
-    for (int i = 0; i<initial_sign.size();i++)
+    for (int i = 0; i < initial_sign.size(); i++)
     {
-        //initial_sign.size()
-    //int bound = ((i < (initial_sign.size()-50)) ? (i+49) : initial_sign.size());
-        for (int j = i+1; j < initial_sign.size();j++)
+        // initial_sign.size()
+        // int bound = ((i < (initial_sign.size()-50)) ? (i+49) : initial_sign.size());
+        for (int j = i + 1; j < initial_sign.size(); j++)
         {
+            if (generalisation.db_r(i, j) > 10 * std::pow(10, -9))
+            {
+                break;
+            }
 
-            Energyscr first_try(location,initial_sign);
-            first_try.change_chargesign(i,j);
+            Energyscr first_try(location, initial_sign);
+            first_try.change_chargesign(i, j);
 
             first_try.locationeuc = generalisation.locationeuc;
-            first_try.db_r = generalisation.db_r;
-            first_try.v_ij = generalisation.v_ij;
+            first_try.db_r        = generalisation.db_r;
+            first_try.v_ij        = generalisation.v_ij;
 
-            first_try.get_distance(i,j);
-            first_try.get_potential(i,j);
-            std::vector<int> index_start = {i,j};
-            std::vector<int> perturber = first_try.find_perturber_alternative();
-
-
+            first_try.get_distance(i, j);
+            first_try.get_potential(i, j);
+            std::vector<int> index_start = {i, j};
+            // std::vector<int> perturber = first_try.find_perturber_alternative();
 
             // i,j SiDBs and perturber are kept on charge state -1
-            index_start.insert(index_start.end(), perturber.begin(),perturber.end());
+            index_start.insert(index_start.end(), pertuber_vector.begin(), pertuber_vector.end());
             sort(index_start.begin(), index_start.end());
 
             // ensure that each index is only on time in vector
-            index_start.erase(unique(index_start.begin(), index_start.end() ), index_start.end() );
-            //std::cout << "j: " << j << std::endl;
+            index_start.erase(unique(index_start.begin(), index_start.end()), index_start.end());
+            // std::cout << "j: " << j << std::endl;
 
             std::vector<int> new_index1;
             do {
-                new_index1 = index_start;
+                new_index1                 = index_start;
                 std::vector<int> new_index = first_try.search_same_potential(index_start);
-                index_start = new_index;
+                index_start                = new_index;
             }
 
-            // as soon as there is no new SiDB which can be switched to -1 due to a suitable distance, the chargesign and the energy
-            // of the certain charge configuration is returned
+            // as soon as there is no new SiDB which can be switched to -1 due to a suitable distance, the chargesign and the energy of the certain charge configuration is returned
 
-            while (!isEqual(new_index1,index_start));
-            //first_try.get_chargesign();
+            while (!isEqual(new_index1, index_start));
+            // first_try.get_chargesign();
             first_try.total_energy();
-            //first_try.system_energy();
-            //std::cout << "system stable?: " << first_try.populationValid() << " | counter: " << first_try.populationValid_counter().first << std::endl;
-            //std::cout << "system stable?: " << first_try.populationValid() << " | counter: " << first_try.populationValid_counter().first << std::endl;
+            // first_try.system_energy();
+            // std::cout << "system stable?: " << first_try.populationValid() << " | counter: " << first_try.populationValid_counter().first << std::endl; std::cout << "system stable?: " << first_try.populationValid() << " | counter: " << first_try.populationValid_counter().first << std::endl;
 
             // In cases with less than 6 physically invalide state, -v_local[i] + µ is printed to get a feeling.
-            if (((first_try.populationValid_counter().first < 10)) && (1==1))
+            if (((first_try.populationValid_counter().first < 50)) && (1 == 1))
             {
                 std::vector<int> stability = first_try.populationValid_counter().second;
-//                for (auto it = stability.begin(); it!=stability.end(); it++)
-//                {
-//                    std::cout << "position: " << (*it) << " | ";
-//
-//                }
+                //                for (auto it = stability.begin(); it!=stability.end(); it++)
+                //                {
+                //                    std::cout << "position: " << (*it) << " | ";
+                //
+                //                }
+                std::cout << "correction: " << first_try.populationValid() << std::endl;
                 std::cout << "Valid mistakes: " << first_try.populationValid_counter().first << std::endl;
                 std::cout << "system energy: " << first_try.system_energy() << std::endl;
+                std::cout << "correction: " << first_try.populationValid() << std::endl;
                 first_try.get_chargesign();
                 std::cout << "i: " << i << std::endl;
                 std::cout << "j: " << j << std::endl;
-                Energyscr second_try(location,first_try.chargesign);
+                Energyscr second_try(location, first_try.chargesign);
                 second_try.locationeuc = generalisation.locationeuc;
-                second_try.db_r = generalisation.db_r;
-                second_try.v_ij = generalisation.v_ij;
+                second_try.db_r        = generalisation.db_r;
+                second_try.v_ij        = generalisation.v_ij;
                 second_try.change_chargesign_one(stability);
                 second_try.total_energy();
                 second_try.get_chargesign();
@@ -179,17 +222,17 @@ int main()
                 std::cout << "Valid mistakes_new: " << second_try.populationValid_counter().first << std::endl;
                 std::cout << "system energy_new: " << second_try.system_energy() << std::endl;
 
-               std::vector<int> stability_new = second_try.populationValid_counter().second;
-//                for (auto it = stability_new.begin(); it!=stability_new.end(); it++)
-//                {
-//                    std::cout << "position_new: " << (*it) << " | ";
-//                }
-//                std::cout << "________________________________" << std::endl;
+                std::vector<int> stability_new = second_try.populationValid_counter().second;
+                //                for (auto it = stability_new.begin(); it!=stability_new.end(); it++)
+                //                {
+                //                    std::cout << "position_new: " << (*it) << " | ";
+                //                }
+                //                std::cout << "________________________________" << std::endl;
 
-                Energyscr third_try(location,second_try.chargesign);
+                Energyscr third_try(location, second_try.chargesign);
                 third_try.locationeuc = generalisation.locationeuc;
-                third_try.db_r = generalisation.db_r;
-                third_try.v_ij = generalisation.v_ij;
+                third_try.db_r        = generalisation.db_r;
+                third_try.v_ij        = generalisation.v_ij;
                 third_try.change_chargesign_one(stability_new);
                 third_try.total_energy();
                 third_try.get_chargesign();
@@ -199,12 +242,10 @@ int main()
 
                 std::vector<int> stability_new3 = third_try.populationValid_counter().second;
 
-
-
-                Energyscr fourth_try(location,third_try.chargesign);
+                Energyscr fourth_try(location, third_try.chargesign);
                 fourth_try.locationeuc = generalisation.locationeuc;
-                fourth_try.db_r = generalisation.db_r;
-                fourth_try.v_ij = generalisation.v_ij;
+                fourth_try.db_r        = generalisation.db_r;
+                fourth_try.v_ij        = generalisation.v_ij;
                 fourth_try.change_chargesign_one(stability_new);
                 fourth_try.total_energy();
                 fourth_try.get_chargesign();
@@ -213,17 +254,14 @@ int main()
                 std::cout << "system energy_new_third: " << fourth_try.system_energy() << std::endl;
 
                 std::vector<int> stability_new4 = fourth_try.populationValid_counter().second;
-//                for (auto it = stability_new3.begin(); it!=stability_new3.end(); it++)
-//                {
-//                    std::cout << "position_new_third: " << (*it) << " | ";
-//                }
-               std::cout << "________________________________" << std::endl;
-
+                //                for (auto it = stability_new3.begin(); it!=stability_new3.end(); it++)
+                //                {
+                //                    std::cout << "position_new_third: " << (*it) << " | ";
+                //                }
+                std::cout << "________________________________" << std::endl;
             }
 
-
-
-            if ((first_try.populationValid()==1) && (first_try.system_energy() < system_energy))
+            if ((first_try.populationValid() == 1) && (first_try.system_energy() < system_energy))
             {
                 system_energy = first_try.system_energy();
                 charge_config = first_try.chargesign;
@@ -231,13 +269,13 @@ int main()
         }
     }
 
-    std::cout << "smallest energy: " << system_energy <<  std::endl;
+    std::cout << "smallest energy: " << system_energy << std::endl;
 
     for (auto it = charge_config.begin(); it != charge_config.end(); it++)
     {
         std::cout << (*it) << " | ";
     }
-
+}
     return 0;
 };
 

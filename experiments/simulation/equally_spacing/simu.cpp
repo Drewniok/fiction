@@ -25,7 +25,7 @@ struct Params {
     float epsilon_screen = 5.6;
     float k = 1 / (4*3.141592653 * epsilon * epsilon_screen);
     float e = 1.602 * std::pow(10,-19);
-    float mu = -0.25;
+    float mu = -0.26;
     float mu_p = mu - 0.59;
     float tf = 5 *  std::pow(10,-9);
     const float POP_STABILITY_ERR = 1E-6;
@@ -56,25 +56,27 @@ void config::get_locationeuc() {
 
 void config::euctoindex(const int &base) {
     chargeindex = 0;
+    chargemax = std::pow(base, chargesign.size()-1);
     for (unsigned int i=0; i<chargesign.size(); i++) {
-        chargeindex += (chargesign[i]) * pow(base, chargesign.size() - i - 1);
+        chargeindex += (-chargesign[i]) * pow(base, chargesign.size() - i - 1);
     }
 };
 
 void config::indextoeuc(const int &base)
 {
     int n_sidb = locationind.size();
-    for (int i=0; i<n_sidb; i++) {
-        chargesign.push_back(-1);
-        //std::cout << chargesign[i] << std::endl;
-    };
+//    for (int i=0; i<n_sidb; i++) {
+//        chargesign.push_back(-1);
+//        //std::cout << chargesign[i] << std::endl;
+//    };
     //std::cout << chargesign.size() << std::endl;
     int i = n_sidb - 1; // i is the number of the n_dbs
-    while (chargeindex > 0) {
+    int chargeindex1 = chargeindex;
+    while (chargeindex1 > 0) {
         div_t d; // Structure to represent the result value of an integral division performed by function div.
-        d = div(chargeindex, base);
-        chargeindex = d.quot;
-        chargesign[i--] = d.rem;
+        d = div(chargeindex1, base);
+        chargeindex1 = d.quot;
+        chargesign[i--] = d.rem-1;
     }
 
 };
@@ -105,8 +107,10 @@ void config::get_index() {
 };
 
 void config::increase_step() {
-    chargeindex += 1;
+        chargeindex -= 1;
 };
+
+
 
 float energy(FPMat &m, unsigned int i, unsigned int j)
 {
@@ -135,7 +139,7 @@ void config::distance(){
         }
 
     }
-   // std::cout << db_r << std::endl;
+   //std::cout << db_r << std::endl;
 };
 
 void Energyscr::get_distance(int &i, int &j)
@@ -154,14 +158,17 @@ void Energyscr::get_potential(int &i, int &j)
 std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
 {
 
+    float max_v1 = 0;
+    float max_v = 0;
+    int index;
     for (int l =0; l<db_r.size1();l++) {
         //std::cout << "k: " << k << std::endl;
         //std::cout << "l: " << l << std::endl;
         //std::cout << "distance: " << distance_value << std::endl;
         //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
         //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
-        float left = 0.7;
-        float right = 1.30;
+        float left = 0.6;
+        float right = 1.4;
         int number_correct = 0;
         //std::vector<int> possible_pos;
         for (int n=0; n<index_db.size(); n++) {
@@ -176,19 +183,23 @@ std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
             //std::cout << "distance_value: " << potential_value << std::endl;
             if (((left * potential_value <= v_ij(l, index_db[n])) && (v_ij(l, index_db[n]) <= right * potential_value) ) || ((v_ij(l, index_db[n]) <= left * potential_value) && (v_ij(l, index_db[n])!=0))) {
                 number_correct += 1;
-            }
+                if(v_ij(l, index_db[n])>max_v)
+                {
+                    max_v = v_ij(l, index_db[n]);
+                };
+            };
         }
+
         //std::cout << "number correct: " << number_correct << std::endl;
         //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
-
-        if (number_correct==index_db.size()) {
-            chargesign[l] = -1;
-            index_db.push_back(l);
+        if ((number_correct==index_db.size()) && (max_v < max_v1)) {
+            max_v1 = max_v;
+            index = l;
             //possible_pos.push_back(l);
         }
-
-
     }
+    chargesign[index] = -1;
+    index_db.push_back(index);
     return index_db;
 };
 
@@ -280,7 +291,7 @@ std::vector<int> Energyscr::find_perturber_alternative(){
         int c = 0;
         int d = 0;
         float threas = 6 * std::pow(10,-9);
-        float threas1 = 1.8 * std::pow(10,-9);
+        float threas1 = 1.4 * std::pow(10,-9);
         std::vector<float> collect_index;
         for (int j = 0; j<db_r.size1(); j++)
         {
@@ -373,10 +384,10 @@ bool Energyscr::populationValid() const
     int collect_invalid=0;
     const float &zero_equiv = params.POP_STABILITY_ERR;
     for (int i=0; i<chargesign.size(); i++) {
-        valid = ((chargesign[i] == -1 && -v_local[i] + params.mu < -zero_equiv)   // DB- condition
+        valid = ((chargesign[i] == -1 && -v_local[i] + params.mu < zero_equiv)   // DB- condition
                  || (chargesign[i] == 1  && -v_local[i] + params.mu_p > zero_equiv)  // DB+ condition
                  || (chargesign[i] == 0  && -v_local[i] + params.mu > zero_equiv
-                     && -v_local[i] + params.mu_p < -zero_equiv));
+                     && -v_local[i] + params.mu_p < zero_equiv));
         collect_invalid += valid;
         if (!valid) {
             //chargesign[i] == -1 ? 0 : -1;
@@ -385,9 +396,10 @@ bool Energyscr::populationValid() const
     }
 
     auto hopDel = [this](const int &i, const int &j) {
-        int dn_i = (chargesign[i]==-1) ? 0 : -1;
+        int dn_i = (chargesign[i]==-1) ? 1 : -1;
         int dn_j = - dn_i;
-        return  v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j);
+        return  v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j)*((chargesign[i]+dn_i)*(chargesign[j]+dn_j)-chargesign[i]*chargesign[j]);
+        //return v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j);
     };
 
     for (unsigned int i=0; i<chargesign.size(); i++) {
@@ -396,14 +408,15 @@ bool Energyscr::populationValid() const
             continue;
 
         for (unsigned int j=0; j<chargesign.size(); j++) {
-            // attempt hops from more negative charge states to more positive ones
-            float E_del = hopDel(i, j);
-            if ((chargesign[j] > chargesign[i]) && (E_del < -zero_equiv)) {
-                return false;
-            }
+
+                // attempt hops from more negative charge states to more positive ones
+                float E_del = hopDel(i, j);
+                if ((chargesign[j] > chargesign[i]) && (E_del < -zero_equiv))
+                {
+                    return false;
+                }
         }
     }
-
     return true;
 }
 
@@ -417,16 +430,45 @@ std::pair<int, std::vector<int>> Energyscr::populationValid_counter()
     std::vector<int> data_collect;
     const float &zero_equiv = params.POP_STABILITY_ERR;
     for (int i=0; i<chargesign.size(); i++) {
-        valid = ((chargesign[i] == -1 && -v_local[i] + params.mu < -zero_equiv)   // DB- condition
-                 || (chargesign[i] == 1  && -v_local[i] + params.mu_p > zero_equiv)  // DB+ condition
-                 || (chargesign[i] == 0  && -v_local[i] + params.mu > zero_equiv
-                     && -v_local[i] + params.mu_p < -zero_equiv));
+        valid = ((chargesign[i] == -1 && -v_local[i] + params.mu < zero_equiv)   // DB- condition
+                 || (chargesign[i] == 1  && -v_local[i] + params.mu_p > -zero_equiv)  // DB+ condition
+                 || (chargesign[i] == 0  && -v_local[i] + params.mu > -zero_equiv
+                     && -v_local[i] + params.mu_p < zero_equiv));
         if (valid!=1)
         {
             //data_collect.push_back(-v_local[i] + params.mu);
             data_collect.push_back(i);
             //chargesign[i] == -1 ? 0 : -1;
-            collect_invalid += 1;}
+            collect_invalid += 1;
+            continue;
+        }
+
+        auto hopDel = [this](const int &i, const int &j) {
+            int dn_i = (chargesign[i]==-1) ? 1 : -1;
+            int dn_j = - dn_i;
+            return  v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j)*((chargesign[i]+dn_i)*(chargesign[j]+dn_j)-chargesign[i]*chargesign[j]);
+            //return v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j);
+        };
+
+        for (unsigned int i=0; i<chargesign.size(); i++) {
+            // do nothing with DB+
+            if (chargesign[i] == 1)
+                continue;
+
+            for (unsigned int j=0; j<chargesign.size(); j++) {
+
+                // attempt hops from more negative charge states to more positive ones
+                float E_del = hopDel(i, j);
+                if ((chargesign[j] > chargesign[i]) && (E_del < -zero_equiv))
+                {
+                    data_collect.push_back(i);
+                    chargesign[i] = 0;
+                    chargesign[j] = -1;
+                    collect_invalid += 1;
+                }
+            }
+        }
+
     }
 
     //std::cout << collect_invalid << std::endl;
@@ -469,7 +511,7 @@ void Energyscr::total_energy(){
            collect += v_ij(j,i) * chargesign[j];
        }
        m[i] = collect;
-       std::cout << "potential at " << i << ": " << collect << std::endl;
+      // std::cout << "potential at " << i << ": " << collect << std::endl;
    }
    v_local = m;
 };
