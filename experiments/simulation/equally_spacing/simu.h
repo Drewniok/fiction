@@ -65,6 +65,7 @@ public:
     //auto gradient(std::vector<float> &vector_input);
     std::pair<std::vector<float>, int> step(std::vector<float> &vector_input);
     std::vector<int> search_same_distance(std::vector<int> &index_db);
+    std::vector<int> search_same_distance_new(std::vector<int> &index_db);
     std::vector<int> search_same_potential(std::vector<int> &index_db);
     float system_energy();
     void total_energy();

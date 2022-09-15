@@ -25,7 +25,7 @@ struct Params {
     float epsilon_screen = 5.6;
     float k = 1 / (4*3.141592653 * epsilon * epsilon_screen);
     float e = 1.602 * std::pow(10,-19);
-    float mu = -0.26;
+    float mu = -0.25;
     float mu_p = mu - 0.59;
     float tf = 5 *  std::pow(10,-9);
     const float POP_STABILITY_ERR = 1E-6;
@@ -158,19 +158,31 @@ void Energyscr::get_potential(int &i, int &j)
 std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
 {
 
-    float max_v1 = 0;
-    float max_v = 0;
-    int index;
+    float max_v1 = 100000;
+    float min_v = 100000;
+    float far_v=10000;
+    float min_far_v=10000;
+    int index=-1;
+    int index_inc=-1;
+    int count = 0;
+    std::vector<int> possible_pos_correct;
+    std::vector<int> possible_pos_incorrect;
+    std::vector<int> possible_pos_index;
+    std::vector<int> possible_pos_index_inc;
+
     for (int l =0; l<db_r.size1();l++) {
         //std::cout << "k: " << k << std::endl;
         //std::cout << "l: " << l << std::endl;
         //std::cout << "distance: " << distance_value << std::endl;
         //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
         //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
-        float left = 0.6;
-        float right = 1.4;
+        float left = 0.9;
+        float right = 1.1;
         int number_correct = 0;
-        //std::vector<int> possible_pos;
+        int number_incorrect = 0;
+
+        float pot_sum=0;
+        float pot_sum_incor=0;
         for (int n=0; n<index_db.size(); n++) {
             //std::cout << "db_r(l,n): " << db_r(l, n) << std::endl;
             //            if ((left * distance_value <= db_r(i, k)) && (db_r(i, k) <= right * distance_value) &&
@@ -181,25 +193,136 @@ std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
             //std::cout << "n: " << index_db[n] << std::endl;
             //std::cout << "db_r(l,n): " << db_r(l, index_db[n]) << std::endl;
             //std::cout << "distance_value: " << potential_value << std::endl;
-            if (((left * potential_value <= v_ij(l, index_db[n])) && (v_ij(l, index_db[n]) <= right * potential_value) ) || ((v_ij(l, index_db[n]) <= left * potential_value) && (v_ij(l, index_db[n])!=0))) {
-                number_correct += 1;
-                if(v_ij(l, index_db[n])>max_v)
+            if (((left * potential_value <= v_ij(l, index_db[n])) && (v_ij(l, index_db[n]) <= right * potential_value) ) && (v_ij(l, index_db[n])!=0))
                 {
-                    max_v = v_ij(l, index_db[n]);
-                };
+                    number_correct += 1;
+//                    if ((std::abs(v_ij(l, index_db[n])-potential_value) < min_v) && v_ij(l, index_db[n]) != 0)
+//                    {
+//                        min_v = std::abs(v_ij(l, index_db[n])-potential_value);
+//                    };
+                    pot_sum +=v_ij(l, index_db[n]) /  index_db.size();
+
+                }
+            if (((v_ij(l, index_db[n]) < left * potential_value)) && (v_ij(l, index_db[n])!=0))
+            {
+                number_incorrect += 1;
+                pot_sum_incor += v_ij(l, index_db[n]) /  index_db.size();
             };
-        }
+        };
 
         //std::cout << "number correct: " << number_correct << std::endl;
         //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
-        if ((number_correct==index_db.size()) && (max_v < max_v1)) {
-            max_v1 = max_v;
+        if ((number_correct==index_db.size()) && std::abs(potential_value - pot_sum) < min_v) {
+            count +=1;
             index = l;
-            //possible_pos.push_back(l);
+            min_v = std::abs(potential_value - pot_sum);
+        }
+
+        else if ((number_correct!=index_db.size()) && (number_incorrect==index_db.size()) && std::abs(potential_value - pot_sum_incor) < min_far_v)
+        {
+            index_inc = l;
+            min_far_v = std::abs(potential_value - pot_sum_incor);
         }
     }
-    chargesign[index] = -1;
-    index_db.push_back(index);
+
+    if (count>0 && index!=-1)
+    {
+        chargesign[index] = -1;
+        index_db.push_back(index);
+    }
+
+    else if (index_inc!=-1)
+    {
+        chargesign[index_inc] = -1;
+        index_db.push_back(index_inc);
+    }
+
+    return index_db;
+};
+
+
+std::vector<int> Energyscr::search_same_distance_new(std::vector<int> &index_db)
+{
+
+    float max_v1 = 100000;
+    float min_v = 100000;
+    float far_v=10000;
+    float min_far_v=10000;
+    int index=-1;
+    int index_inc=-1;
+    int count = 0;
+    std::vector<int> possible_pos_correct;
+    std::vector<int> possible_pos_incorrect;
+    std::vector<int> possible_pos_index;
+    std::vector<int> possible_pos_index_inc;
+
+    for (int l =0; l<db_r.size1();l++) {
+        //std::cout << "k: " << k << std::endl;
+        //std::cout << "l: " << l << std::endl;
+        //std::cout << "distance: " << distance_value << std::endl;
+        //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
+        //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
+        float left = 0.7;
+        float right = 1.3;
+        int number_correct = 0;
+        int number_incorrect = 0;
+
+        float pot_sum=0;
+        float pot_sum_incor=0;
+        for (int n=0; n<index_db.size(); n++) {
+            //std::cout << "db_r(l,n): " << db_r(l, n) << std::endl;
+            //            if ((left * distance_value <= db_r(i, k)) && (db_r(i, k) <= right * distance_value) &&
+            //                (left * distance_value <= db_r(j, k)) && (db_r(j, k) <=  right * distance_value) && (left * distance_value <= db_r(i, l)) && (db_r(i, l) <=  right * distance_value) &&
+            //                (left * distance_value <= db_r(j, l)) && (db_r(j, l) <=  right * distance_value) &&
+            //                (left * distance_value <= db_r(k, l)) && (db_r(k, l) <=  right * distance_value)) {
+            //std::cout << "l: " << l << std::endl;
+            //std::cout << "n: " << index_db[n] << std::endl;
+            //std::cout << "db_r(l,n): " << db_r(l, index_db[n]) << std::endl;
+            //std::cout << "distance_value: " << potential_value << std::endl;
+            if (((left * distance_value <= db_r(l, index_db[n])) && (db_r(l, index_db[n]) <= right * distance_value) ) && (db_r(l, index_db[n])!=0))
+            {
+                number_correct += 1;
+                //                    if ((std::abs(v_ij(l, index_db[n])-potential_value) < min_v) && v_ij(l, index_db[n]) != 0)
+                //                    {
+                //                        min_v = std::abs(v_ij(l, index_db[n])-potential_value);
+                //                    };
+                pot_sum +=db_r(l, index_db[n]) /  index_db.size();
+
+            }
+            if (((v_ij(l, index_db[n]) < left * distance_value)) && (db_r(l, index_db[n])!=0))
+            {
+                number_incorrect += 1;
+                pot_sum_incor += db_r(l, index_db[n]) /  index_db.size();
+            };
+        };
+
+        //std::cout << "number correct: " << number_correct << std::endl;
+        //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
+        if ((number_correct==index_db.size()) && std::abs(distance_value - pot_sum) < min_v) {
+            count +=1;
+            index = l;
+            min_v = std::abs(distance_value - pot_sum);
+        }
+
+        else if ((number_correct!=index_db.size()) && (number_incorrect==index_db.size()) && std::abs(distance_value - pot_sum_incor) < min_far_v)
+        {
+            index_inc = l;
+            min_far_v = std::abs(distance_value - pot_sum_incor);
+        }
+    }
+
+    if (count>0 && index!=-1)
+    {
+        chargesign[index] = -1;
+        index_db.push_back(index);
+    }
+
+    else if (index_inc!=-1)
+    {
+        chargesign[index_inc] = -1;
+        index_db.push_back(index_inc);
+    }
+
     return index_db;
 };
 
@@ -215,7 +338,7 @@ std::vector<int> Energyscr::search_same_distance(std::vector<int> &index_db)
             //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
             //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
             float left = 0.7;
-            float right = 1.30;
+            float right = 1.3;
             int number_correct = 0;
             //std::vector<int> possible_pos;
             for (int n=0; n<index_db.size(); n++) {
@@ -253,6 +376,8 @@ std::vector<int> Energyscr::search_same_distance(std::vector<int> &index_db)
             }
         return index_db;
     };
+
+
 
 
 std::vector<int> Energyscr::find_perturber(){
@@ -385,8 +510,8 @@ bool Energyscr::populationValid() const
     const float &zero_equiv = params.POP_STABILITY_ERR;
     for (int i=0; i<chargesign.size(); i++) {
         valid = ((chargesign[i] == -1 && -v_local[i] + params.mu < zero_equiv)   // DB- condition
-                 || (chargesign[i] == 1  && -v_local[i] + params.mu_p > zero_equiv)  // DB+ condition
-                 || (chargesign[i] == 0  && -v_local[i] + params.mu > zero_equiv
+                 || (chargesign[i] == 1  && -v_local[i] + params.mu_p > -zero_equiv)  // DB+ condition
+                 || (chargesign[i] == 0  && -v_local[i] + params.mu > -zero_equiv
                      && -v_local[i] + params.mu_p < zero_equiv));
         collect_invalid += valid;
         if (!valid) {
