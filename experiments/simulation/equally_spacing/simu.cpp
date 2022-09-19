@@ -25,7 +25,7 @@ struct Params {
     float epsilon_screen = 5.6;
     float k = 1 / (4*3.141592653 * epsilon * epsilon_screen);
     float e = 1.602 * std::pow(10,-19);
-    float mu = -0.20;
+    float mu = -0.32;
     float mu_p = mu - 0.59;
     float tf = 5 *  std::pow(10,-9);
     const float POP_STABILITY_ERR = 1E-6;
@@ -394,7 +394,7 @@ for (int l  = 0; l<db_r.size1(); l++)
 
         if (count1>0)
         {
-            if (distance_min >= 0.95*max_value)
+            if (distance_min >= 0.75*max_value)
             {
                 random.push_back(l);
             }

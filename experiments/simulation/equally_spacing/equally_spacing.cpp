@@ -43,9 +43,15 @@ int print_perturber_location = 1;
 
 int main()
 {
-    const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i2o_hourglass/22_hex_inputsdbp_hourglass_v0.sqd");
+    const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_xor/hex_21_inputsdbp_xor_v1.sqd");
+    //const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/HA.sqd");
+  // "C:\Users\jan-d\Downloads\sidb-bestagon-gate-library-xml-fix\sidb-bestagon-gate-library-xml-fix\experiments\layouts\trindade16\xor2.sqd"
+   // "C:\Users\jan-d\Downloads\sidb-bestagon-gate-library-xml-fix\sidb-bestagon-gate-library-xml-fix\bestagon-gates\2i1o_xor\hex_21_inputsdbp_xor_v1_11.sqd"
+    //"C:\Users\jan-d\Downloads\sidb-bestagon-gate-library-xml-fix\sidb-bestagon-gate-library-xml-fix\bestagon-gates\1i2o_fo2\12_hex_inputsdbp_fo2_v6.sqd"
     //"C:/Users/jan-d/OneDrive/Desktop/test9.sqd"
     //"C:\Users\jan-d\Downloads\sidb-bestagon-gate-library-xml-fix\si
+    //const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/1i1o_inv_diag/hex_11_inputsdbp_inv_diag_v0_manual.sqd");
+    //"C:\Users\jan-d\Downloads\sidb-bestagon-gate-library-xml-fix\sidb-bestagon-gate-library-xml-fix\bestagon-gates\1i1o_inv_diag\hex_11_inputsdbp_inv_diag_v0_manual.sqd"
     //const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>("C:/Users/jan-d/OneDrive/Desktop/test3.sqd");
     std::vector<std::vector<unsigned long>> location;
     std::vector<cell<sidb_cell_clk_lyt>> all_cells{};
@@ -327,7 +333,7 @@ if (1==1)
 {
 
     std::vector<int> initial_sign(location.size(), 0);
-    // std::vector<int> initial_sign = {-1,0,-1,0,-1,0,0,-1,0,-1};
+    //std::vector<int> initial_sign = {-1,-1,0,0,-1,-1,0,0,-1,-1,0,0,-1,-1,0,0,-1,-1,0,0,-1,-1,0,0,-1,-1,0,0,-1,-1};
     Energyscr generalisation(location, initial_sign);
     generalisation.toeuc();
     generalisation.distance();
@@ -338,15 +344,16 @@ if (1==1)
     float            system_energy = 100000;
     std::vector<int> charge_config;
 
-    for (int z = 0; z < 30; z++)
+    for (int z = 0; z < 300; z++)
     {
+        std::cout << "z: " << z << std::endl;
         for (int i = 0; i < initial_sign.size(); i++)
         {
             // initial_sign.size()
             // int bound = ((i < (initial_sign.size()-50)) ? (i+49) : initial_sign.size());
             initial_sign[i - 1] = 0;
             initial_sign[i]     = -1;
-            // std::cout << "i: " << i << std::endl;
+            //std::cout << "i: " << i << std::endl;
             Energyscr first_try(location, initial_sign);
             first_try.locationeuc = generalisation.locationeuc;
             first_try.db_r        = generalisation.db_r;
@@ -370,8 +377,8 @@ if (1==1)
             // while (!isEqual(new_index1,index_start))
             // do
             {
-                // std::cout << "i: " << i << std::endl;
-                // std::cout << "k: " << k << std::endl;
+                //std::cout << "i: " << i << std::endl;
+                //std::cout << "k: " << k << std::endl;
                 new_index1                 = index_start;
                 std::vector<int> new_index = first_try.find_new_best_neighbor_GRC(index_start);
 
@@ -394,15 +401,20 @@ if (1==1)
                 index_start = new_index;
                 // first_try.get_chargesign();
                 first_try.total_energy();
-                // std::cout << "system energy_old: " << first_try.system_energy() << std::endl;
-                // std::cout << "correction_old: " << first_try.populationValid() << std::endl;
+                if (first_try.populationValid() == 1 && first_try.system_energy()<system_energy)
+                {
+                    std::cout << "system energy_old: " << first_try.system_energy() << std::endl;
+                    first_try.get_chargesign();
+                    system_energy = first_try.system_energy();
+                    charge_config = first_try.chargesign;
+                }
 
                 std::tuple<int, std::vector<int>, int> output2 = first_try.populationValid_counter();
                 // std::cout << "correction_valid: " << std::get<0>(output2) << std::endl;
                 // std::cout << "correction_metastable: " << std::get<2>(output2) << std::endl;
                 //  std::cout << "correction: " << first_try.populationValid() << std::endl;
                 first_try.total_energy();
-                if (first_try.populationValid() == 1)
+                if (first_try.populationValid() == 1 && first_try.system_energy()<system_energy)
                 {
                     std::cout << "system energy_new: " << first_try.system_energy() << std::endl;
                     first_try.get_chargesign();
@@ -484,14 +496,15 @@ if (1==1)
         //                     std::cout << "position_new_third: " << (*it) << " | ";
         //                 }
 
-        std::cout << "________________________________" << std::endl;
-        //
-        std::cout << "smallest energy: " << system_energy << std::endl;
 
-        for (auto it = charge_config.begin(); it != charge_config.end(); it++)
-        {
-            std::cout << (*it) << " | ";
-        }
+    }
+    std::cout << "________________________________" << std::endl;
+    //
+    std::cout << "smallest energy: " << system_energy << std::endl;
+
+    for (auto it = charge_config.begin(); it != charge_config.end(); it++)
+    {
+        std::cout << (*it) << " | ";
     }
 }
     return 0;

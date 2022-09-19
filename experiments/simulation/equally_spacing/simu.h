@@ -19,7 +19,7 @@ class config {
     public:
 
     config(const std::vector<std::vector<unsigned long>> &input1, const std::vector<int> &input2) : locationind(input1), chargesign(input2)  {};
-
+    virtual ~config(){};
 
     void toeuc();
 
@@ -47,6 +47,7 @@ class config {
 
     int chargeindex=0;
 
+
     private:
 
 
@@ -55,7 +56,7 @@ class config {
 class Energyscr : public config {
 public:
     Energyscr(const std::vector<std::vector<unsigned long>> &input1, const std::vector<int> &input2) : config(input1, input2) {};
-
+    ~Energyscr(){};
     void potentials();
     void change_chargesign(int &i, int &j);
     void change_chargesign_one(std::vector<int> &vector);
@@ -80,6 +81,7 @@ public:
     std::pair<float, std::vector<int>> shortestPath(int &u, int &v, int &k);
 
     FPMat v_ij;
+
 private:
 
 
