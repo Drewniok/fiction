@@ -62,8 +62,11 @@ public:
     void get_distance(int &i,int &j);
     void get_potential(int &i,int &j);
     std::vector<float> laplace(std::vector<float> &vector_input, const float &f);
+    std::vector<int> find_new_best_neighbor(std::vector<int> &index_db);
+    std::vector<int> find_new_best_neighbor_GRC(std::vector<int> &index_db);
     //auto gradient(std::vector<float> &vector_input);
     std::pair<std::vector<float>, int> step(std::vector<float> &vector_input);
+    bool sum_distance(std::vector<int> &input, int &old, int &now);
     std::vector<int> search_same_distance(std::vector<int> &index_db);
     std::vector<int> search_same_distance_new(std::vector<int> &index_db);
     std::vector<int> search_same_potential(std::vector<int> &index_db);
@@ -72,7 +75,7 @@ public:
     std::vector<int> find_perturber();
     std::vector<int> find_perturber_alternative();
     bool populationValid() const;
-    std::pair<int, std::vector<int>> populationValid_counter();
+    std::tuple<int, std::vector<int>, int> populationValid_counter();
     void set_charge();
     std::pair<float, std::vector<int>> shortestPath(int &u, int &v, int &k);
 

@@ -25,7 +25,7 @@ struct Params {
     float epsilon_screen = 5.6;
     float k = 1 / (4*3.141592653 * epsilon * epsilon_screen);
     float e = 1.602 * std::pow(10,-19);
-    float mu = -0.25;
+    float mu = -0.20;
     float mu_p = mu - 0.59;
     float tf = 5 *  std::pow(10,-9);
     const float POP_STABILITY_ERR = 1E-6;
@@ -155,6 +155,18 @@ void Energyscr::get_potential(int &i, int &j)
     //std::cout << db_r(i,j) << std::endl;
 };
 
+bool Energyscr::sum_distance(std::vector<int> &input, int &old, int &now)
+{
+    float sum_old=0;
+    float sum_now=0;
+        for (int j =0; j<input.size(); j++)
+        {
+            sum_old +=db_r(j,old);
+            sum_now +=db_r(j,now);
+        }
+    return sum_now > sum_old;
+};
+
 std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
 {
 
@@ -239,6 +251,172 @@ std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
 
     return index_db;
 };
+
+std::vector<int> Energyscr::find_new_best_neighbor(std::vector<int> &index_db)
+{
+    float first_distance;
+    float max_value;
+    int index_l=-1;
+    int count=0;
+for (int l  = 0; l<db_r.size1(); l++)
+{
+
+    if ((std::find(index_db.begin(), index_db.end(), l) != index_db.end()))
+    {
+        continue;
+    }
+    else
+    {
+        count +=1;
+    }
+
+    float distance_min = db_r(l,index_db[0]);
+    for (int n=0; n<index_db.size(); n++)
+    {
+        if (db_r(l,index_db[n]) < distance_min)
+        {
+            distance_min = db_r(l,index_db[n]);
+            //std::cout << distance_min << std::endl;
+        }
+    }
+
+    if (count==1)
+    {
+        max_value = distance_min;
+        index_l = l;
+    }
+
+    if (count>1)
+    {
+        if (distance_min > max_value)
+        {
+            max_value = distance_min;
+            index_l = l;
+        }
+        else if (distance_min == max_value)
+        {
+            if (sum_distance(index_db, index_l, l))
+            {
+                max_value = distance_min;
+                index_l   = l;
+            }
+        }
+    }
+}
+
+if (index_l > -1)
+{chargesign[index_l] = -1;
+index_db.push_back(index_l);}
+
+return index_db;
+};
+
+
+
+
+
+std::vector<int> Energyscr::find_new_best_neighbor_GRC(std::vector<int> &index_db)
+{
+
+    float max_value;
+    int index_l=-1;
+    int count=0;
+
+for (int l  = 0; l<db_r.size1(); l++)
+    {
+        if ((std::find(index_db.begin(), index_db.end(), l) != index_db.end()))
+        {
+            continue;
+        }
+        else
+        {
+            count +=1;
+        }
+
+        float distance_min = db_r(l,index_db[0]);
+        for (int n=0; n<index_db.size(); n++)
+        {
+            if (db_r(l,index_db[n]) < distance_min)
+            {
+                distance_min = db_r(l,index_db[n]);
+                //std::cout << distance_min << std::endl;
+            }
+        }
+
+        if (count==1)
+        {
+            max_value = distance_min;
+            index_l = l;
+        }
+
+        if (count>1)
+        {
+            if (distance_min > max_value)
+            {
+                max_value = distance_min;
+                index_l = l;
+            }
+            else if (distance_min == max_value)
+            {
+                if (sum_distance(index_db, index_l, l))
+                {
+                    max_value = distance_min;
+                    index_l   = l;
+                }
+            }
+        }
+    }
+
+    std::vector<int> random;
+    int count1=0;
+    for (int l  = 0; l<db_r.size1(); l++)
+    {
+        if ((std::find(index_db.begin(), index_db.end(), l) != index_db.end()))
+        {
+            continue;
+        }
+
+        else
+        {
+            count1 +=1;
+        }
+
+        float distance_min = db_r(l,index_db[0]);
+        for (int n=0; n<index_db.size(); n++)
+        {
+            if (db_r(l,index_db[n]) < distance_min)
+            {
+                distance_min = db_r(l,index_db[n]);
+                //std::cout << distance_min << std::endl;
+            }
+        };
+
+
+        if (count1>0)
+        {
+            if (distance_min >= 0.95*max_value)
+            {
+                random.push_back(l);
+            }
+        }
+
+    };
+
+        int random_index = rand() % random.size();
+        //std::cout << random[random_index] << std::endl;
+        if (random_index >-1)
+        {
+            int random_element         = random[random_index];
+            chargesign[random_element] = -1;
+            index_db.push_back(random_element);
+        }
+
+    return index_db;
+}
+
+
+
+
 
 
 std::vector<int> Energyscr::search_same_distance_new(std::vector<int> &index_db)
@@ -545,13 +723,14 @@ bool Energyscr::populationValid() const
     return true;
 }
 
-std::pair<int, std::vector<int>> Energyscr::populationValid_counter()
+std::tuple<int, std::vector<int>, int> Energyscr::populationValid_counter()
 {
     // Check whether v_local at each site meets population validity constraints
     // Note that v_local components have flipped signs from E_sys
 
     bool valid;
     int collect_invalid=0;
+    int collect_unstable=0;
     std::vector<int> data_collect;
     const float &zero_equiv = params.POP_STABILITY_ERR;
     for (int i=0; i<chargesign.size(); i++) {
@@ -586,10 +765,10 @@ std::pair<int, std::vector<int>> Energyscr::populationValid_counter()
                 float E_del = hopDel(i, j);
                 if ((chargesign[j] > chargesign[i]) && (E_del < -zero_equiv))
                 {
-                    data_collect.push_back(i);
+                    //data_collect.push_back(i);
                     chargesign[i] = 0;
                     chargesign[j] = -1;
-                    collect_invalid += 1;
+                    collect_unstable += 1;
                 }
             }
         }
@@ -597,7 +776,7 @@ std::pair<int, std::vector<int>> Energyscr::populationValid_counter()
     }
 
     //std::cout << collect_invalid << std::endl;
-    return std::make_pair(collect_invalid, data_collect);
+    return std::make_tuple(collect_invalid, data_collect, collect_unstable);
 }
 
 void Energyscr::potentials() {
