@@ -6,21 +6,18 @@
 #include <iostream>
 #include <cmath>
 #include <math.h>
-#include <string>
 #include <climits>
-#include <numeric>
+
 
 float INF = 1000000000.0;
 
 struct Params {
-
-    // Gitterkonstanten
+    // lattice dimensions
     float a = 3.84 * std::pow(10,-10);
     float b = 2.25 * std::pow(10,-10);
     float c = 7.68 * std::pow(10,-10);
 
-    //
-
+    // physical parameters
     float epsilon = 8.854 * std::pow(10,-12);
     float epsilon_screen = 5.6;
     float k = 1 / (4*3.141592653 * epsilon * epsilon_screen);
@@ -29,47 +26,41 @@ struct Params {
     float mu_p = mu - 0.59;
     float tf = 5 *  std::pow(10,-9);
     const float POP_STABILITY_ERR = 1E-6;
-
 };
 
 struct Params params;
 
-
+// siqad specific lattice coordinates are converted in euclidean coordinates
 void config::toeuc() {
     std::vector<DBeucCo> m;
     for (unsigned int i = 0; i < locationind.size(); ++i) {
 
            m.push_back({(locationind[i][0]) * params.a, locationind[i][1] * params.c + locationind[i][2] * params.b});
-
     }
     locationeuc = m;
 };
 
+// print euclidean coordinates of each single placed SiDB
 void config::get_locationeuc() {
     for (unsigned int i = 0; i<locationeuc.size(); ++i)
     {
-
        std::cout << locationeuc[i][0] << " | " << locationeuc[i][1] << std::endl;
-
     }
 };
 
-void config::euctoindex(const int &base) {
+// charge configuration vector (-1,0,1,-1,...) is transformed to an unique index
+void config::chargeconf_to_index(const int &base) {
     chargeindex = 0;
-    chargemax = std::pow(base, chargesign.size()-1);
+    chargemax = pow(base, chargesign.size())-1;
     for (unsigned int i=0; i<chargesign.size(); i++) {
-        chargeindex += (-chargesign[i]) * pow(base, chargesign.size() - i - 1);
+        chargeindex += (chargesign[i]+1) * pow(base, chargesign.size() - i - 1);
     }
 };
 
-void config::indextoeuc(const int &base)
+// index is converted back to the charge config. vector
+void config::index_to_chargeconf(const int &base)
 {
     int n_sidb = locationind.size();
-//    for (int i=0; i<n_sidb; i++) {
-//        chargesign.push_back(-1);
-//        //std::cout << chargesign[i] << std::endl;
-//    };
-    //std::cout << chargesign.size() << std::endl;
     int i = n_sidb - 1; // i is the number of the n_dbs
     int chargeindex1 = chargeindex;
     while (chargeindex1 > 0) {
@@ -78,16 +69,13 @@ void config::indextoeuc(const int &base)
         chargeindex1 = d.quot;
         chargesign[i--] = d.rem-1;
     }
-
 };
 
-
-
+// print the charge config. vector
 void config::get_chargesign() {
     for (unsigned int i = 0; i<chargesign.size(); i++) {
-        //std::cout << i << std::endl;
         if (i == 0) {
-            std::cout << "chargeconfig: " << chargesign[i] << "|" ;
+            std::cout << "charge configuration: |" << chargesign[i] << "|" ;
         }
         else if (i != chargesign.size()-1){
             std::cout << chargesign[i] << "|";
@@ -98,34 +86,26 @@ void config::get_chargesign() {
     }
 };
 
-
-
-
-
+// print the charge index
 void config::get_index() {
     std::cout << "Index: " << chargeindex << std::endl;
 };
 
+// charge index is increased by one
 void config::increase_step() {
-        chargeindex -= 1;
+        chargeindex += 1;
 };
 
-
-
-float energy(FPMat &m, unsigned int i, unsigned int j)
-{
-    float e = params.k * 1/m(i,j) * params.e; // eV
-    return e;
-};
-
+// potential calculation
 float energy_screened(FPMat &m, unsigned int i, unsigned int j)
 {
-    float e = params.k * 1/m(i,j)
+    float potential = params.k * 1/m(i,j)
 
             * std::exp(-m(i,j)/params.tf) * params.e; // eV
-    return e;
+    return potential;
 };
 
+// distance matrix is calculated
 void config::distance(){
     db_r.resize(locationeuc.size(),locationeuc.size());
     for (unsigned int i = 0; i < db_r.size1(); i++)
@@ -134,27 +114,25 @@ void config::distance(){
         for (unsigned int j = i+1; j < db_r.size2(); j++)
         {
             db_r(i,j) = std::sqrt(std::pow(locationeuc[i][0] - locationeuc[j][0],2) + std::pow(locationeuc[i][1] - locationeuc[j][1],2));
-            //std::cout << db_r(i,j) << std::endl;
+            // symmetry is introduced
             db_r(j,i) = db_r(i,j);
         }
-
     }
-   //std::cout << db_r << std::endl;
 };
 
+// define distance between two SiDBs as separate variable
 void Energyscr::get_distance(int &i, int &j)
 {
     distance_value = db_r(i,j);
-    //std::cout << db_r(i,j) << std::endl;
 };
 
-
+// define potential between two SiDBs as separate variable
 void Energyscr::get_potential(int &i, int &j)
 {
     potential_value = v_ij(i,j);
-    //std::cout << db_r(i,j) << std::endl;
 };
 
+// check if the summed distance between the current SiDB (now) and the other available ones is larger than between the old one and the others.
 bool Energyscr::sum_distance(std::vector<int> &input, int &old, int &now)
 {
     float sum_old=0;
@@ -167,12 +145,10 @@ bool Energyscr::sum_distance(std::vector<int> &input, int &old, int &now)
     return sum_now > sum_old;
 };
 
+
 std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
 {
-
-    float max_v1 = 100000;
     float min_v = 100000;
-    float far_v=10000;
     float min_far_v=10000;
     int index=-1;
     int index_inc=-1;
@@ -183,37 +159,17 @@ std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
     std::vector<int> possible_pos_index_inc;
 
     for (int l =0; l<db_r.size1();l++) {
-        //std::cout << "k: " << k << std::endl;
-        //std::cout << "l: " << l << std::endl;
-        //std::cout << "distance: " << distance_value << std::endl;
-        //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
-        //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
         float left = 0.9;
         float right = 1.1;
         int number_correct = 0;
         int number_incorrect = 0;
-
         float pot_sum=0;
         float pot_sum_incor=0;
         for (int n=0; n<index_db.size(); n++) {
-            //std::cout << "db_r(l,n): " << db_r(l, n) << std::endl;
-            //            if ((left * distance_value <= db_r(i, k)) && (db_r(i, k) <= right * distance_value) &&
-            //                (left * distance_value <= db_r(j, k)) && (db_r(j, k) <=  right * distance_value) && (left * distance_value <= db_r(i, l)) && (db_r(i, l) <=  right * distance_value) &&
-            //                (left * distance_value <= db_r(j, l)) && (db_r(j, l) <=  right * distance_value) &&
-            //                (left * distance_value <= db_r(k, l)) && (db_r(k, l) <=  right * distance_value)) {
-            //std::cout << "l: " << l << std::endl;
-            //std::cout << "n: " << index_db[n] << std::endl;
-            //std::cout << "db_r(l,n): " << db_r(l, index_db[n]) << std::endl;
-            //std::cout << "distance_value: " << potential_value << std::endl;
             if (((left * potential_value <= v_ij(l, index_db[n])) && (v_ij(l, index_db[n]) <= right * potential_value) ) && (v_ij(l, index_db[n])!=0))
                 {
                     number_correct += 1;
-//                    if ((std::abs(v_ij(l, index_db[n])-potential_value) < min_v) && v_ij(l, index_db[n]) != 0)
-//                    {
-//                        min_v = std::abs(v_ij(l, index_db[n])-potential_value);
-//                    };
                     pot_sum +=v_ij(l, index_db[n]) /  index_db.size();
-
                 }
             if (((v_ij(l, index_db[n]) < left * potential_value)) && (v_ij(l, index_db[n])!=0))
             {
@@ -221,9 +177,6 @@ std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
                 pot_sum_incor += v_ij(l, index_db[n]) /  index_db.size();
             };
         };
-
-        //std::cout << "number correct: " << number_correct << std::endl;
-        //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
         if ((number_correct==index_db.size()) && std::abs(potential_value - pot_sum) < min_v) {
             count +=1;
             index = l;
@@ -236,19 +189,16 @@ std::vector<int> Energyscr::search_same_potential(std::vector<int> &index_db)
             min_far_v = std::abs(potential_value - pot_sum_incor);
         }
     }
-
     if (count>0 && index!=-1)
     {
         chargesign[index] = -1;
         index_db.push_back(index);
     }
-
     else if (index_inc!=-1)
     {
         chargesign[index_inc] = -1;
         index_db.push_back(index_inc);
     }
-
     return index_db;
 };
 
@@ -260,7 +210,6 @@ std::vector<int> Energyscr::find_new_best_neighbor(std::vector<int> &index_db)
     int count=0;
 for (int l  = 0; l<db_r.size1(); l++)
 {
-
     if ((std::find(index_db.begin(), index_db.end(), l) != index_db.end()))
     {
         continue;
@@ -269,14 +218,12 @@ for (int l  = 0; l<db_r.size1(); l++)
     {
         count +=1;
     }
-
     float distance_min = db_r(l,index_db[0]);
     for (int n=0; n<index_db.size(); n++)
     {
         if (db_r(l,index_db[n]) < distance_min)
         {
             distance_min = db_r(l,index_db[n]);
-            //std::cout << distance_min << std::endl;
         }
     }
 
@@ -306,25 +253,23 @@ for (int l  = 0; l<db_r.size1(); l++)
 
 if (index_l > -1)
 {chargesign[index_l] = -1;
-index_db.push_back(index_l);}
+index_db.push_back(index_l);
+}
 
 return index_db;
 };
 
 
-
-
-
-std::vector<int> Energyscr::find_new_best_neighbor_GRC(std::vector<int> &index_db)
+// analogy to the max-min diversity problem (algorithm is inspired from https://doi.org/10.1016/j.cor.2008.05.011)
+std::vector<int> Energyscr::find_new_best_neighbor_GRC(std::vector<int> &index_db) //input is a vector with the indices of all already SiDBs with -1
 {
-
     float max_value;
     int index_l=-1;
     int count=0;
-
 for (int l  = 0; l<db_r.size1(); l++)
     {
-        if ((std::find(index_db.begin(), index_db.end(), l) != index_db.end()))
+
+        if ((std::find(index_db.begin(), index_db.end(), l) != index_db.end())) // take no l-index which is already occupied
         {
             continue;
         }
@@ -333,13 +278,12 @@ for (int l  = 0; l<db_r.size1(); l++)
             count +=1;
         }
 
-        float distance_min = db_r(l,index_db[0]);
+        float distance_min = db_r(l, index_db[0]);
         for (int n=0; n<index_db.size(); n++)
         {
             if (db_r(l,index_db[n]) < distance_min)
             {
                 distance_min = db_r(l,index_db[n]);
-                //std::cout << distance_min << std::endl;
             }
         }
 
@@ -391,40 +335,31 @@ for (int l  = 0; l<db_r.size1(); l++)
             }
         };
 
-
         if (count1>0)
         {
-            if (distance_min >= 0.75*max_value)
+            if (distance_min >= 0.98*max_value)
             {
                 random.push_back(l);
             }
         }
 
     };
-
         int random_index = rand() % random.size();
-        //std::cout << random[random_index] << std::endl;
         if (random_index >-1)
         {
             int random_element         = random[random_index];
             chargesign[random_element] = -1;
             index_db.push_back(random_element);
         }
-
     return index_db;
 }
 
 
 
 
-
-
 std::vector<int> Energyscr::search_same_distance_new(std::vector<int> &index_db)
 {
-
-    float max_v1 = 100000;
     float min_v = 100000;
-    float far_v=10000;
     float min_far_v=10000;
     int index=-1;
     int index_inc=-1;
@@ -435,35 +370,18 @@ std::vector<int> Energyscr::search_same_distance_new(std::vector<int> &index_db)
     std::vector<int> possible_pos_index_inc;
 
     for (int l =0; l<db_r.size1();l++) {
-        //std::cout << "k: " << k << std::endl;
-        //std::cout << "l: " << l << std::endl;
-        //std::cout << "distance: " << distance_value << std::endl;
-        //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
-        //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
+
         float left = 0.7;
         float right = 1.3;
         int number_correct = 0;
         int number_incorrect = 0;
-
         float pot_sum=0;
         float pot_sum_incor=0;
         for (int n=0; n<index_db.size(); n++) {
-            //std::cout << "db_r(l,n): " << db_r(l, n) << std::endl;
-            //            if ((left * distance_value <= db_r(i, k)) && (db_r(i, k) <= right * distance_value) &&
-            //                (left * distance_value <= db_r(j, k)) && (db_r(j, k) <=  right * distance_value) && (left * distance_value <= db_r(i, l)) && (db_r(i, l) <=  right * distance_value) &&
-            //                (left * distance_value <= db_r(j, l)) && (db_r(j, l) <=  right * distance_value) &&
-            //                (left * distance_value <= db_r(k, l)) && (db_r(k, l) <=  right * distance_value)) {
-            //std::cout << "l: " << l << std::endl;
-            //std::cout << "n: " << index_db[n] << std::endl;
-            //std::cout << "db_r(l,n): " << db_r(l, index_db[n]) << std::endl;
-            //std::cout << "distance_value: " << potential_value << std::endl;
+
             if (((left * distance_value <= db_r(l, index_db[n])) && (db_r(l, index_db[n]) <= right * distance_value) ) && (db_r(l, index_db[n])!=0))
             {
                 number_correct += 1;
-                //                    if ((std::abs(v_ij(l, index_db[n])-potential_value) < min_v) && v_ij(l, index_db[n]) != 0)
-                //                    {
-                //                        min_v = std::abs(v_ij(l, index_db[n])-potential_value);
-                //                    };
                 pot_sum +=db_r(l, index_db[n]) /  index_db.size();
 
             }
@@ -474,8 +392,6 @@ std::vector<int> Energyscr::search_same_distance_new(std::vector<int> &index_db)
             };
         };
 
-        //std::cout << "number correct: " << number_correct << std::endl;
-        //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
         if ((number_correct==index_db.size()) && std::abs(distance_value - pot_sum) < min_v) {
             count +=1;
             index = l;
@@ -508,55 +424,26 @@ std::vector<int> Energyscr::search_same_distance_new(std::vector<int> &index_db)
 
 std::vector<int> Energyscr::search_same_distance(std::vector<int> &index_db)
 {
-
         for (int l =0; l<db_r.size1();l++) {
-            //std::cout << "k: " << k << std::endl;
-            //std::cout << "l: " << l << std::endl;
-            //std::cout << "distance: " << distance_value << std::endl;
-            //std::cout << "db_r(i,k): " << db_r(i, k) << std::endl;
-            //std::cout << "db_r(j,k): " << db_r(j, k) << std::endl;
             float left = 0.7;
             float right = 1.3;
             int number_correct = 0;
-            //std::vector<int> possible_pos;
             for (int n=0; n<index_db.size(); n++) {
-                //std::cout << "db_r(l,n): " << db_r(l, n) << std::endl;
-//            if ((left * distance_value <= db_r(i, k)) && (db_r(i, k) <= right * distance_value) &&
-//                (left * distance_value <= db_r(j, k)) && (db_r(j, k) <=  right * distance_value) && (left * distance_value <= db_r(i, l)) && (db_r(i, l) <=  right * distance_value) &&
-//                (left * distance_value <= db_r(j, l)) && (db_r(j, l) <=  right * distance_value) &&
-//                (left * distance_value <= db_r(k, l)) && (db_r(k, l) <=  right * distance_value)) {
-                //std::cout << "l: " << l << std::endl;
-                //std::cout << "n: " << index_db[n] << std::endl;
-                //std::cout << "db_r(l,n): " << db_r(l, index_db[n]) << std::endl;
-                //std::cout << "distance_value: " << distance_value << std::endl;
+
                 if (((left * distance_value <= db_r(l, index_db[n])) && (db_r(l, index_db[n]) <= right * distance_value) ) || (db_r(l, index_db[n]) >= left * distance_value)) {
                     number_correct += 1;
                 }
             }
-            //std::cout << "number correct: " << number_correct << std::endl;
-            //std::cout << "index_db_size: " << index_db.size() << std::endl << std::endl;
 
             if (number_correct==index_db.size()) {
                 chargesign[l] = -1;
                 index_db.push_back(l);
-                //possible_pos.push_back(l);
             }
-
-//                std::cout << "new SiDB | k: " << k << std::endl;
-//                std::cout << "new SiDB | l: " << l << std::endl;
-//                chargesign[k] = -1;
-//                chargesign[l] = -1;
-                //get_chargesign();
-                //system_energy();
-                //potentials();
-                //total_energy();
-                //std::cout << "stability: " << populationValid() << std::endl;
-            }
+        }
         return index_db;
     };
 
-
-
+// find perturbers in a circuit
 
 std::vector<int> Energyscr::find_perturber(){
     std::vector<int> perturber_collect;
@@ -583,10 +470,8 @@ std::vector<int> Energyscr::find_perturber(){
 
 std::vector<int> Energyscr::find_perturber_alternative(){
     std::vector<int> perturber_collect;
-
     for (int i = 0; i<db_r.size1(); i++)
     {
-
         int right = 0;
         int left = 0;
         int top = 0;
@@ -598,7 +483,6 @@ std::vector<int> Energyscr::find_perturber_alternative(){
         std::vector<float> collect_index;
         for (int j = 0; j<db_r.size1(); j++)
         {
-
             if ((db_r(i,j)<threas) && (db_r(i,j)!=0))
             {
                 d +=1;
@@ -629,9 +513,6 @@ std::vector<int> Energyscr::find_perturber_alternative(){
             }
         }
 
-        //std::cout << "c: " << c << std::endl;
-        //std::cout << "left: " << left << std::endl;
-
         if (((c == top) || (c == bottom) || (c == right) || (c == left)) && (c!=0) && (c == d))
         {
             chargesign[i] = -1;
@@ -644,18 +525,14 @@ std::vector<int> Energyscr::find_perturber_alternative(){
 
 void Energyscr::set_charge() {
     float min = 10.0;
-    //std::cout << min << std::endl;
     int index = 0;
     for (int i = 0; i < v_local.size(); i++) {
         //std::cout << chargesign[i] << std::endl;
         if ((-v_local[i] < min) && (chargesign[i] != -1)) {
             min = -v_local[i];
-            //std::cout << i << std::endl;
-            //std::cout << v_local[i] << std::endl;
             index = i;
         }
     }
-    //std::cout << min << std::endl;
     if (chargesign[index]>-1)
     {
         chargesign[index] = chargesign[index] -1;
@@ -681,8 +558,7 @@ void Energyscr::change_chargesign_one(std::vector<int> &vector)
 bool Energyscr::populationValid() const
 {
     // Check whether v_local at each site meets population validity constraints
-    // Note that v_local components have flipped signs from E_sys
-
+    // this includes the checking if the charge state is valid and if no hop can be performed which reduces the energy even further
     bool valid;
     int collect_invalid=0;
     const float &zero_equiv = params.POP_STABILITY_ERR;
@@ -693,7 +569,6 @@ bool Energyscr::populationValid() const
                      && -v_local[i] + params.mu_p < zero_equiv));
         collect_invalid += valid;
         if (!valid) {
-            //chargesign[i] == -1 ? 0 : -1;
             return false;
         }
     }
@@ -702,7 +577,9 @@ bool Energyscr::populationValid() const
         int dn_i = (chargesign[i]==-1) ? 1 : -1;
         int dn_j = - dn_i;
         return  v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j)*((chargesign[i]+dn_i)*(chargesign[j]+dn_j)-chargesign[i]*chargesign[j]);
-        //return v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j);
+
+        // this is from Siqad. However, it is quite likely wrong
+        //return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j);
     };
 
     for (unsigned int i=0; i<chargesign.size(); i++) {
@@ -725,8 +602,6 @@ bool Energyscr::populationValid() const
 
 std::tuple<int, std::vector<int>, int> Energyscr::populationValid_counter()
 {
-    // Check whether v_local at each site meets population validity constraints
-    // Note that v_local components have flipped signs from E_sys
 
     bool valid;
     int collect_invalid=0;
@@ -740,9 +615,7 @@ std::tuple<int, std::vector<int>, int> Energyscr::populationValid_counter()
                      && -v_local[i] + params.mu_p < zero_equiv));
         if (valid!=1)
         {
-            //data_collect.push_back(-v_local[i] + params.mu);
             data_collect.push_back(i);
-            //chargesign[i] == -1 ? 0 : -1;
             collect_invalid += 1;
             continue;
         }
@@ -751,7 +624,7 @@ std::tuple<int, std::vector<int>, int> Energyscr::populationValid_counter()
             int dn_i = (chargesign[i]==-1) ? 1 : -1;
             int dn_j = - dn_i;
             return  v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j)*((chargesign[i]+dn_i)*(chargesign[j]+dn_j)-chargesign[i]*chargesign[j]);
-            //return v_local[i]*dn_i + v_local[j]*dn_j + v_ij(i,j);
+            //return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j);
         };
 
         for (unsigned int i=0; i<chargesign.size(); i++) {
@@ -774,19 +647,16 @@ std::tuple<int, std::vector<int>, int> Energyscr::populationValid_counter()
         }
 
     }
-
-    //std::cout << collect_invalid << std::endl;
     return std::make_tuple(collect_invalid, data_collect, collect_unstable);
 }
 
-void Energyscr::potentials() {
+void config::potentials() {
     v_ij.resize(locationeuc.size(), locationeuc.size());
     for (unsigned int i = 0; i < v_ij.size1(); i++) {
         v_ij(i,i)=0;
-
         for (unsigned int j = i+1; j < v_ij.size2(); j++) {
-            //std::cout << "i: " << i << " | j: " << j << std::endl;
-            if (db_r(i,j) > 1000*std::pow(10,-9))
+
+            if (db_r(i,j) > 10000*std::pow(10,-9))
             {
                 v_ij(i, j) = std::pow(10,-36);
             }
@@ -794,15 +664,12 @@ void Energyscr::potentials() {
             {
                 v_ij(i, j) = energy_screened(db_r, i, j);
             }
-
             v_ij(j, i) =  v_ij(i, j);
         }
     }
-   //std::cout << v_ij << std::endl;
 };
 
-
-
+// calculate v_local for each SiDB location for one specific charge distribution
 void Energyscr::total_energy(){
     std::vector<float> m(v_ij.size1(),0);
    for (unsigned int i = 0; i < v_ij.size1(); i++)
@@ -810,12 +677,9 @@ void Energyscr::total_energy(){
        float collect = 0;
        for (unsigned int j = 0; j < v_ij.size2(); j++)
        {
-           //std::cout << "i: " << i << " | j: " << j << std::endl;
-           //std::cout << "chargesign["<<j<<"] :" << chargesign[j] << std::endl;
            collect += v_ij(j,i) * chargesign[j];
        }
        m[i] = collect;
-      // std::cout << "potential at " << i << ": " << collect << std::endl;
    }
    v_local = m;
 };
@@ -827,14 +691,14 @@ float Energyscr::system_energy(){
 
         for (unsigned int j = i+1; j < v_ij.size2(); j++)
         {
-            //std::cout << "i: " << i << " | j: " << j << std::endl;
-            //std::cout << "chargesign["<<j<<"] :" << chargesign[j] << std::endl;
             collect_all += v_ij(j,i) * chargesign[j]*chargesign[i];
         }
-        //std::cout << "potential at " << i << ": " << collect << std::endl;
     }
     return collect_all;
 };
+
+
+
 
 //std::pair<float, std::vector<int>> Energyscr::shortestPath(int &u, int &v, int &k) {
 //    // Table to be filled up using DP. The value sp[i][j][e] will store
@@ -891,19 +755,19 @@ float Energyscr::system_energy(){
 //                            if ((v_ij(i, *it) != INF) && (i != *it) &&
 //                                (j != *it) && (sp[*it][j][e - 1] != INF) && (sp[*it][j][e - 1] >= 0)) {
 //
-////                                std::cout << "a: " << v_ij(i, *it) << std::endl;
-////                                std::cout << "b: " << sp[*it][j][e-1] << std::endl;
-////                                std::cout << "i: " << i << std::endl;
-////                                std::cout << "j: " << j << std::endl;
-////                                std::cout << "e: " << e << std::endl;
-////                                std::cout << *it << std::endl;
+//                                std::cout << "a: " << v_ij(i, *it) << std::endl;
+//                                std::cout << "b: " << sp[*it][j][e-1] << std::endl;
+//                                std::cout << "i: " << i << std::endl;
+//                                std::cout << "j: " << j << std::endl;
+//                                std::cout << "e: " << e << std::endl;
+//                                std::cout << *it << std::endl;
 //                                //std::cout << "Summe: " << v_ij(i, *it) + sp[*it][j][e-1] << std::endl;
 //                                collect.push_back(v_ij(i, *it) + sp[*it][j][e - 1]);
 //                                collect_index.push_back(*it);
 //
 //
-////                                sp[i][j][e] = std::fmin(sp[i][j][e], v_ij(i, a) +
-////                                                                     sp[a][j][e-1]);
+//                                sp[i][j][e] = std::fmin(sp[i][j][e], v_ij(i, a) +
+//                                                                     sp[a][j][e-1]);
 //
 //
 //
@@ -923,11 +787,11 @@ float Energyscr::system_energy(){
 //                        path_cer.push_back(value);
 //                        //sampling.erase(std::remove(sampling.begin(), sampling.end(),value), sampling.end());
 //                        //std::cout << "j: " << j << " | i: " << i << " | "<< e << " | " << collect_index[min_index] << std::endl;
-////                         for (auto it = path_cer.begin(); it!= path_cer.end(); it++)
-////                        {
-////                            std::cout << *it << std::endl;
-////                            std::cout << e << std::endl;
-////                        }
+//                         for (auto it = path_cer.begin(); it!= path_cer.end(); it++)
+//                        {
+//                            std::cout << *it << std::endl;
+//                            std::cout << e << std::endl;
+//                        }
 //
 //                        //path_cer.push_back(j);
 //
@@ -948,18 +812,17 @@ float Energyscr::system_energy(){
 //        };
 //
 //
-////std::cout << sizeof(path) << std::endl;
-////            for (auto it = path[0][5][2].begin(); it!= path[0][5][2].end(); it++)
-////            {
-////                std::cout << *it << std::endl;
-////                std::cout << 1 << std::endl;
-////                //std::cout <<  << std::endl;
-////            }
-//
-////    for (auto i = path_cer.begin(); i!= path_cer.end(); i++)
-////    {
-////        std::cout << *i;
-////    }
+//std::cout << sizeof(path) << std::endl;
+//            for (auto it = path[0][5][2].begin(); it!= path[0][5][2].end(); it++)
+//            {
+//                std::cout << *it << std::endl;
+//                std::cout << 1 << std::endl;
+//                //std::cout <<  << std::endl;
+//            }
+//    for (auto i = path_cer.begin(); i!= path_cer.end(); i++)
+//    {
+//        std::cout << *i;
+//    }
 //        return std::make_pair(sp[u][v][k], path[u][v][k]);
 //};
 //
@@ -977,11 +840,6 @@ float Energyscr::system_energy(){
 //};
 
 std::pair<float, std::vector<int>> Energyscr::shortestPath(int &u, int &v, int &k) {
-
-#include <iostream>
-#include <climits>
-
-#include <algorithm>
 
     using namespace std;
     int size = v_ij.size1();
