@@ -43,6 +43,7 @@ namespace Circuits
     // lattice dimensions
     //const std::string test10       = "C:/Users/jan-d/OneDrive/Desktop/test10.sqd";
     const std::string xor2_gate    = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/xor2.sqd";
+    const std::string or_gate_10      = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_or/21_hex_inputsdbp_or_v17_10.sqd";
     const std::string or_gate      = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_or/21_hex_inputsdbp_or_v17_10.sqd";
     const std::string and_gate_new = "C:/Users/jan-d/Downloads/21_hex_inputsdbp_and_v7.sqd";
     const std::string inv_diagonal = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/1i1o_inv_diag/hex_11_inputsdbp_inv_diag_v0_manual.sqd";
@@ -52,6 +53,8 @@ namespace Circuits
     const std::string majority = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/fontes18/majority.sqd";
     const std::string fo2_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/1i2o_fo2/12_hex_inputsdbp_fo2_v6.sqd";
     const std::string ha = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i2o_ha/22_hex_inputsdbp_ha_v2.sqd";
+    const std::string xor_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i2o_xor/hex_21_inputsdbp_xor_v1_11";
+    const std::string HA_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/HA.sqd";
     };
 
     std::string path = "C:/Users/jan-d/OneDrive/Dokumente/PhD/FCN/sqd/";
@@ -60,8 +63,10 @@ int main()
 {
     int identical = 0;
 
-for (const auto &file : directory_iterator(path))
-//for (int circuit_num=0; circuit_num<1;circuit_num++)
+//for (const auto &file : directory_iterator(path))
+//{
+
+for (int circuit_num=0; circuit_num<1;circuit_num++)
 {
 //    std::vector<std::vector<unsigned long>> location;
 //
@@ -71,7 +76,7 @@ for (const auto &file : directory_iterator(path))
 //    std::uniform_int_distribution<std::mt19937::result_type> dist10(0, 15);
 //    std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
 //
-//    int number_of_sidb = 65;
+//    int number_of_sidb = 26;
 //    // generate random layout
 //    std::vector<int> numbers_x;
 //    for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
@@ -105,11 +110,13 @@ for (const auto &file : directory_iterator(path))
 //    }
 
 
-    auto        t1        = std::chrono::high_resolution_clock::now();
 
-    //std::string selection = Circuits::and_gate;
-    std::string selection = file.path();
+
+    std::string selection = Circuits::xor2_gate;
+   // std::string selection = path;
+   //std::string selection = file.path();
 //
+
             const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(selection);
 
             std::vector<std::vector<unsigned long>> location;
@@ -186,8 +193,13 @@ for (const auto &file : directory_iterator(path))
 
     // std::vector<int> v{0,1,2,4,8,16,32,64,128,256,512};
     // int circuit_num = 1;
+//   std::ofstream outFile(selection + std::to_string(circuit_num) +  "_location.txt");
+//   std::ofstream chargeFile(selection + std::to_string(circuit_num) + "_charge.txt");
+
+
     std::ofstream outFile(selection +  "_location.txt");
     std::ofstream chargeFile(selection + "_charge.txt");
+
     // the important part
     std::cout << selection << std::endl;
 
@@ -204,8 +216,9 @@ for (const auto &file : directory_iterator(path))
     {
         chargeFile << std::to_string(i) << ";";
     };
-    chargeFile << "type";
-    chargeFile << "runtime" << std::endl;
+    chargeFile << "type;";
+    chargeFile << "runtime;";
+    chargeFile << "energy" << std::endl;
 
     // example of how Siqad works
     // ____________________________________________
@@ -221,8 +234,9 @@ for (const auto &file : directory_iterator(path))
 
     // ---------------------------------------------- EXHAUSTIVE SEARCH
     // -------------------------------------------------
+    auto        t1        = std::chrono::high_resolution_clock::now();
     float system_energy_min = 100000;
-    if (true)
+    if (!true)
     {
         std::vector<int> charge;
         std::vector<int> initial_sign(location.size(), -1);
@@ -243,8 +257,8 @@ for (const auto &file : directory_iterator(path))
             if ((counter % 1000000) == 0)
             {
                 // std::cout << "iteration step: " << counter << std::endl;
-                generalisation.get_chargesign();
-                std::cout << std::endl;
+                //generalisation.get_chargesign();
+                //std::cout << std::endl;
             }
             generalisation
                 .total_energy();  // update of v_local[i] which changes as soon as the charge distribution changes
@@ -272,7 +286,7 @@ for (const auto &file : directory_iterator(path))
             std::cout << (*it) << " | ";
             chargeFile << std::to_string(*it) << ";";
         }
-        chargeFile << "EXGS";
+        chargeFile << "EXGS;";
         std::cout << std::endl
                   << "-------------------------------------------------------------------------------" << std::endl;
         const auto                    t11        = std::chrono::high_resolution_clock::now();
@@ -280,7 +294,8 @@ for (const auto &file : directory_iterator(path))
         std::cout << std::endl
                   << std::endl
                   << fmt::format("It took {} s to simulate the {} circuit", diff_first.count(), selection) << std::endl;
-        chargeFile << std::to_string(diff_first.count());
+        chargeFile << std::to_string(diff_first.count()) << ";";
+        chargeFile << std::to_string(system_energy_min);
     }
     // -------------------------------------------------------------------------------------------------------------------------------
 
@@ -317,7 +332,7 @@ for (const auto &file : directory_iterator(path))
         std::vector<std::vector<float>> collection_all;
 
         // std::for_each(std::execution::par, iterator_helper.cbegin(), iterator_helper.cend(), [&](const auto& b){
-        int threashold_num = 2000;
+        int threashold_num = 1000;
         int count_equal_energy = 0;
         for (int z = 0; z < threashold_num; z++)
         {
@@ -354,10 +369,11 @@ for (const auto &file : directory_iterator(path))
                     // auto index_size = index_start.size();
                     // std::cout <<  "index_size:" << index_start_size << std::endl;
                     // std::cout <<  "index_end_size:" << index_end_size << std::endl;
-
+                    //first_try.get_chargesign();
                     first_try.total_energy();
                     // first_try.get_chargesign();
                     //   check if new charge configuration with lower energy is found
+
                     if (first_try.populationValid() && first_try.system_energy() <= system_energy)
                     {
                         if(first_try.system_energy() == system_energy)
@@ -365,34 +381,36 @@ for (const auto &file : directory_iterator(path))
                             count_equal_energy +=1;
                         }
                         std::cout << "system energy old: " << first_try.system_energy() << std::endl;
-                        first_try.get_chargesign();
+                        //first_try.get_chargesign();
                         system_energy = first_try.system_energy();
                         charge_config = first_try.chargesign;
                         break;
                     }
                     // populationValid_counter() can let an electron jump from a more negatively charged SiDB to a more
                     // positively charged one
-                    std::tuple<int, std::vector<int>, int> output2 = first_try.populationValid_counter();
-                    first_try.total_energy();  // v_local[i] are updated
-                    if ((first_try.populationValid()) && (first_try.system_energy() <= system_energy))
-                    {
-                        if(first_try.system_energy() == system_energy)
-                        {
-                            count_equal_energy +=1;
-                        }
-                        std::cout << "system energy new: " << first_try.system_energy() << std::endl;
-                        first_try.get_chargesign();
-                        system_energy = first_try.system_energy();
-                        charge_config = first_try.chargesign;
-                        break;
-                    };
+
+//                    std::tuple<int, std::vector<int>, int> output2 = first_try.populationValid_counter();
+//                    first_try.total_energy();  // v_local[i] are updated
+//                    if ((first_try.populationValid()) && (first_try.system_energy() <= system_energy))
+//                    {
+//                        if(first_try.system_energy() == system_energy)
+//                        {
+//                            count_equal_energy +=1;
+//                        }
+//                        std::cout << "system energy new: " << first_try.system_energy() << std::endl;
+//                        first_try.get_chargesign();
+//                        system_energy = first_try.system_energy();
+//                        charge_config = first_try.chargesign;
+//                        break;
+//                    };
                     // first_try.get_chargesign();
                     collection_all.push_back(
                         {first_try.system_energy(), static_cast<float>(first_try.populationValid())});
 
                 };
+
             };
-            if (count_equal_energy > 7)
+            if (count_equal_energy > 10)
             {break;}
         }
         std::cout << "________________________________" << std::endl;
@@ -404,7 +422,7 @@ for (const auto &file : directory_iterator(path))
             std::cout << it << " | ";
             chargeFile << std::to_string(it) << ";";
         }
-        chargeFile << "EQ";
+        chargeFile << "EQ;";
 
 
         //        for (const auto& it : collection_all)
@@ -422,6 +440,7 @@ for (const auto &file : directory_iterator(path))
     }
     std::chrono::duration<double> diff = t2 - t12;
     chargeFile << std::to_string(diff.count());
+    chargeFile << ";" << std::to_string(system_energy);
     std::cout << std::endl
               << std::endl
               << fmt::format("It took {} s to simulate the {} circuit", diff.count(), selection) << std::endl;

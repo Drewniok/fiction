@@ -617,7 +617,7 @@ bool Energyscr::populationValid() const
 //               v_ij(i, j) * ((chargesign[i] + dn_i) * (chargesign[j] + dn_j) - chargesign[i] * chargesign[j]);
 
         // this is from Siqad. However, it is quite likely wrong
-        return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j);
+        return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
     };
 
     for (unsigned int i = 0; i < chargesign.size(); i++)
@@ -667,7 +667,7 @@ std::tuple<int, std::vector<int>, int> Energyscr::populationValid_counter()
             int dn_j = -dn_i;
 //            return v_local[i] * dn_i + v_local[j] * dn_j +
 //                   v_ij(i, j) * ((chargesign[i] + dn_i) * (chargesign[j] + dn_j) - chargesign[i] * chargesign[j]);
-            return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j);
+            return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
         };
 
         for (unsigned int i = 0; i < chargesign.size(); i++)
