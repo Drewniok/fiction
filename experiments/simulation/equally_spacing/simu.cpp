@@ -76,7 +76,7 @@ void config::index_to_chargeconf(const int& base)
 };
 
 // print the charge config. vector
-void config::get_chargesign()
+void config::get_chargesign() const
 {
     for (unsigned int i = 0; i < chargesign.size(); i++)
     {
@@ -96,7 +96,7 @@ void config::get_chargesign()
 };
 
 // print the charge index
-void config::get_index()
+void config::get_index() const
 {
     std::cout << "Index: " << chargeindex << std::endl;
 };
@@ -360,7 +360,7 @@ void Energyscr::find_new_best_neighbor_GRC(
 
         if (count1 > 0)
         {
-            if (distance_min >= 0.8 * max_value)
+            if (distance_min >= 0.7 * max_value)
             {
                 random.push_back(l);
             }
@@ -609,15 +609,39 @@ bool Energyscr::populationValid() const
         }
     }
 
+
+
+
     auto hopDel = [this](const int& i, const int& j)
     {
+        //std::vector<int> charge_sign_saved = chargesign;
+        //float E_ori = this->system_energy_vec(charge_sign_saved);
+
         int dn_i = (chargesign[i] == -1) ? 1 : -1;
         int dn_j = -dn_i;
-//        return v_local[i] * dn_i + v_local[j] * dn_j +
+
+            //        return v_local[i] * dn_i + v_local[j] * dn_j +
 //               v_ij(i, j) * ((chargesign[i] + dn_i) * (chargesign[j] + dn_j) - chargesign[i] * chargesign[j]);
 
         // this is from Siqad. However, it is quite likely wrong
-        return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
+        //charge_sign_saved[i] += dn_i;
+        //charge_sign_saved[j] += dn_j;
+        //float E_new = this->system_energy_vec(charge_sign_saved);
+        //float E_diff = E_new - E_ori;
+        //float E_fast = v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*((chargesign[i] + dn_i) * (chargesign[j] + dn_j) - chargesign[i] * chargesign[j])*1;
+        float E_fast = v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
+
+//        if (std::abs(std::abs(E_diff) - std::abs(E_fast)) > 0.0000001)
+//        { //std::cout << "Real E delta deviates from speedy delta E too much" << std::endl;
+////            std::cout << std::abs(std::abs(E_diff) - std::abs(E_fast)) << std::endl;
+////            std::cout << "i: " << i << std::endl;
+////            std::cout << "j: " << j << std::endl;
+//            //return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
+//            return E_diff;
+//        }
+//        else
+            //return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
+            return E_fast;
     };
 
     for (unsigned int i = 0; i < chargesign.size(); i++)
@@ -684,7 +708,7 @@ std::tuple<int, std::vector<int>, int> Energyscr::populationValid_counter()
                 if ((chargesign[j] > chargesign[i]) && (E_del < -zero_equiv))
                 {
                     // data_collect.push_back(i);
-                    //chargesign[i] = 0;
+                    chargesign[i] = 0;
                     chargesign[j] = -1;
                     collect_unstable += 1;
                 }
@@ -703,7 +727,7 @@ void config::potentials()
         for (unsigned int j = i + 1; j < v_ij.size2(); j++)
         {
 
-            if (db_r(i, j) > 50 * std::pow(10, -9))
+            if (db_r(i, j) > 500000 * std::pow(10, -9))
             {
                 v_ij(i, j) = 0;
             }
@@ -732,7 +756,7 @@ void Energyscr::total_energy()
     v_local = m;
 };
 
-float Energyscr::system_energy()
+float Energyscr::system_energy() const
 {
     float collect_all = 0;
     for (unsigned int i = 0; i < v_ij.size1(); i++)
@@ -745,6 +769,23 @@ float Energyscr::system_energy()
     }
     return collect_all;
 };
+
+
+
+float Energyscr::system_energy_vec(std::vector<int> &n_in) const
+{
+    float collect_all = 0;
+    for (unsigned int i = 0; i < v_ij.size1(); i++)
+    {
+
+        for (unsigned int j = i + 1; j < v_ij.size2(); j++)
+        {
+            collect_all += v_ij(j, i) * static_cast<float>(n_in[j] * n_in[i]);
+        }
+    }
+    return collect_all;
+};
+
 
 // std::pair<float, std::vector<int>> Energyscr::shortestPath(int &u, int &v, int &k) {
 //     // Table to be filled up using DP. The value sp[i][j][e] will store

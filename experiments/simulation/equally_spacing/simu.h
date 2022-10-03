@@ -31,8 +31,8 @@ class config
     void
     chargeconf_to_index(const int& base);  // charge configuration vector (-1,0,1,-1,...) is assigned to a unique index
     void index_to_chargeconf(const int& base);  // index to charge configuration vector
-    void get_chargesign();                      // // print the charge configuration vector
-    void get_index();                           // print the charge index
+    void get_chargesign() const;                      // // print the charge configuration vector
+    void get_index() const;                           // print the charge index
     void increase_step();                       // charge index is increased by one
     void distance();                            // distance matrix is calculated
     void potentials();
@@ -56,8 +56,9 @@ class Energyscr : public config
     Energyscr(const std::vector<std::vector<unsigned long>>& input1, const std::vector<int>& input2) :
             config(input1, input2){};
 
-    void                                   total_energy();
-    float                                  system_energy();
+    void                                   total_energy() ;
+    float                                  system_energy() const;
+    float                                  system_energy_vec(std::vector<int> &n_in) const;
     bool                                   populationValid() const;
     std::tuple<int, std::vector<int>, int> populationValid_counter();
     void                                   find_new_best_neighbor_GRC(std::vector<int>& index_db);
