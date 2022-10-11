@@ -21,6 +21,11 @@ if (EXISTS ${PROJECT_SOURCE_DIR}/.git)
     endif ()
 endif ()
 
+set(Boost_INCLUDE_DIR /Users/jandrewniok/Downloads/boost_1_80_0)
+set(Boost_LIBRARY_DIR /Users/jandrewniok/Downloads/boost_1_80_0)
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+
 # path to the experiments cpp files and EPFL benchmarks
 target_compile_definitions(fiction_experiments INTERFACE "EXPERIMENTS_PATH=\"${CMAKE_CURRENT_SOURCE_DIR}/\"")
 

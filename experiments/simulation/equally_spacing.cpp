@@ -2,31 +2,83 @@
 // Created by jan-d on 02.09.2022.
 //
 
+#include "fiction/io/read_sqd_layout.hpp"
+#include "fiction/io/write_sqd_layout.hpp"
+#include "fiction/technology/area.hpp"
+#include "fiction/technology/cell_technologies.hpp"
+#include "fiction/types.hpp"
 #include "simu.cpp"
 #include "simu.h"
 
-
-#include <iterator>
-#include <fiction/io/read_sqd_layout.hpp>
-#include <fiction/technology/area.hpp>
-#include <fiction/io/write_sqd_layout.hpp>
-#include <fiction/technology/cell_technologies.hpp>
-#include <fiction/types.hpp>
-#include <fstream>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <execution>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <iterator>
 #include <random>
+#include <string>
 #include <tuple>
 #include <vector>
-#include <string>
-#include <filesystem>
 
 using namespace fiction;
 using std::filesystem::directory_iterator;
 
+template<typename T>
+float average(std::vector<T> const& v){
+    if(v.empty()){
+        return 0;
+    }
+
+    auto const count = static_cast<T>(v.size());
+    return std::reduce(v.begin(), v.end()) / count;
+}
+
+
+template<typename T>
+std::vector<T> unique_values( std::vector<T> & input_vec ){
+
+    std::vector<T> uniques( input_vec.size() );
+    typename std::vector<T>::iterator it;
+    it = std::unique_copy (input_vec.begin(), input_vec.end(), uniques.begin() );
+
+    std::sort( uniques.begin(), it );
+
+    it = std::unique_copy( uniques.begin(), it, uniques.begin() );
+
+    uniques.resize( std::distance(uniques.begin(), it) );
+
+    return uniques;
+}
+
+template<typename T>
+std::vector<int> count_unique_values( std::vector<T> & input_vec ){
+
+    std::vector<T> uniques = unique_values<T>( input_vec );
+    std::vector<int> counts( uniques.size() );
+
+    for(size_t i = 0; i < counts.size(); ++i)
+        counts[i] = std::count( input_vec.begin(), input_vec.end(), uniques[i] );
+
+    return counts;
+}
+
+
+template<typename T>
+std::ostream & operator << (std::ostream & o, const std::vector<T> & v){
+
+    o << "[ ";
+    for (size_t i = 0; i < v.size()-1; i++)
+        o << v[i] << ", ";
+
+    o << v[v.size()-1];
+
+    std::cout << " ]" << std::endl;
+
+    return o;
+}
 
 // function is used to sort the second and afterwards the first element of the vector
 bool sortPairs(std::vector<unsigned long> const& s1, std::vector<unsigned long> const& s2)
@@ -40,36 +92,20 @@ bool sortPairs(std::vector<unsigned long> const& s1, std::vector<unsigned long> 
 
 namespace Circuits
 {
-    // lattice dimensions
-    //const std::string test10       = "C:/Users/jan-d/OneDrive/Desktop/test10.sqd";
-    const std::string xor2_gate    = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/xor2.sqd";
-    const std::string xnor_gate_layout = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/xnor2.sqd";
-    const std::string or_gate_10      = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_or/21_hex_inputsdbp_or_v17_10.sqd";
-    const std::string or_gate      = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_or/21_hex_inputsdbp_or_v17_10.sqd";
-    const std::string and_gate_new = "C:/Users/jan-d/Downloads/21_hex_inputsdbp_and_v7.sqd";
-    const std::string inv_diagonal = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/1i1o_inv_diag/hex_11_inputsdbp_inv_diag_v0_manual.sqd";
-    const std::string and_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_and/21_hex_inputsdbp_and_v19.sqd";
-    const std::string hourglass = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i2o_hourglass/22_hex_inputsdbp_hourglass_v0.sqd";
-    const std::string  test8 = "C:/Users/jan-d/OneDrive/Desktop/test8.sqd";
-    const std::string majority = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/fontes18/majority.sqd";
-    const std::string fo2_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/1i2o_fo2/12_hex_inputsdbp_fo2_v6.sqd";
-    const std::string ha = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i2o_ha/22_hex_inputsdbp_ha_v2.sqd";
-    const std::string xor_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i2o_xor/hex_21_inputsdbp_xor_v1_11";
-    const std::string HA_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/HA.sqd";
-    const std::string xor5_r1 = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/fontes18/xor5_r1.sqd";
-    const std::string xorfontes18_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/fontes18/xor.sqd";
-    const std::string xorfontes18_gate_10 = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/fontes18/xor_10.sqd";
-    const std::string par_gen = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/par_gen.sqd";
-    const std::string mux_21 = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/experiments/layouts/trindade16/mux21.sqd";
-    const std::string xnor_gate = "C:/Users/jan-d/Downloads/sidb-bestagon-gate-library-xml-fix/sidb-bestagon-gate-library-xml-fix/bestagon-gates/2i1o_xnor/hex_21_inputsdbp_xnor_v21.sqd";
+
+std::string mux = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/sam_layouts/mux_mu32.sqd";
+std::string and_gate = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/21_hex_inputsdbp_and_v19.sqd";
+std::string or_gate = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/22_hex_inputsdbp_hourglass_v0.sqd";
+
     };
 
     //std::string path = "C:/Users/jan-d/OneDrive/Dokumente/PhD/FCN/sqd/";
-    std::string path = "C:/Users/jan-d/OneDrive/Desktop/select/";
+    std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/";
+    std::string folder = "gates_sqd";
+
 int main()
 {
-    for (int q = 0; q<1; q++)
-    {
+
         bool EXGS_on   = false;
         int  identical = 0;
 
@@ -87,8 +123,13 @@ int main()
 
         int loop_count = 0;
 
-//        for (const auto& file : directory_iterator(path))
-//        {
+        for (const auto& file : directory_iterator(path + folder))
+        {
+            std::cout << file.path() << std::endl;
+            std::vector<float> smallest_energy;
+            std::vector<float> time;
+            for (int q = 0; q<100; q++)
+            {
             float energy_exact = energy_EXGS[loop_count];
             loop_count += 1;
              for (int circuit_num=0; circuit_num<1;circuit_num++)
@@ -135,9 +176,9 @@ int main()
 //                     location.push_back(*it);
 //                 }
 
-            std::string selection = Circuits::par_gen;
+            //std::string selection = Circuits::or_gate;
              //std::string selection = path;
-            //std::string selection = file.path();
+            std::string selection = file.path();
             //
             //
             const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(selection);
@@ -151,8 +192,8 @@ int main()
             // transform coordinates in new coordinates, inspired by SIQAD
             for (const auto& c : all_cells)
             {
-                auto          X = c.x;
-                unsigned long Y = ((c.y) - ((c.y) % 2)) * 0.5;
+                auto          X = static_cast<unsigned long>(c.x);
+                auto Y = static_cast<unsigned long>(((c.y) - ((c.y) % 2)) * 0.5);
                 unsigned long Z = ((c.y) % 2);
                 location.push_back({X, Y, Z});
             }
@@ -175,9 +216,9 @@ int main()
             //                          location.push_back({X, Y, Z});
             //                      });
 
-            std::cout << std::endl
-                      << fmt::format("There are {} SiDBs in the circuit", location.size()) << std::endl
-                      << std::endl;
+//            std::cout << std::endl
+//                      << fmt::format("There are {} SiDBs in the circuit", location.size()) << std::endl
+//                      << std::endl;
 
             // sort vector such that the dots are saved from top to bottom from left to right
             std::sort(location.begin(), location.end(), sortPairs);
@@ -196,6 +237,13 @@ int main()
 
             Energyscr check(location, initial_sign);
             check.toeuc();
+
+            std::string filename = selection.substr(0, selection.find("sqd/"));
+            //std::cout << filename << std::endl;
+            filename = selection.substr(filename.size()+4, selection.find("sqd/"));
+            //std::cout << filename << std::endl;
+            std::ofstream File_python(path + "/wrapper_files/" + filename + "_wrapper.txt");
+            check.location_infile(File_python);
             check.distance();
             // std::vector<int> perturber = check.find_perturber_alternative();
             int warning = 0;
@@ -226,11 +274,11 @@ int main()
 //                                     std::to_string(number_of_sidb) + "_charge.txt");
 
             //
-            std::ofstream outFile(selection  + "_location.txt");
-            std::ofstream chargeFile(selection + "_charge.txt");
+            std::ofstream outFile(selection  + "/location.txt");
+            std::ofstream chargeFile(selection + "/charge.txt");
 
             // the important part
-            std::cout << selection << std::endl;
+            //std::cout << selection << std::endl;
 
             outFile << "x;"
                     << "y;"
@@ -363,7 +411,7 @@ int main()
                 std::vector<std::vector<float>> collection_all;
 
                 // std::for_each(std::execution::par, iterator_helper.cbegin(), iterator_helper.cend(), [&](const auto& b){
-                int threashold_num     = 4000;
+                int threashold_num     = 100;
                 int count_equal_energy = 0;
                 for (int z = 0; z < threashold_num; z++)
                 {
@@ -383,7 +431,7 @@ int main()
                         first_try.v_ij        = generalisation.v_ij;
                         // ---------------------------------------------------------------------------------------
                         first_try.total_energy();  // However, v_local[i] has to recalculated
-                        std::vector<int> perturber = first_try.find_perturber_alternative();
+                        //std::vector<int> perturber = first_try.find_perturber_alternative();
                         // perturber.push_back(i);
 
                         std::vector<int> index_start = {i};  // index_start includes all the indices of "-1"-SiDBs
@@ -397,7 +445,7 @@ int main()
                         //            auto first_try = generalisation;
                         //            first_try = ;
 
-                        for (int set_dbs = 0; set_dbs < location.size() / 2 + 1; set_dbs++)
+                        for (int set_dbs = 0; set_dbs < location.size() / 2 + 3; set_dbs++)
                         {
                             index_start_size = index_start.size();
                             // based on the max-min diversity problem, all -1 SiDBs are selected iteratively
@@ -418,7 +466,7 @@ int main()
                                 {
                                     count_equal_energy += 1;
                                 }
-                                std::cout << "system energy old: " << first_try.system_energy() << std::endl;
+                                //std::cout << "system energy old: " << first_try.system_energy() << std::endl;
                                 // first_try.get_chargesign();
                                 system_energy = first_try.system_energy();
                                 charge_config = first_try.chargesign;
@@ -440,20 +488,21 @@ int main()
                                 {first_try.system_energy(), static_cast<float>(first_try.populationValid())});
                         };
                     };
-                    if (count_equal_energy > 30)
+                    if (count_equal_energy > 6)
                     {
                         break;
                     }
                 }
-                std::cout << "________________________________" << std::endl;
+                //std::cout << "________________________________" << std::endl;
                 //
-                std::cout << "smallest energy: " << system_energy << std::endl;
+               // std::cout << "smallest energy: " << system_energy << std::endl;
+                smallest_energy.push_back(system_energy);
                 chargeFile << std::endl;
-                for (const auto& it : charge_config)
-                {
-                    std::cout << it << " | ";
-                    chargeFile << std::to_string(it) << ";";
-                }
+          //      for (const auto& it : charge_config)
+          //      {
+          //          std::cout << it << " | ";
+          //          chargeFile << std::to_string(it) << ";";
+         //       }
                 chargeFile << "EQ;";
 
                 //        for (const auto& it : collection_all)
@@ -489,14 +538,34 @@ int main()
             {
                 chargeFile << ";" << std::to_string(system_energy);
             }
-            std::cout << std::endl
-                      << std::endl
-                      << fmt::format("It took {} s to simulate the {} circuit", diff.count(), selection) << std::endl;
+           // std::cout << std::endl
+           //           << std::endl
+           //           << fmt::format("It took {} s to simulate the {} circuit", diff.count(), selection) << std::endl;
 
 
-            std::cout << "identical: " << identical << std::endl;
-            std::cout << "unidentical: " << unidentical << std::endl;
+         //   std::cout << "identical: " << identical << std::endl;
+         //   std::cout << "unidentical: " << unidentical << std::endl;
+            time.push_back(diff.count());
         }
+        }
+    auto const a = average(time);
+    std::cout << "average time: " << a << "\n";
+    std::vector<float> v_uniques_int = unique_values<float>( smallest_energy );
+    std::cout << "Vector of unique values: " << v_uniques_int;
+
+    std::vector<int> v_counts_int = count_unique_values<float>( smallest_energy );
+    std::cout << "Vector of unique counts: " << v_counts_int;
+    float TTS;
+    if (v_counts_int[0] == 100)
+    { TTS = a;}
+    else
+    {    TTS = a * log(1.0-0.997) / log(1.0-static_cast<float>(v_counts_int[0])/100.0);
+    }
+    std::cout << "TTS: " << TTS;
+    std::cout << "\n\n";
+
+
+
     }
 return 0;
 }

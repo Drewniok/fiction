@@ -28,8 +28,8 @@ class config
 
     void toeuc();  // siqad specific coordinates are used to calculate the real euclidean positions of our SiDBs
     void get_locationeuc();  // print euclidean coordinates of each single placed SiDB
-    void
-    chargeconf_to_index(const int& base);  // charge configuration vector (-1,0,1,-1,...) is assigned to a unique index
+    void location_infile(std::ofstream &file);
+    void chargeconf_to_index(const int& base);  // charge configuration vector (-1,0,1,-1,...) is assigned to a unique index
     void index_to_chargeconf(const int& base);  // index to charge configuration vector
     void get_chargesign() const;                      // // print the charge configuration vector
     void get_index() const;                           // print the charge index

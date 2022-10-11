@@ -41,11 +41,11 @@ void config::toeuc()
 };
 
 // print euclidean coordinates of each single placed SiDB
-void config::get_locationeuc()
+void config::location_infile(std::ofstream &file)
 {
     for (const auto& i : locationeuc)
     {
-        std::cout << i[0] << " | " << i[1] << std::endl;
+        file << i[0]*1*std::pow(10,10) << "; " << i[1]*std::pow(10,10) << std::endl;
     }
 };
 
