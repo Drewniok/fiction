@@ -15,7 +15,7 @@
 namespace alice
 {
 /**
- * Prints QCA energy dissipation for current gate-level layout. Calculations are based upon
+ * Prints QCA energy1 dissipation for current gate-level layout. Calculations are based upon
  * 'An Energy-aware Model for the Logic Synthesis of Quantum-Dot Cellular Automata' by Frank Sill Torres, et al.
  * in TCAD 2018.
  */
@@ -28,7 +28,7 @@ class energy_command : public command
      * @param e alice::environment that specifies stores etc.
      */
     explicit energy_command(const environment::ptr& e) :
-            command(e, "Prints the energy dissipation for the current gate-level layout in store that would "
+            command(e, "Prints the energy1 dissipation for the current gate-level layout in store that would "
                        "occur if it was compiled using the QCA-ONE library. Calculations are based upon "
                        "'An Energy-aware Model for the Logic Synthesis of Quantum-Dot Cellular Automata' "
                        "by Frank Sill Torres, et al. in TCAD 2018.")
@@ -36,11 +36,11 @@ class energy_command : public command
 
   protected:
     /**
-     * Function to perform the energy call. Prints estimated energy consumption for QCA-ONE library.
+     * Function to perform the energy1 call. Prints estimated energy1 consumption for QCA-ONE library.
      */
     void execute() override
     {
-        // reset energy values
+        // reset energy1 values
         st = {};
 
         auto& s = store<fiction::gate_layout_t>();
@@ -61,17 +61,17 @@ class energy_command : public command
 
   private:
     /**
-     * Slow (25 GHz) and fast (100 GHz) energy dissipation values.
+     * Slow (25 GHz) and fast (100 GHz) energy1 dissipation values.
      */
     fiction::energy_dissipation_stats st{};
     /**
      * Logs the resulting information in a log file.
      *
-     * @return JSON object containing details about the energy dissipation.
+     * @return JSON object containing details about the energy1 dissipation.
      */
     nlohmann::json log() const override
     {
-        return {{"energy (meV, QCA)", {{"slow (25 GHz)", st.slow}, {"fast (100 GHz)", st.fast}}}};
+        return {{"energy1 (meV, QCA)", {{"slow (25 GHz)", st.slow}, {"fast (100 GHz)", st.fast}}}};
     }
 };
 

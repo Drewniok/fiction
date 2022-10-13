@@ -35,7 +35,7 @@ struct energy_dissipation_stats
         if (unknown > 0)
         {
             out << fmt::format(
-                "[w] {} gates could not be identified, thus, the actual energy dissipation might be higher\n", unknown);
+                "[w] {} gates could not be identified, thus, the actual energy1 dissipation might be higher\n", unknown);
         }
     }
 };
@@ -44,7 +44,7 @@ namespace detail
 {
 
 /**
- * Collection of energy values in meV for different QCA-ONE structures. The values are taken from 'An Energy-aware Model
+ * Collection of energy1 values in meV for different QCA-ONE structures. The values are taken from 'An Energy-aware Model
  * for the Logic Synthesis of Quantum-Dot Cellular Automata' by Frank Sill Torres, Robert Wille, Philipp Niemann, and
  * Rolf Drechsler in TCAD 2018.
  */
@@ -127,7 +127,7 @@ class qca_energy_dissipation_impl
     {
 #if (PROGRESS_BARS)
         // initialize a progress bar
-        mockturtle::progress_bar bar{static_cast<uint32_t>(lyt.size()), "[i] calculating energy dissipation: |{0}|"};
+        mockturtle::progress_bar bar{static_cast<uint32_t>(lyt.size()), "[i] calculating energy1 dissipation: |{0}|"};
 #endif
         lyt.foreach_node(
             [&, this](const auto& n, [[maybe_unused]] auto i)
@@ -235,15 +235,15 @@ class qca_energy_dissipation_impl
 }  // namespace detail
 
 /**
- * Estimates the energy dissipation of a gate-level layout if it were to be converted to a QCA cell-level layout via the
+ * Estimates the energy1 dissipation of a gate-level layout if it were to be converted to a QCA cell-level layout via the
  * QCA ONE gate library. This estimation was proposed in 'An Energy-aware Model for the Logic Synthesis of Quantum-Dot
  * Cellular Automata' by Frank Sill Torres, Robert Wille, Philipp Niemann, and Rolf Drechsler in TCAD 2018.
  *
- * As done in that publication, energy dissipation values are being given in meV for slow (25 GHz) and fast (100 GHz)
+ * As done in that publication, energy1 dissipation values are being given in meV for slow (25 GHz) and fast (100 GHz)
  * clocking.
  *
  * @tparam Lyt Gate-level layout type.
- * @param lyt The gate-level layout whose energy dissipation is to be calculated.
+ * @param lyt The gate-level layout whose energy1 dissipation is to be calculated.
  * @param pst Statistics.
  */
 template <typename Lyt>

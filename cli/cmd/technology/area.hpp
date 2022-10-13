@@ -38,7 +38,7 @@ class area_command : public command
 
   protected:
     /**
-     * Function to perform the energy call. Prints estimated energy consumption for QCA-ONE library.
+     * Function to perform the energy1 call. Prints estimated energy1 consumption for QCA-ONE library.
      */
     void execute() override
     {

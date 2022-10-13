@@ -47,6 +47,7 @@ class config
     std::vector<float>                      v_local;  // local potential at each SiDB location
     unsigned int                            chargeindex = 0;
     FPMat                                   v_ij;
+    float                                   potential_energy=0;
 };
 
 class Energyscr : public config
@@ -56,27 +57,19 @@ class Energyscr : public config
     Energyscr(const std::vector<std::vector<unsigned long>>& input1, const std::vector<int>& input2) :
             config(input1, input2){};
 
-    void                                   total_energy() ;
+    float                                   total_energy() ;
+    float                                   total_energy_EQ(int &index);
     float                                  system_energy() const;
     float                                  system_energy_vec(std::vector<int> &n_in) const;
+    void                                    get_distance(int& i, int& j);
+    void                                    get_potential(int& i, int& j);
     bool                                   populationValid() const;
     std::tuple<int, std::vector<int>, int> populationValid_counter();
-    void                                   find_new_best_neighbor_GRC(std::vector<int>& index_db);
+    void                                  find_new_best_neighbor_GRC(std::vector<int>& index_db);
     bool                                   sum_distance(std::vector<int>& input, int& old, int& now);
-
-    void                               change_chargesign(int& i, int& j);
-    void                               change_chargesign_one(std::vector<int>& vector);
-    void                               get_distance(int& i, int& j);
-    void                               get_potential(int& i, int& j);
-    std::vector<float>                 laplace(std::vector<float>& vector_input, const float& f);
-    std::vector<int>                   find_new_best_neighbor(std::vector<int>& index_db);
-    std::vector<int>                   search_same_distance(std::vector<int>& index_db);
-    std::vector<int>                   search_same_distance_new(std::vector<int>& index_db);
-    std::vector<int>                   search_same_potential(std::vector<int>& index_db);
     std::vector<int>                   find_perturber();
     std::vector<int>                   find_perturber_alternative();
-    void                               set_charge();
-    std::pair<float, std::vector<int>> shortestPath(int& u, int& v, int& k);
+
 };
 
 #endif  // UNTITLED_SIMU_H
