@@ -1,0 +1,5 @@
+TTS;energy1;layout;number_sidb
+0.011657;0.967423;hex_21_inputsdbp_xor_v1_01.sqd;21
+0.008998;1.010352;12_hex_inputsdbp_fo2_v6_0.sqd;20
+0.029001;1.076673;12_hex_inputsdbp_fo2_v6_1.sqd;20
+0.017676;0.936637;hex_21_inputsdbp_xor_v1_00.sqd;21
