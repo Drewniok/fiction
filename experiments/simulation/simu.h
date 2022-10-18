@@ -36,6 +36,7 @@ class config
     void increase_step();                       // charge index is increased by one
     void distance();                            // distance matrix is calculated
     void potentials();
+    void identify_outsider();
 
     std::vector<std::vector<unsigned long>> locationind;
     std::vector<DBeucCo>                    locationeuc;  // euclidean coordinates of our SiDB
@@ -48,6 +49,8 @@ class config
     unsigned int                            chargeindex = 0;
     FPMat                                   v_ij;
     float                                   potential_energy=0;
+    std::vector<int>                        outsider;
+
 };
 
 class Energyscr : public config
@@ -57,7 +60,7 @@ class Energyscr : public config
     Energyscr(const std::vector<std::vector<unsigned long>>& input1, const std::vector<int>& input2) :
             config(input1, input2){};
 
-    float                                   total_energy() ;
+    void                                   total_energy() ;
     float                                   total_energy_EQ(int &index);
     float                                  system_energy() const;
     float                                  system_energy_vec(std::vector<int> &n_in) const;

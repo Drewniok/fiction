@@ -107,6 +107,81 @@ void config::increase_step()
     chargeindex += 1;
 };
 
+
+void config::identify_outsider()
+{
+
+    int i_up=0;
+    float up=0;
+    int i_down=0;
+    float down=MAX_FLOAT;
+    int i_right=0;
+    float right=0;
+    int i_left=0;
+    float left=MAX_FLOAT;
+
+    for (int i = 0; i < locationeuc.size(); i++)
+    {
+        if (locationeuc[i][0] < left)
+        {
+            left= locationeuc[i][0];
+            i_left = i;
+
+        }
+
+        if (locationeuc[i][0] > right)
+        {
+            right= locationeuc[i][0];
+            i_left = i;
+
+        }
+
+        if (locationeuc[i][1] > up)
+        {
+            up =  locationeuc[i][1];
+            i_up = i;
+
+        }
+
+        if (locationeuc[i][1] < down)
+        {
+            down =  locationeuc[i][1];
+            i_down = i;
+
+        }
+    }
+
+    outsider = {i_left,i_right,i_down,i_up};
+
+    for (int i = 0; i < locationeuc.size(); i++)
+    {
+        if (locationeuc[i][0] == left && i!=i_left)
+        {
+            outsider.push_back(i);
+        }
+
+        if (locationeuc[i][0] == right && i!=i_right)
+        {
+            outsider.push_back(i);
+        }
+
+        if (locationeuc[i][1] == up && i!=i_up)
+        {
+            outsider.push_back(i);
+        }
+
+        if (locationeuc[i][1] == down && i!=i_down)
+        {
+            outsider.push_back(i);
+        }
+    }
+//    for (auto it = outsider.begin();it != outsider.end(); it++)
+//    {
+//        std::cout << *it << std::endl;
+//    }
+
+}
+
 // potential calculation
 float energy_screened(FPMat& m, unsigned int i, unsigned int j)
 {
@@ -165,21 +240,15 @@ bool Energyscr::sum_distance(std::vector<int>& input, int& old, int& now)
 void Energyscr::find_new_best_neighbor_GRC(
     std::vector<int>& index_db)  // input is a vector with the indices of all already SiDBs with -1
 {
-    float max_value;
+    float max_value =0;
     int   index_l = -1;
     int   count   = 0;
-    for (int l = 0; l < db_r.size1(); l++)
+    for (auto it = chargesign.begin(); it!=chargesign.end();it++)
     {
-
-        if ((std::find(index_db.begin(), index_db.end(), l) !=
-             index_db.end()))  // take no l-index which is already occupied
-        {
+        if ((*it)!=0)
             continue;
-        }
-        else
-        {
-            count += 1;
-        }
+        count += 1;
+        int l = static_cast<int>(std::distance(chargesign.begin(), it));
 
 
         float distance_min = db_r(l, index_db[0]);
@@ -197,7 +266,7 @@ void Energyscr::find_new_best_neighbor_GRC(
             index_l   = l;
         }
 
-        if (count > 1)
+        else if (count > 1)
         {
             if (distance_min > max_value)
             {
@@ -216,19 +285,18 @@ void Energyscr::find_new_best_neighbor_GRC(
         }
     }
 //std::cout << "max value" << index_l << std::endl;
+
     std::vector<int> random;
     int              count1 = 0;
-    for (int l = 0; l < db_r.size1(); l++)
-    {
-        if ((std::find(index_db.begin(), index_db.end(), l) != index_db.end()))
-        {
-            continue;
-        }
 
-        else
-        {
-            count1 += 1;
-        }
+    for (auto it = chargesign.begin(); it!=chargesign.end();it++)
+    {
+        if ((*it)!=0)
+            continue;
+
+        count1 += 1;
+        int l = static_cast<int>(std::distance(chargesign.begin(), it));
+
 
         float distance_min = db_r(l, index_db[0]);
         for (int n : index_db)
@@ -243,7 +311,8 @@ void Energyscr::find_new_best_neighbor_GRC(
 
         if (count1 > 0)
         {
-            if (distance_min >= 0.72 * max_value)
+            const float& zero_equiv      = Params::POP_STABILITY_ERR;
+            if (distance_min >= 0.7 * max_value)
             {
                 random.push_back(l);
             }
@@ -394,24 +463,8 @@ bool Energyscr::populationValid() const
             //        return v_local[i] * dn_i + v_local[j] * dn_j +
 //               v_ij(i, j) * ((chargesign[i] + dn_i) * (chargesign[j] + dn_j) - chargesign[i] * chargesign[j]);
 
-        // this is from Siqad. However, it is quite likely wrong
-        //charge_sign_saved[i] += dn_i;
-        //charge_sign_saved[j] += dn_j;
-        //float E_new = this->system_energy_vec(charge_sign_saved);
-        //float E_diff = E_new - E_ori;
-        //float E_fast = v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*((chargesign[i] + dn_i) * (chargesign[j] + dn_j) - chargesign[i] * chargesign[j])*1;
-        float E_fast = v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
+       float E_fast = v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
 
-//        if (std::abs(std::abs(E_diff) - std::abs(E_fast)) > 0.0000001)
-//        { //std::cout << "Real E delta deviates from speedy delta E too much" << std::endl;
-////            std::cout << std::abs(std::abs(E_diff) - std::abs(E_fast)) << std::endl;
-////            std::cout << "i: " << i << std::endl;
-////            std::cout << "j: " << j << std::endl;
-//            //return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
-//            return E_diff;
-//        }
-//        else
-            //return v_local[i]*dn_i + v_local[j]*dn_j - v_ij(i,j)*1;
             return E_fast;
     };
 
@@ -512,7 +565,7 @@ void config::potentials()
 };
 
 // calculate v_local for each SiDB location for one specific charge distribution
-float Energyscr::total_energy()
+void Energyscr::total_energy()
 {
     std::vector<float> m(v_ij.size1(), 0);
     for (unsigned int i = 0; i < v_ij.size1(); i++)

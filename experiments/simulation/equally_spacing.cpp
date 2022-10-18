@@ -100,14 +100,24 @@ std::string or_gate = "/Users/jandrewniok/CLionProjects/fiction/experiments/best
     };
 
     //std::string path = "C:/Users/jan-d/OneDrive/Dokumente/PhD/FCN/sqd/";
-    std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates";
-    std::string folder = "/gates_sqd";
+    std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/rand_bestagon_files/";
+    //std::string folder = "/gates_sqd";
+    std::string folder = "/sqd/";
     //std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/wrapper_files/";
+
+
+    std::vector<unsigned long> convert_coordinate(const std::vector<unsigned long> &vector_loc_siqad)
+    {
+        std::vector<unsigned long> output(2,0);
+        output[0] = vector_loc_siqad[0];
+        output[1] = vector_loc_siqad[1] + vector_loc_siqad[2];
+        return output;
+    };
 
 int main()
 {
 
-        bool EXGS_on   = false;
+        bool EXGS_on   = true;
 
 
         std::vector<float> energy_EXGS = {1.01035, 1.01035, 1.07667, 0.92899, 1.07623, 0.9814 , 1.19412,
@@ -121,105 +131,100 @@ int main()
                                             0.99119, 0.7797};
 
         int loop_count = 0;
-        std::ofstream result_file(path + "all_results.txt");
-        result_file << "TTS;" << "energy1;"<< "layout;" << "number_sidb" << std::endl;
+        std::ofstream result_file(path + "all_results_c_80.txt");
+        result_file << "TTS_EXGS;"  << "TTS_EQ;" << "energy1;"<< "layout;" << "number_sidb" << std::endl;
+        //result_file << "TTS_EXGS;" << "energy1;"<< "layout;" << "number_sidb" << std::endl;
+
         for (const auto& file : directory_iterator(path + folder))
         {
 
 
-            //std::string selection = file.path();
-            //std::cout << file.path() << std::endl;
-//        for (int circuit_num =0; circuit_num<300;circuit_num++)
-//        {
+            std::string selection = file.path();
+            std::cout << file.path() << std::endl;
+
+
+
             std::vector<float> smallest_energy;
             std::vector<float> time;
 
 
 
-//                 std::vector<std::vector<unsigned long>> location;
+//                std::vector<std::vector<unsigned long>> location;
 //
-//                 std::random_device                                       dev;
-//                 std::mt19937                                             rng(dev());
-//                 std::uniform_int_distribution<std::mt19937::result_type> dist6(0, 60);
-//                 std::uniform_int_distribution<std::mt19937::result_type> dist10(0, 2);
-//                 std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
-//                 std::uniform_int_distribution<std::mt19937::result_type> dist_number_sidb(10, 12);
+//                std::random_device                                       dev;
+//                std::mt19937                                             rng(dev());
+//                std::uniform_int_distribution<std::mt19937::result_type> dist6(0, 27);
+//                std::uniform_int_distribution<std::mt19937::result_type> dist10(0, 15);
+//                std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
+//                std::uniform_int_distribution<std::mt19937::result_type> dist_number_sidb(20, 23);
 //
-//                 int number_of_sidb = dist_number_sidb(rng);
-//                 // generate random layout
-//                 std::vector<int> numbers_x;
-//                 for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
-//                     numbers_x.push_back(dist6(rng));
-//                 unsigned seed_x = std::chrono::system_clock::now().time_since_epoch().count();
-//                 std::shuffle(numbers_x.begin(), numbers_x.end(), std::default_random_engine(seed_x));
+//                int number_of_sidb = dist_number_sidb(rng);
+//                // generate random layout
+//                std::vector<int> numbers_x;
+//                for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
+//                    numbers_x.push_back(dist6(rng));
+//                unsigned seed_x = std::chrono::system_clock::now().time_since_epoch().count();
+//                std::shuffle(numbers_x.begin(), numbers_x.end(), std::default_random_engine(seed_x));
 //
-//                 std::vector<int> numbers_z;
-//                 for (int i = 1; i < number_of_sidb + 1; i++)  // add 0-99 to the vector
-//                     numbers_z.push_back(dist10(rng));
-//                 unsigned seed_z = std::chrono::system_clock::now().time_since_epoch().count();
-//                 std::shuffle(numbers_z.begin(), numbers_z.end(), std::default_random_engine(seed_z));
+//                std::vector<int> numbers_z;
+//                for (int i = 1; i < number_of_sidb + 1; i++)  // add 0-99 to the vector
+//                    numbers_z.push_back(dist10(rng));
+//                unsigned seed_z = std::chrono::system_clock::now().time_since_epoch().count();
+//                std::shuffle(numbers_z.begin(), numbers_z.end(), std::default_random_engine(seed_z));
 //
-//                 std::vector<int> numbers_y;
-//                 for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
-//                     numbers_y.push_back(dist1(rng));
-//                 unsigned seed_y = std::chrono::system_clock::now().time_since_epoch().count();
-//                 std::shuffle(numbers_y.begin(), numbers_y.end(), std::default_random_engine(seed_z));
+//                std::vector<int> numbers_y;
+//                for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
+//                    numbers_y.push_back(dist1(rng));
+//                unsigned seed_y = std::chrono::system_clock::now().time_since_epoch().count();
+//                std::shuffle(numbers_y.begin(), numbers_y.end(), std::default_random_engine(seed_z));
 //
-//                 std::set<std::vector<unsigned long>> collect_set;
+//                std::set<std::vector<unsigned long>> collect_set;
 //
-//                 for (int l = 0; l < numbers_y.size(); l++)
-//                 {
-//                     collect_set.insert({static_cast<unsigned long>(numbers_x[l]), static_cast<unsigned long>(numbers_z[l]),
-//                                         static_cast<unsigned long>(numbers_y[l])});
-//                 };
+//                for (int l = 0; l < numbers_y.size(); l++)
+//                {
+//                    collect_set.insert({static_cast<unsigned long>(numbers_x[l]), static_cast<unsigned long>(numbers_z[l]),
+//                                        static_cast<unsigned long>(numbers_y[l])});
+//                };
 //
-//                 for (auto it = collect_set.begin(); it != collect_set.end(); it++)
-//                 {
-//                     location.push_back(*it);
-//                 }
+//                for (auto it = collect_set.begin(); it != collect_set.end(); it++)
+//                {
+//                    location.push_back(*it);
+//                }
 
-            std::string selection = file.path();
-             //std::string selection = path;
-            std::cout << selection << std::endl;
+            //std::string selection = file.path();
+            // std::string selection = path;
+            //std::cout << selection << std::endl;
 
             //
             //
 
-            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(selection);
+         const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(selection);
 
-            std::vector<std::vector<unsigned long>> location;
-            std::vector<cell<sidb_cell_clk_lyt>>    all_cells{};
-            all_cells.reserve(lyt.num_cells());
+         std::vector<std::vector<unsigned long>> location;
+         std::vector<cell<sidb_cell_clk_lyt>>    all_cells{};
+         all_cells.reserve(lyt.num_cells());
 
-            lyt.foreach_cell([&all_cells](const auto& c) { all_cells.push_back(c); });
+         lyt.foreach_cell([&all_cells](const auto& c) { all_cells.push_back(c); });
 
-            // transform coordinates in new coordinates, inspired by SIQAD
-            for (const auto& c : all_cells)
-            {
-                auto          X = static_cast<unsigned long>(c.x);
-                auto Y = static_cast<unsigned long>(((c.y) - ((c.y) % 2)) * 0.5);
-                unsigned long Z = ((c.y) % 2);
-                location.push_back({X, Y, Z});
-            }
+         // transform coordinates in new coordinates, inspired by SIQAD
+         for (const auto& c : all_cells)
+         {
+             auto          X = static_cast<unsigned long>(c.x);
+             auto Y = static_cast<unsigned long>(((c.y) - ((c.y) % 2)) * 0.5);
+             unsigned long Z = ((c.y) % 2);
+             location.push_back({X, Y, Z});
+         }
 
 
-            //            sidb_cell_clk_lyt location_to_fiction_layout{{10,10}};
-            //
-            //            for (const auto& c : location)
-            //            {
-            //                location_to_fiction_layout.assign_cell_type(convert_coordinate(c), sidb_technology::cell_type::NORMAL);
-            //            }
-            //
-            //            write_sqd_layout(location_to_fiction_layout, "filename.sqd");
 
-            //        std::for_each(std::execution::par, all_cells.cbegin(), all_cells.cend(),
-            //                      [&location](const auto& c)
-            //                      {
-            //                          auto          X = c.x;
-            //                          unsigned long Y = ((c.y) - ((c.y) % 2)) * 0.5;
-            //                          unsigned long Z = ((c.y) % 2);
-            //                          location.push_back({X, Y, Z});
-            //                      });
+//                    std::for_each(std::execution::par, all_cells.cbegin(), all_cells.cend(),
+//                                  [&location](const auto& c)
+//                                  {
+//                                      auto          X = c.x;
+//                                      unsigned long Y = ((c.y) - ((c.y) % 2)) * 0.5;
+//                                      unsigned long Z = ((c.y) % 2);
+//                                      location.push_back({X, Y, Z});
+//                                  });
 
 //            std::cout << std::endl
 //                      << fmt::format("There are {} SiDBs in the circuit", location.size()) << std::endl
@@ -243,34 +248,39 @@ int main()
             Energyscr check(location, initial_sign);
             check.toeuc();
 
+
+
+
             std::string filename = selection.substr(0, selection.find("sqd/"));
             filename = selection.substr(filename.size()+4, selection.find("sqd/"));
+            //std::string filename = "test";
+            //
+        std::ofstream File_python(path + "/loc/" + filename + "_wrapper.txt");
+            //
+        std::ofstream energy_python(path + "/energy/" +  filename + "_energy.txt");
 
+            float energy_file_read = MAX_FLOAT;
 
-//            std::ofstream File_python(path + "/wrapper_files/random/random/loc1/" + filename + "_wrapper.txt");
-//            std::ofstream energy_python(path + "/wrapper_files/random/random/energy1/" + filename + "_energy.txt");
+//           std::fstream my_file;
+//           std::cout << path + "/energy/" + filename << std::endl;
+//           my_file.open(path + "/energy/" + filename + "_energy.txt", std::ios::in);
+//           if (!my_file) {
+//               std::cout << "No such file";
+//           }
+//           else {
+//               float energy_file;
+//
+//               while (1) {
+//                   my_file >> energy_file;
+//                   if (my_file.eof())
+//                       break;
+//
+//                   //std::cout << ch;
+//               }
+//               energy_file_read = energy_file;
+//           }
 
-            float energy_file_read;
-            std::fstream my_file;
-            //std::cout << path + "/wrapper_files/energy/" + filename << std::endl;
-            my_file.open(path + "/wrapper_files/energy/" + filename + "_energy.txt", std::ios::in);
-            if (!my_file) {
-                std::cout << "No such file";
-            }
-            else {
-                float energy_file;
-
-                while (1) {
-                    my_file >> energy_file;
-                    if (my_file.eof())
-                        break;
-
-                    //std::cout << ch;
-                }
-                energy_file_read = energy_file;
-            }
-
-            std::cout << energy_file_read << std::endl;
+        //  std::cout << energy_file_read << std::endl;
 
 
 
@@ -281,7 +291,7 @@ int main()
             {
                 for (int col = 0; col < location.size(); col++)
                 {
-                    if ((check.db_r(row, col) < 8E-10) && (check.db_r(row, col) != 0))
+                    if ((check.db_r(row, col) < 7E-10) && (check.db_r(row, col) != 0))
                     {
                         warning += 1;
                     }
@@ -294,12 +304,14 @@ int main()
             }
 
 
-            std::ofstream File_python(path + "/random/loc3/" + "_wrapper.txt");
-            std::ofstream energy_python(path + "/random/energy3/" + "_energy.txt");
-            check.location_infile(File_python);
+
+
+          //  std::ofstream File_python(path + "/wrapper_files/random/loc/" + std::to_string(circuit_num) + "_wrapper.txt");
+          //  std::ofstream energy_python(path + "/wrapper_files/random/energy/" + std::to_string(circuit_num) + "_energy.txt");
+          // check.location_infile(File_python);
             // std::vector<int> v{0,1,2,4,8,16,32,64,128,256,512};
 
-//            int circuit_num    = 1;
+           //  int circuit_num    = 1;
 //            int number_of_sidb = 1;
 //
 //            std::ofstream outFile(selection + "/location_random3/" + std::to_string(circuit_num) +
@@ -308,11 +320,12 @@ int main()
 //                                     std::to_string(number_of_sidb) + "_charge.txt");
 
             //
-  //          std::ofstream outFile(selection  + "/XX/location.txt");
-  //          std::ofstream chargeFile(selection + "/XX/charge.txt");
+         // std::ofstream outFile(path + folder + std::to_string(circuit_num) + "_wrapper.txt");
+         //  std::ofstream chargeFile(path + folder + std::to_string(circuit_num) + "_charge.txt");
 
             // the important part
             //std::cout << selection << std::endl;
+
 
 //            outFile << "x;"
 //                    << "y;"
@@ -323,6 +336,7 @@ int main()
 //                outFile << std::endl;
 //            };
 //
+
 //            for (int i = 0; i < location.size(); i++)
 //            {
 //                chargeFile << std::to_string(i) << ";";
@@ -347,6 +361,8 @@ int main()
 
             // ---------------------------------------------- EXHAUSTIVE SEARCH
             // -------------------------------------------------
+
+
             auto  t1                = std::chrono::high_resolution_clock::now();
             float system_energy_min = energy_file_read;
             if (EXGS_on)
@@ -359,9 +375,7 @@ int main()
                 generalisation.distance();    // distance-matrix d(i,j) is calculated, only required once
                 generalisation.potentials();  // potential-matrix v(i,j) is calculated, also only required once, since
                                               // chargesign is stil not included
-               // std::cout << "max: " << generalisation.chargemax
-                //          << std::endl;  // number of all possible charge distributions
-                // can be output
+
 
                 int counter = 0;
                 while (generalisation.chargeindex <= generalisation.chargemax)
@@ -391,13 +405,13 @@ int main()
 //                          << "-------------------------------------------------------------------------------"
 //                          << std::endl;
                 // after all charge configurations are evaluated, the energetically lowest charge which is physically valid at the same time is printed
-        //        std::cout << "smallest energy1 found: " << system_energy_min << std::endl;
+                std::cout << "smallest energy found: " << system_energy_min << std::endl;
         //        std::cout << "charge configuration: |";
-                //for (auto it = charge.begin(); it != charge.end(); it++)
-                //{
-                    //std::cout << (*it) << " | ";
-//                  chargeFile << std::to_string(*it) << ";";
-                //}
+                for (auto it = charge.begin(); it != charge.end(); it++)
+                {
+                    std::cout << (*it) << " | ";
+                  //chargeFile << std::to_string(*it) << ";";
+                }
          //       chargeFile << "EXGS;";
         //        std::cout << std::endl
 //                          << "-------------------------------------------------------------------------------"
@@ -410,7 +424,10 @@ int main()
 //                          << std::endl;
   //              chargeFile << std::to_string(diff_first.count()) << ";";
   //              chargeFile << std::to_string(system_energy_min);
+                result_file << std::to_string(diff_first.count()) << ";";
             }
+
+
             energy_python << std::to_string(system_energy_min) << std::endl;
             // -------------------------------------------------------------------------------------------------------------------------------
 
@@ -425,9 +442,16 @@ int main()
             generalisation.distance();
             generalisation.potentials();
             generalisation.total_energy();
+            generalisation.identify_outsider();
             //std::vector<int> perturber = generalisation.find_perturber_alternative();
+            Energyscr first_try(location, initial_sign);
+            // -------------- some attributes do not change when charge sign is changed --------------
+            first_try.locationeuc = generalisation.locationeuc;
+            first_try.db_r        = generalisation.db_r;
+            first_try.v_ij        = generalisation.v_ij;
+            first_try.outsider    = generalisation.outsider;
 
-            for (int q = 0; q<1000; q++)
+            for (int q = 0; q<100; q++)
             {
                 float energy_exact = energy_file_read;
                 loop_count += 1;
@@ -443,34 +467,25 @@ int main()
 
                 std::vector<int> charge_config;
 
-                //static const std::vector<bool> iterator_helper(100, false);
-                // this loop executes in parallel if the compiler so wishes
-                //std::vector<std::vector<float>> collection_all;
-
                 // std::for_each(std::execution::par, iterator_helper.cbegin(), iterator_helper.cend(), [&](const auto& b){
-                int threashold_num     = 10;
+                const int threashold_num     = 80;
                 int count_equal_energy = 0;
-                std::vector<int> initial_sign(location.size(), 0);
+
+
                 for (int z = 0; z < threashold_num; z++)
                 {
-
-                    // std::cout << z << std::endl;
-                    for (int i = 0; i < location.size(); i++)
-                    {
-
+                    for (auto &i : first_try.outsider)
+                   {
+                       // for (int i =0;i<location.size();i++)
+                        // {
+                        //std::cout << i << std::endl;
+                        first_try.potential_energy = 0;
+                    std::vector<int> initial_sign(location.size(), 0);
 
                     //int i = 0;  // at the beginning, all SiDBs are set to the charge 0. Now, one SiDB is chosen
                     initial_sign[i] = -1;
-                    initial_sign[i-1] = 0;
-
-                        //  randomly and set to -1
-                        // std::cout << z << std::endl;
-                        Energyscr first_try(location, initial_sign);
-                        // -------------- some attributes do not change when charge sign is changed --------------
-                        first_try.locationeuc = generalisation.locationeuc;
-                        first_try.db_r        = generalisation.db_r;
-                        first_try.v_ij        = generalisation.v_ij;
-                        first_try.v_local = std::vector<float>(first_try.v_ij.size1(),0);
+                    first_try.chargesign = initial_sign;
+                    first_try.v_local = std::vector<float>(first_try.v_ij.size1(),0.0);
                             // ---------------------------------------------------------------------------------------
                         //system_energy_local = first_try.total_energy();  // However, v_local[i] has to recalculated
                         //std::vector<int> perturber = first_try.find_perturber_alternative();
@@ -479,22 +494,13 @@ int main()
                         std::vector<int> index_start = {i};  // index_start includes all the indices of "-1"-SiDBs
                         //perturber.push_back(i);
                         first_try.total_energy_EQ(i);
-                        auto index_start_size = index_start.size();
-                        auto index_end_size   = index_start.size();
 
 
-                        for (int set_dbs = 0; set_dbs < location.size()/2+5; set_dbs++)
+                        for (int set_dbs = 0; set_dbs < location.size()/2+2; set_dbs++)
                         {
-                            index_start_size = index_start.size();
                             // based on the max-min diversity problem, all -1 SiDBs are selected iteratively
-                            //float save_energy = first_try.potential_energy;
-                            //std::vector<float> save_v_local = first_try.v_local;
 
                             first_try.find_new_best_neighbor_GRC(index_start);
-                            index_end_size = index_start.size();
-
-                            //first_try.total_energy();
-                            // first_try.get_chargesign();
                             //    check if new charge configuration with lower energy1 is found
                             if (first_try.populationValid() && first_try.potential_energy <= system_energy)
                             {
@@ -502,18 +508,14 @@ int main()
                                 {
                                     count_equal_energy += 1;
                                 }
-                                //std::cout << "system energy1 old: " << first_try.system_energy() << std::endl;
-                                //first_try.get_chargesign();
                                 system_energy = first_try.potential_energy;
                                 charge_config = first_try.chargesign;
-
-                                //system_energy = first_try.total_energy;
                                 break;
                             }
 
                         };
                     };
-                    if (count_equal_energy > 5)
+                    if (count_equal_energy > 7)
                     {
                         break;
                     }
@@ -521,16 +523,16 @@ int main()
 
                 //std::cout << "________________________________" << std::endl;
                 //
-               // std::cout << "smallest energy1: " << system_energy << std::endl;
+               //std::cout << "smallest energy: " << system_energy << std::endl;
                 smallest_energy.push_back(std::round((system_energy)*100000)/100000);
    //             chargeFile << std::endl;
    //             chargeFile << "EQ;";
-
+                }
 
             const auto t2     = std::chrono::high_resolution_clock::now();
-            const auto ms_int = std::chrono::duration_cast<std::chrono::seconds>(t2 - t12);
+            //const auto ms_int = std::chrono::duration_cast<std::chrono::seconds>(t2 - t12);
 
-            if ((system_energy_min == system_energy) && (EXGS_on))
+            if (((std::abs(system_energy_min - system_energy))<0.0001) && (EXGS_on))
             {
                 identical += 1;
             }
@@ -539,12 +541,12 @@ int main()
                 unidentical += 1;
             }
 
-            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) < 0.00001))
+            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) < 0.001))
             {
                 identical += 1;
             }
 
-            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) > 0.00001))
+            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) > 0.001))
             {
                 unidentical += 1;
             }
@@ -564,18 +566,19 @@ int main()
             time.push_back(diff.count());
         }
 
-        }
+
+
         std::cout << "identical: " << identical << std::endl;
 
     auto const a = average(time);
- //   std::cout << "average time: " << a << "\n";
+    std::cout << "average time: " << a << "\n";
     std::vector<float> v_uniques_int = unique_values<float>( smallest_energy );
     std::cout << "Vector of unique values: " << v_uniques_int;
 
     std::vector<int> v_counts_int = count_unique_values<float>( smallest_energy );
     float write_energy = v_uniques_int[0];
     std::cout << "Vector of unique counts: " << v_counts_int;
-    float TTS;
+    float TTS=MAX_FLOAT;
     if ((v_uniques_int[0]==MAX_FLOAT) && (v_uniques_int.size() == 1))
     {
         TTS = 50;
@@ -589,19 +592,33 @@ int main()
         TTS = 50;
     }
 
-    else if (v_counts_int[0] == 1000)
+    else if (identical == 100)
     { TTS = a;}
 
     else
-    {    TTS = a * log(1.0-0.997) / log(1.0-static_cast<float>(v_counts_int[0])/1000.0);
+    {    TTS = a * log(1.0-0.997) / log(1.0-static_cast<float>(identical)/100.0);
     }
 
     std::cout << "\n\n";
-
     result_file << std::to_string(TTS) << ";" << std::to_string(v_uniques_int[0]) << ";" << filename << ";" << std::to_string(location.size()) << std::endl;
     //result_file << std::to_string(TTS) << ";" << std::to_string(write_energy) << ";" << std::to_string(circuit_num) << ";" << std::to_string(location.size()) << std::endl;
 
+//    if (identical>=0)
+//    {
+//        sidb_cell_clk_lyt location_to_fiction_layout{{30, 30}};
+//
+//        for (const auto& c : location)
+//        {
+//            cell<sidb_cell_clk_lyt> cell_new;
+//            cell_new.x = c[0];
+//            cell_new.y = c[1] * 2 + c[2];
+//            location_to_fiction_layout.assign_cell_type(cell_new, sidb_technology::cell_type::NORMAL);
+//        }
+//
+//    write_sqd_layout(location_to_fiction_layout, path + "/wrapper_files/random/sqd/" + std::to_string(circuit_num) + "test.sqd");
+//    }
 
     }
+
 return 0;
 }
