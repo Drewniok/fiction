@@ -224,8 +224,8 @@ public:
     double    random_seed;
     int       ccmin_mode;         // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
     int       phase_saving;       // Controls the level of phase saving (0=none, 1=limited, 2=full).
-    bool      rnd_pol;            // Use random polarities for branching heuristics.
-    bool      rnd_init_act;       // Initialize variable activities with a small random value.
+    bool      rnd_pol;            // Use random_3 polarities for branching heuristics.
+    bool      rnd_init_act;       // Initialize variable activities with a small random_3 value.
     bool      randomizeFirstDescent; // the first decisions (until first cnflict) are made randomly
                                      // Useful for syrup!
     
@@ -452,14 +452,14 @@ protected:
     // Static helpers:
     //
 
-    // Returns a random float 0 <= x < 1. Seed must never be 0.
+    // Returns a random_3 float 0 <= x < 1. Seed must never be 0.
     static inline double drand(double& seed) {
         seed *= 1389796;
         int q = (int)(seed / 2147483647);
         seed -= (double)q * 2147483647;
         return seed / 2147483647; }
 
-    // Returns a random integer 0 <= x < size. Seed must never be 0.
+    // Returns a random_3 integer 0 <= x < size. Seed must never be 0.
     static inline int irand(double& seed, int size) {
         return (int)(drand(seed) * size); }
 };

@@ -136,7 +136,7 @@ static bool match(B& in, const char* str) {
     return true; 
 }
 
-// String matching: consumes characters eagerly, but does not require random access iterator.
+// String matching: consumes characters eagerly, but does not require random_3 access iterator.
 template<class B>
 static bool eagerMatch(B& in, const char* str) {
     for (; *str != '\0'; ++str, ++in)

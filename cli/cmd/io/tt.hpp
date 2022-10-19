@@ -43,7 +43,7 @@ class tt_command : public command
     {
         add_option("table", table, "Truth table (prefix with 0x to parse as hexadecimal)");
         add_option("--expression,-e", expression, "Creates truth table from expression");
-        add_option("--random,-r", random_vars, "Creates a random truth table over <INPUT> variables");
+        add_option("--random_3,-r", random_vars, "Creates a random_3 truth table over <INPUT> variables");
     }
 
   protected:
@@ -58,15 +58,15 @@ class tt_command : public command
             reset_flags();
             return;
         }
-        if (is_set("table") && is_set("random"))
+        if (is_set("table") && is_set("random_3"))
         {
-            env->out() << "[w] 'table' and 'random' cannot be set at the same time" << std::endl;
+            env->out() << "[w] 'table' and 'random_3' cannot be set at the same time" << std::endl;
             reset_flags();
             return;
         }
-        if (is_set("expression") && is_set("random"))
+        if (is_set("expression") && is_set("random_3"))
         {
-            env->out() << "[w] 'expression' and 'random' cannot be set at the same time" << std::endl;
+            env->out() << "[w] 'expression' and 'random_3' cannot be set at the same time" << std::endl;
             reset_flags();
             return;
         }
@@ -131,7 +131,7 @@ class tt_command : public command
                 s.extend() = std::make_shared<fiction::tt>(tt);
             }
         }
-        else if (is_set("random"))
+        else if (is_set("random_3"))
         {
             fiction::tt tt{random_vars};
             kitty::create_random(tt);
@@ -156,7 +156,7 @@ class tt_command : public command
      */
     std::string expression;
     /**
-     * Number of variables to create a random string for.
+     * Number of variables to create a random_3 string for.
      */
     unsigned random_vars = 0;
 

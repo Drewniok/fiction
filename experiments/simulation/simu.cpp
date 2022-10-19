@@ -312,14 +312,14 @@ void Energyscr::find_new_best_neighbor_GRC(
         if (count1 > 0)
         {
             const float& zero_equiv      = Params::POP_STABILITY_ERR;
-            if (distance_min >= 0.7 * max_value)
+            if (distance_min >= 0.80 * max_value)
             {
                 random.push_back(l);
             }
         }
     };
 
-//    for (auto it = random.begin(); it<random.end(); it++)
+//    for (auto it = random_3.begin(); it<random_3.end(); it++)
 //    {
 //        std::cout << *it << std::endl;
 //    }
@@ -327,7 +327,7 @@ void Energyscr::find_new_best_neighbor_GRC(
     if ((random_index > -1) && (random.size()!=0))
     {
         int random_element         = random[random_index];
-        //std::cout << "random element: " << random_element << std::end;
+        //std::cout << "random_3 element: " << random_element << std::end;
         chargesign[random_element] = -1;
         index_db.push_back(random_element);
         potential_energy += -v_local[random_element];
@@ -564,7 +564,7 @@ void config::potentials()
     }
 };
 
-// calculate v_local for each SiDB location for one specific charge distribution
+// calculate v_local for each SiDB loc for one specific charge distribution
 void Energyscr::total_energy()
 {
     std::vector<float> m(v_ij.size1(), 0);
@@ -582,7 +582,7 @@ void Energyscr::total_energy()
 };
 
 
-// calculate v_local for each SiDB location for one specific charge distribution
+// calculate v_local for each SiDB loc for one specific charge distribution
 float Energyscr::total_energy_EQ(int &index)
 {
 

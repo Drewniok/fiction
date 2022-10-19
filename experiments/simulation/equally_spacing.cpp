@@ -100,9 +100,9 @@ std::string or_gate = "/Users/jandrewniok/CLionProjects/fiction/experiments/best
     };
 
     //std::string path = "C:/Users/jan-d/OneDrive/Dokumente/PhD/FCN/sqd/";
-    std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/rand_bestagon_files/";
+    std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/";
     //std::string folder = "/gates_sqd";
-    std::string folder = "/sqd/";
+    std::string folder = "/template/";
     //std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/wrapper_files/";
 
 
@@ -119,28 +119,20 @@ int main()
 
         bool EXGS_on   = true;
 
-
-        std::vector<float> energy_EXGS = {1.01035, 1.01035, 1.07667, 0.92899, 1.07623, 0.9814 , 1.19412,
-                                            0.97742, 0.97742, 1.02576, 1.02445, 0.9838 , 1.00219, 0.73757,
-                                            0.73921, 0.78406, 0.91751, 0.91751, 0.97982, 0.97419, 1.03774,
-                                            1.24894, 1.24894, 1.31221, 1.2935 , 1.36088, 1.01939, 1.01939,
-                                            1.06535, 1.08088, 1.12825, 1.39355, 1.39355, 1.44769, 1.44769,
-                                            1.50717, 1.03817, 1.03817, 1.106  , 0.90262, 0.90262, 0.95849,
-                                            0.74904, 0.74904, 0.81316, 0.58676, 0.58676, 0.65266, 1.16061,
-                                            1.16061, 0.95537, 0.94709, 0.99646, 0.93664, 0.93664, 0.96742,
-                                            0.99119, 0.7797};
-
         int loop_count = 0;
-        std::ofstream result_file(path + "all_results_c_80.txt");
+        std::ofstream result_file(path + "random_3_/" + "all_results.txt");
         result_file << "TTS_EXGS;"  << "TTS_EQ;" << "energy1;"<< "layout;" << "number_sidb" << std::endl;
         //result_file << "TTS_EXGS;" << "energy1;"<< "layout;" << "number_sidb" << std::endl;
 
-        for (const auto& file : directory_iterator(path + folder))
+
+        for (int circuit_num = 1; circuit_num<2; circuit_num++)
         {
+       // for (const auto& file : directory_iterator(path + folder))
+       // {
 
 
-            std::string selection = file.path();
-            std::cout << file.path() << std::endl;
+     //       std::string selection = file.path();
+     //       std::cout << file.path() << std::endl;
 
 
 
@@ -148,99 +140,87 @@ int main()
             std::vector<float> time;
 
 
+            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(path + folder + "sidb_template_4.sqd");
 
-//                std::vector<std::vector<unsigned long>> location;
-//
-//                std::random_device                                       dev;
-//                std::mt19937                                             rng(dev());
-//                std::uniform_int_distribution<std::mt19937::result_type> dist6(0, 27);
-//                std::uniform_int_distribution<std::mt19937::result_type> dist10(0, 15);
-//                std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
-//                std::uniform_int_distribution<std::mt19937::result_type> dist_number_sidb(20, 23);
-//
-//                int number_of_sidb = dist_number_sidb(rng);
-//                // generate random layout
-//                std::vector<int> numbers_x;
-//                for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
-//                    numbers_x.push_back(dist6(rng));
-//                unsigned seed_x = std::chrono::system_clock::now().time_since_epoch().count();
-//                std::shuffle(numbers_x.begin(), numbers_x.end(), std::default_random_engine(seed_x));
-//
-//                std::vector<int> numbers_z;
-//                for (int i = 1; i < number_of_sidb + 1; i++)  // add 0-99 to the vector
-//                    numbers_z.push_back(dist10(rng));
-//                unsigned seed_z = std::chrono::system_clock::now().time_since_epoch().count();
-//                std::shuffle(numbers_z.begin(), numbers_z.end(), std::default_random_engine(seed_z));
-//
-//                std::vector<int> numbers_y;
-//                for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
-//                    numbers_y.push_back(dist1(rng));
-//                unsigned seed_y = std::chrono::system_clock::now().time_since_epoch().count();
-//                std::shuffle(numbers_y.begin(), numbers_y.end(), std::default_random_engine(seed_z));
-//
-//                std::set<std::vector<unsigned long>> collect_set;
-//
-//                for (int l = 0; l < numbers_y.size(); l++)
-//                {
-//                    collect_set.insert({static_cast<unsigned long>(numbers_x[l]), static_cast<unsigned long>(numbers_z[l]),
-//                                        static_cast<unsigned long>(numbers_y[l])});
-//                };
-//
-//                for (auto it = collect_set.begin(); it != collect_set.end(); it++)
-//                {
-//                    location.push_back(*it);
-//                }
+            std::vector<std::vector<unsigned long>> location;
+            std::vector<cell<sidb_cell_clk_lyt>>    all_cells{};
+            all_cells.reserve(lyt.num_cells());
+
+            lyt.foreach_cell([&all_cells](const auto& c) { all_cells.push_back(c); });
+
+            // transform coordinates in new coordinates, inspired by SIQAD
+            for (const auto& c : all_cells)
+            {
+                auto          X = static_cast<unsigned long>(c.x);
+                auto Y = static_cast<unsigned long>(((c.y) - ((c.y) % 2)) * 0.5);
+                unsigned long Z = ((c.y) % 2);
+                location.push_back({X, Y, Z});
+            }
+
+
+                std::random_device                                       dev;
+                std::mt19937                                             rng(dev());
+                std::uniform_int_distribution<std::mt19937::result_type> dist6(185, 189);
+                std::uniform_int_distribution<std::mt19937::result_type> dist10(66, 74);
+                std::uniform_int_distribution<std::mt19937::result_type> dist1(0, 1);
+                std::uniform_int_distribution<std::mt19937::result_type> dist_number_sidb(0, 0);
+
+                int number_of_sidb = dist_number_sidb(rng);
+                // generate random_3 layout
+                std::vector<int> numbers_x;
+                for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
+                    numbers_x.push_back(dist6(rng));
+                unsigned seed_x = std::chrono::system_clock::now().time_since_epoch().count();
+                std::shuffle(numbers_x.begin(), numbers_x.end(), std::default_random_engine(seed_x));
+
+                std::vector<int> numbers_z;
+                for (int i = 1; i < number_of_sidb + 1; i++)  // add 0-99 to the vector
+                    numbers_z.push_back(dist10(rng));
+                unsigned seed_z = std::chrono::system_clock::now().time_since_epoch().count();
+                std::shuffle(numbers_z.begin(), numbers_z.end(), std::default_random_engine(seed_z));
+
+                std::vector<int> numbers_y;
+                for (int i = 0; i < number_of_sidb; i++)  // add 0-99 to the vector
+                    numbers_y.push_back(dist1(rng));
+                unsigned seed_y = std::chrono::system_clock::now().time_since_epoch().count();
+                std::shuffle(numbers_y.begin(), numbers_y.end(), std::default_random_engine(seed_z));
+
+                std::set<std::vector<unsigned long>> collect_set;
+
+                for (int l = 0; l < numbers_y.size(); l++)
+                {
+                    collect_set.insert({static_cast<unsigned long>(numbers_x[l]), static_cast<unsigned long>(numbers_z[l]),
+                                        static_cast<unsigned long>(numbers_y[l])});
+                };
+
+                for (auto it = collect_set.begin(); it != collect_set.end(); it++)
+                {
+                    location.push_back(*it);
+                }
 
             //std::string selection = file.path();
             // std::string selection = path;
             //std::cout << selection << std::endl;
 
-            //
-            //
-
-         const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(selection);
-
-         std::vector<std::vector<unsigned long>> location;
-         std::vector<cell<sidb_cell_clk_lyt>>    all_cells{};
-         all_cells.reserve(lyt.num_cells());
-
-         lyt.foreach_cell([&all_cells](const auto& c) { all_cells.push_back(c); });
-
-         // transform coordinates in new coordinates, inspired by SIQAD
-         for (const auto& c : all_cells)
-         {
-             auto          X = static_cast<unsigned long>(c.x);
-             auto Y = static_cast<unsigned long>(((c.y) - ((c.y) % 2)) * 0.5);
-             unsigned long Z = ((c.y) % 2);
-             location.push_back({X, Y, Z});
-         }
-
-
 
 //                    std::for_each(std::execution::par, all_cells.cbegin(), all_cells.cend(),
-//                                  [&location](const auto& c)
+//                                  [&loc](const auto& c)
 //                                  {
 //                                      auto          X = c.x;
 //                                      unsigned long Y = ((c.y) - ((c.y) % 2)) * 0.5;
 //                                      unsigned long Z = ((c.y) % 2);
-//                                      location.push_back({X, Y, Z});
+//                                      loc.push_back({X, Y, Z});
 //                                  });
 
 //            std::cout << std::endl
-//                      << fmt::format("There are {} SiDBs in the circuit", location.size()) << std::endl
+//                      << fmt::format("There are {} SiDBs in the circuit", loc.size()) << std::endl
 //                      << std::endl;
 
             // sort vector such that the dots are saved from top to bottom from left to right
             std::sort(location.begin(), location.end(), sortPairs);
 
-            // print all SiDB location
+            // print all SiDB loc
 
-            //    for (const auto& it : location)
-            //    {
-            //        std::cout << "X: " << it[0] << " | "
-            //                  << "Y: " << it[1] << " | "
-            //                  << "Z: " << it[2] << std::endl;
-            //    }
 
             std::vector<int> charge;
             std::vector<int> initial_sign(location.size(), -1);
@@ -251,13 +231,13 @@ int main()
 
 
 
-            std::string filename = selection.substr(0, selection.find("sqd/"));
-            filename = selection.substr(filename.size()+4, selection.find("sqd/"));
+         //   std::string filename = selection.substr(0, selection.find("sqd/"));
+         //   filename = selection.substr(filename.size()+4, selection.find("sqd/"));
             //std::string filename = "test";
             //
-        std::ofstream File_python(path + "/loc/" + filename + "_wrapper.txt");
+  //      std::ofstream File_python(path + "/random_3/"  + "_wrapper.txt");
             //
-        std::ofstream energy_python(path + "/energy/" +  filename + "_energy.txt");
+  //      std::ofstream energy_python(path + "/random_3/"  + "_energy.txt");
 
             float energy_file_read = MAX_FLOAT;
 
@@ -283,7 +263,6 @@ int main()
         //  std::cout << energy_file_read << std::endl;
 
 
-
             check.distance();
             // std::vector<int> perturber = check.find_perturber_alternative();
             int warning = 0;
@@ -303,12 +282,18 @@ int main()
                 continue;
             }
 
+//            for (const auto& it : location)
+//            {
+//                std::cout << "X: " << it[0] << " | "
+//                          << "Y: " << it[1] << " | "
+//                          << "Z: " << it[2] << std::endl;
+//            }
 
 
 
-          //  std::ofstream File_python(path + "/wrapper_files/random/loc/" + std::to_string(circuit_num) + "_wrapper.txt");
-          //  std::ofstream energy_python(path + "/wrapper_files/random/energy/" + std::to_string(circuit_num) + "_energy.txt");
-          // check.location_infile(File_python);
+           std::ofstream File_python(path + "/random_3_/loc/" + std::to_string(circuit_num) + "_wrapper.txt");
+           std::ofstream energy_python(path + "/random_3_/energy/" + std::to_string(circuit_num) + "_energy.txt");
+          check.location_infile(File_python);
             // std::vector<int> v{0,1,2,4,8,16,32,64,128,256,512};
 
            //  int circuit_num    = 1;
@@ -320,7 +305,7 @@ int main()
 //                                     std::to_string(number_of_sidb) + "_charge.txt");
 
             //
-         // std::ofstream outFile(path + folder + std::to_string(circuit_num) + "_wrapper.txt");
+         std::ofstream outFile(path + folder + "sidb_template_4.txt");
          //  std::ofstream chargeFile(path + folder + std::to_string(circuit_num) + "_charge.txt");
 
             // the important part
@@ -330,14 +315,14 @@ int main()
 //            outFile << "x;"
 //                    << "y;"
 //                    << "z;" << std::endl;
-//            for (int i = 0; i < location.size(); i++)
-//            {
-//                for (const auto& e : location[i]) outFile << std::to_string(e) << ";";
-//                outFile << std::endl;
-//            };
+            for (int i = 0; i < location.size(); i++)
+            {
+                for (const auto& e : location[i]) outFile << std::to_string(e) << ";";
+                outFile << std::endl;
+            };
 //
 
-//            for (int i = 0; i < location.size(); i++)
+//            for (int i = 0; i < loc.size(); i++)
 //            {
 //                chargeFile << std::to_string(i) << ";";
 //            };
@@ -426,7 +411,7 @@ int main()
   //              chargeFile << std::to_string(system_energy_min);
                 result_file << std::to_string(diff_first.count()) << ";";
             }
-
+            //result_file << std::to_string(100) << ";";
 
             energy_python << std::to_string(system_energy_min) << std::endl;
             // -------------------------------------------------------------------------------------------------------------------------------
@@ -468,7 +453,7 @@ int main()
                 std::vector<int> charge_config;
 
                 // std::for_each(std::execution::par, iterator_helper.cbegin(), iterator_helper.cend(), [&](const auto& b){
-                const int threashold_num     = 80;
+                const int threashold_num     = 100;
                 int count_equal_energy = 0;
 
 
@@ -476,8 +461,8 @@ int main()
                 {
                     for (auto &i : first_try.outsider)
                    {
-                       // for (int i =0;i<location.size();i++)
-                        // {
+//                        for (int i =0;i<location.size();i++)
+//                         {
                         //std::cout << i << std::endl;
                         first_try.potential_energy = 0;
                     std::vector<int> initial_sign(location.size(), 0);
@@ -496,7 +481,7 @@ int main()
                         first_try.total_energy_EQ(i);
 
 
-                        for (int set_dbs = 0; set_dbs < location.size()/2+2; set_dbs++)
+                        for (int set_dbs = 0; set_dbs < location.size()/2+4; set_dbs++)
                         {
                             // based on the max-min diversity problem, all -1 SiDBs are selected iteratively
 
@@ -515,7 +500,7 @@ int main()
 
                         };
                     };
-                    if (count_equal_energy > 7)
+                    if (count_equal_energy > 6)
                     {
                         break;
                     }
@@ -596,29 +581,30 @@ int main()
     { TTS = a;}
 
     else
-    {    TTS = a * log(1.0-0.997) / log(1.0-static_cast<float>(identical)/100.0);
+    {    // TTS = a * log(1.0-0.997) / log(1.0-static_cast<float>(identical)/100.0);
+       TTS = a * log(1.0-0.997) / log(1.0-static_cast<float>(v_counts_int[0])/100.0);
     }
 
     std::cout << "\n\n";
-    result_file << std::to_string(TTS) << ";" << std::to_string(v_uniques_int[0]) << ";" << filename << ";" << std::to_string(location.size()) << std::endl;
-    //result_file << std::to_string(TTS) << ";" << std::to_string(write_energy) << ";" << std::to_string(circuit_num) << ";" << std::to_string(location.size()) << std::endl;
+    //result_file << std::to_string(TTS) << ";" << std::to_string(v_uniques_int[0]) << ";" << filename << ";" << std::to_string(loc.size()) << std::endl;
+    result_file << std::to_string(TTS) << ";" << std::to_string(write_energy) << ";" << std::to_string(circuit_num) << ";" << std::to_string(location.size()) << std::endl;
 
-//    if (identical>=0)
-//    {
-//        sidb_cell_clk_lyt location_to_fiction_layout{{30, 30}};
-//
-//        for (const auto& c : location)
-//        {
-//            cell<sidb_cell_clk_lyt> cell_new;
-//            cell_new.x = c[0];
-//            cell_new.y = c[1] * 2 + c[2];
-//            location_to_fiction_layout.assign_cell_type(cell_new, sidb_technology::cell_type::NORMAL);
-//        }
-//
-//    write_sqd_layout(location_to_fiction_layout, path + "/wrapper_files/random/sqd/" + std::to_string(circuit_num) + "test.sqd");
-//    }
+    if (identical>=0)
+    {
+        sidb_cell_clk_lyt location_to_fiction_layout{{50, 50}};
 
+        for (const auto& c : location)
+        {
+            cell<sidb_cell_clk_lyt> cell_new;
+            cell_new.x = c[0];
+            cell_new.y = c[1] * 2 + c[2];
+            location_to_fiction_layout.assign_cell_type(cell_new, sidb_technology::cell_type::NORMAL);
+        }
+
+    write_sqd_layout(location_to_fiction_layout, path + "random_3_/sqd/" + std::to_string(circuit_num) + "test.sqd");
     }
+
+  }
 
 return 0;
 }

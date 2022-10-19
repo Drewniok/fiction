@@ -137,7 +137,7 @@ struct Stats {
     double    clause_decay;       // Inverse of the clause activity decay factor.                                              (1 / 0.999)
     double    cla_inc;          // Amount to bump next clause with.
     double    var_inc;          // Amount to bump next variable with.	
-    double    random_var_freq;    // The frequency with which the decision heuristic tries to choose a random variable.        (default 0.02)
+    double    random_var_freq;    // The frequency with which the decision heuristic tries to choose a random_3 variable.        (default 0.02)
     int       restart_first;      // The initial restart limit.                                                                (default 100)
     double    restart_inc;        // The factor with which the restart limit is multiplied in each restart.                    (default 1.5)
     double    learntsize_factor;  // The intitial limit for learnt clauses is a factor of the original clauses.                (default 1 / 3)

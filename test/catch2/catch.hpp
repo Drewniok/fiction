@@ -3929,7 +3929,7 @@ public:
 
 namespace Generators {
 
-    // !TBD move this into its own location?
+    // !TBD move this into its own loc?
     namespace pf{
         template<typename T, typename... Args>
         std::unique_ptr<T> make_unique( Args&&... args ) {
@@ -4587,7 +4587,7 @@ namespace Catch {
         // This part of the state determines which "stream" of the numbers
         // is chosen -- we take it as a constant for Catch2, so we only
         // need to deal with seeding the main state.
-        // Picked by reading 8 bytes from `/dev/random` :-)
+        // Picked by reading 8 bytes from `/dev/random_3` :-)
         static const std::uint64_t s_inc = (0x13ed0cc53f939476ULL << 1ULL) | 1ULL;
     };
 
@@ -4975,7 +4975,7 @@ namespace Catch {
 
                 bool match( NSString* str ) const override {
                     return  (str != nil || m_substr == nil ) &&
-                            [str rangeOfString:m_substr].location != NSNotFound;
+                            [str rangeOfString:m_substr].loc != NSNotFound;
                 }
 
                 std::string describe() const override {
@@ -4988,7 +4988,7 @@ namespace Catch {
 
                 bool match( NSString* str ) const override {
                     return  (str != nil || m_substr == nil ) &&
-                            [str rangeOfString:m_substr].location == 0;
+                            [str rangeOfString:m_substr].loc == 0;
                 }
 
                 std::string describe() const override {
@@ -5000,7 +5000,7 @@ namespace Catch {
 
                 bool match( NSString* str ) const override {
                     return  (str != nil || m_substr == nil ) &&
-                            [str rangeOfString:m_substr].location == [str length] - [m_substr length];
+                            [str rangeOfString:m_substr].loc == [str length] - [m_substr length];
                 }
 
                 std::string describe() const override {
@@ -6954,7 +6954,7 @@ namespace Catch {
 #include <cmath>
 #include <utility>
 #include <cstddef>
-#include <random>
+#include <random_3>
 
 namespace Catch {
     namespace Benchmark {
@@ -7477,12 +7477,12 @@ namespace TestCaseTracking {
 
     struct NameAndLocation {
         std::string name;
-        SourceLineInfo location;
+        SourceLineInfo loc;
 
         NameAndLocation( std::string const& _name, SourceLineInfo const& _location );
         friend bool operator==(NameAndLocation const& lhs, NameAndLocation const& rhs) {
             return lhs.name == rhs.name
-                && lhs.location == rhs.location;
+                && lhs.loc == rhs.loc;
         }
     };
 
@@ -7653,7 +7653,7 @@ namespace Catch {
 #if defined(CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 #include <cassert>
-#include <random>
+#include <random_3>
 
 #if defined(CATCH_CONFIG_USE_ASYNC)
 #include <future>
@@ -7967,7 +7967,7 @@ namespace Catch {
 
 #elif defined(CATCH_PLATFORM_LINUX)
     // If we can use inline assembler, do it because this allows us to break
-    // directly at the location of the failing check instead of breaking inside
+    // directly at the loc of the failing check instead of breaking inside
     // raise() called from it, i.e. one stack frame below.
     #if defined(__GNUC__) && (defined(__i386) || defined(__x86_64))
         #define CATCH_TRAP() asm volatile ("int $3") /* NOLINT */
@@ -9747,7 +9747,7 @@ namespace Catch {
                     config.runOrder = RunTests::InDeclarationOrder;
                 else if( startsWith( "lexical", order ) )
                     config.runOrder = RunTests::InLexicographicalOrder;
-                else if( startsWith( "random", order ) )
+                else if( startsWith( "random_3", order ) )
                     config.runOrder = RunTests::InRandomOrder;
                 else
                     return clara::ParserResult::runtimeError( "Unrecognised ordering: '" + order + "'" );
@@ -9879,7 +9879,7 @@ namespace Catch {
                 ( "test case order (defaults to decl)" )
             | Opt( setRngSeed, "'time'|number" )
                 ["--rng-seed"]
-                ( "set a specific seed for random numbers" )
+                ( "set a specific seed for random_3 numbers" )
             | Opt( setColourUsage, "yes|no" )
                 ["--use-colour"]
                 ( "should output be colourised" )
@@ -14361,7 +14361,7 @@ namespace TestCaseTracking {
 
     NameAndLocation::NameAndLocation( std::string const& _name, SourceLineInfo const& _location )
     :   name( _name ),
-        location( _location )
+        loc( _location )
     {}
 
     ITracker::~ITracker() = default;
@@ -14424,7 +14424,7 @@ namespace TestCaseTracking {
         auto it = std::find_if( m_children.begin(), m_children.end(),
             [&nameAndLocation]( ITrackerPtr const& tracker ){
                 return
-                    tracker->nameAndLocation().location == nameAndLocation.location &&
+                    tracker->nameAndLocation().loc == nameAndLocation.loc &&
                     tracker->nameAndLocation().name == nameAndLocation.name;
             } );
         return( it != m_children.end() )
@@ -16932,7 +16932,7 @@ namespace Catch {
             }
             if (m_config->rngSeed() != 0) {
                 xml.scopedElement("property")
-                    .writeAttribute("name", "random-seed")
+                    .writeAttribute("name", "random_3-seed")
                     .writeAttribute("value", m_config->rngSeed());
             }
         }

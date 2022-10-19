@@ -45,7 +45,7 @@ class config
     FPMat                                   db_r;  // distance matrix
     float                                   distance_value{};
     float                                   potential_value{};
-    std::vector<float>                      v_local;  // local potential at each SiDB location
+    std::vector<float>                      v_local;  // local potential at each SiDB loc
     unsigned int                            chargeindex = 0;
     FPMat                                   v_ij;
     float                                   potential_energy=0;

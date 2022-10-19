@@ -85,7 +85,7 @@ class bounding_box_2d
     /**
      * Returns the minimum corner of the bounding box.
      *
-     * In a cartesian_layout<offset::ucoord_t> object, this location represents the most north-western coordinate of the
+     * In a cartesian_layout<offset::ucoord_t> object, this loc represents the most north-western coordinate of the
      * bounding box enclosing every non-empty coordinate.
      *
      * @return The minimum enclosing coordinate in the associated layout.
@@ -97,7 +97,7 @@ class bounding_box_2d
     /**
      * Returns the maximum corner of the bounding box.
      *
-     * In a cartesian_layout<offset::ucoord_t> object, this location represents the most south-eastern coordinate of the
+     * In a cartesian_layout<offset::ucoord_t> object, this loc represents the most south-eastern coordinate of the
      * bounding box enclosing every non-empty coordinate.
      *
      * @return The maximum enclosing coordinate in the associated layout.

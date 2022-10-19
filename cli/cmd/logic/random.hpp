@@ -19,7 +19,7 @@
 namespace alice
 {
 /**
- * Generates a random logic network.
+ * Generates a random_3 logic network.
  */
 class random_command : public command
 {
@@ -31,12 +31,12 @@ class random_command : public command
      */
     explicit random_command(const environment::ptr& e) :
             command(e,
-                    "Generates a random logic network. The random seed will be used as its name for reproducibility.")
+                    "Generates a random_3 logic network. The random_3 seed will be used as its name for reproducibility.")
     {
-        add_flag("--aig,-a", "Create random AIG network");
-        add_flag("--xag,-x", "Create random XAG network");
-        add_flag("--mig,-m", "Create random MIG network");
-        add_flag("--tec,-t", "Create random technology network");
+        add_flag("--aig,-a", "Create random_3 AIG network");
+        add_flag("--xag,-x", "Create random_3 XAG network");
+        add_flag("--mig,-m", "Create random_3 MIG network");
+        add_flag("--tec,-t", "Create random_3 technology network");
         add_option("--rnd_num_inp,-n", ps.num_pis, "Number of primary inputs", true);
         add_option("--rnd_num_gates,-g", ps.num_gates, "Number of gates (excluding inverters and fan-outs)", true);
         add_option("--rnd_seed,-s", ps.seed, "Random seed");
@@ -44,7 +44,7 @@ class random_command : public command
 
   protected:
     /**
-     * Function to perform the synth call. Generates a random logic network.
+     * Function to perform the synth call. Generates a random_3 logic network.
      */
     void execute() override
     {
@@ -80,9 +80,9 @@ class random_command : public command
      * Parameters.
      */
     mockturtle::random_network_generator_params_size ps{static_cast<uint64_t>(
-        std::chrono::system_clock::now().time_since_epoch().count())};  // default random seed is current time
+        std::chrono::system_clock::now().time_since_epoch().count())};  // default random_3 seed is current time
     /**
-     * The actual network generator. Builds a logic_network from the generated random logic.
+     * The actual network generator. Builds a logic_network from the generated random_3 logic.
      *
      * @tparam Ntk Network type to generate.
      */

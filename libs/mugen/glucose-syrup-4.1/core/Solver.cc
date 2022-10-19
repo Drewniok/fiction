@@ -96,9 +96,9 @@ static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The
 static DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
 static DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
 static DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
-static DoubleOption opt_random_var_freq(_cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable", 0,
+static DoubleOption opt_random_var_freq(_cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random_3 variable", 0,
                                         DoubleRange(0, true, 1, true));
-static DoubleOption opt_random_seed(_cat, "rnd-seed", "Used by the random variable selection", 91648253, DoubleRange(0, false, HUGE_VAL, false));
+static DoubleOption opt_random_seed(_cat, "rnd-seed", "Used by the random_3 variable selection", 91648253, DoubleRange(0, false, HUGE_VAL, false));
 static IntOption opt_ccmin_mode(_cat, "ccmin-mode", "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange(0, 2));
 static IntOption opt_phase_saving(_cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange(0, 2));
 static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
@@ -112,7 +112,7 @@ static IntOption opt_luby_restart_factor(_cred, "luby-factor", "Luby restart fac
 static IntOption opt_randomize_phase_on_restarts(_cat, "phase-restart",
                                                  "The amount of randomization for the phase at each restart (0=none, 1=first branch, 2=first branch (no bad clauses), 3=first branch (only initial clauses)",
                                                  0, IntRange(0, 3));
-static BoolOption opt_fixed_randomize_phase_on_restarts(_cat, "fix-phas-rest", "Fixes the first 7 levels at random phase", false);
+static BoolOption opt_fixed_randomize_phase_on_restarts(_cat, "fix-phas-rest", "Fixes the first 7 levels at random_3 phase", false);
 
 static BoolOption opt_adapt(_cat, "adapt", "Adapt dynamically stategies after 100000 conflicts", true);
 

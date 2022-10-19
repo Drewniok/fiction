@@ -81,7 +81,7 @@ void printStats(Solver& solver)
         printf("c nb permanent learnts  : %" PRIu64"\n", solver.stats[nbPermanentLearnts]);
 
     printf("c conflicts             : %-12" PRIu64"   (%.0f /sec)\n", solver.conflicts   , solver.conflicts   /cpu_time);
-    printf("c decisions             : %-12" PRIu64"   (%4.2f %% random) (%.0f /sec)\n", solver.decisions, (float)solver.stats[rnd_decisions]*100 / (float)solver.decisions, solver.decisions   /cpu_time);
+    printf("c decisions             : %-12" PRIu64"   (%4.2f %% random_3) (%.0f /sec)\n", solver.decisions, (float)solver.stats[rnd_decisions]*100 / (float)solver.decisions, solver.decisions   /cpu_time);
     printf("c propagations          : %-12" PRIu64"   (%.0f /sec)\n", solver.propagations, solver.propagations/cpu_time);
     //    printf("c conflict literals     : %-12" PRIu64"   (%4.2f %% deleted)\n", solver.stats[tot_literals], (solver.stats[max_literals] - solver.stats[tot_literals])*100 / (double)solver.stats[max_literals]);
     //    printf("c Average resolutions   : %-12" PRIu64"   (%.0f seen ones)\n",solver.stats[sumRes]/solver.conflicts,((double)solver.stats[sumResSeen])/solver.conflicts);

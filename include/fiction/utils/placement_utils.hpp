@@ -287,7 +287,7 @@ template <typename Lyt, typename Ntk>
  * @param ntk Network whose node is to be placed.
  * @param n Node in ntk to place onto t in lyt.
  * @param node2pos Mapping from network nodes to layout signals, i.e., a pointer to their position in the layout. The
- * map is used to fetch location of the fanins. The node_map is not updated by this function.
+ * map is used to fetch loc of the fanins. The node_map is not updated by this function.
  * @return Signal to the newly placed gate in lyt.
  */
 template <typename Lyt, typename Ntk>
@@ -357,11 +357,11 @@ struct branching_signal_container
         }
     };
     /**
-     * Accesses the branching container to find the location of a given node n. Returns the signal to that location if
+     * Accesses the branching container to find the loc of a given node n. Returns the signal to that loc if
      * it was already stored or the default signal, otherwise.
      *
      * @param n Node whose branching position is desired.
-     * @return Signal to n's layout location or the default signal if it wasn't found.
+     * @return Signal to n's layout loc or the default signal if it wasn't found.
      */
     [[nodiscard]] mockturtle::signal<Lyt> operator[](const mockturtle::node<Ntk>& n) const
     {
@@ -435,7 +435,7 @@ struct branching_signal_container
  * @param ntk Network whose node is to be placed.
  * @param n Node in ntk to place onto t in lyt.
  * @param node2pos Mapping from network nodes to layout signals, i.e., a pointer to their position in the layout via
- * branches. The map is used to fetch location of the fanins. The node_map is not updated by this function.
+ * branches. The map is used to fetch loc of the fanins. The node_map is not updated by this function.
  * @return Signal to the newly placed gate in lyt.
  */
 template <typename Lyt, typename Ntk, uint16_t fanout_size = 2>

@@ -19,10 +19,10 @@ template <typename Stream>
 bool is_stream_empty(Stream& stream)
 {
     stream.flush();
-    std::streampos pos = stream.tellp();    // store current location
+    std::streampos pos = stream.tellp();    // store current loc
     stream.seekp(0, std::ios_base::end);    // go to end
     bool is_empty = (stream.tellp() == 0);  // check size == 0 ?
-    stream.seekp(pos);                      // restore location
+    stream.seekp(pos);                      // restore loc
 
     return is_empty;
 }

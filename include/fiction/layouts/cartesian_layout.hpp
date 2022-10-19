@@ -320,7 +320,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is directly north of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is directly north of c1.
      */
     [[nodiscard]] constexpr bool is_north_of(const OffsetCoordinateType& c1,
@@ -332,7 +332,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is directly east of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is directly east of c1.
      */
     [[nodiscard]] bool is_east_of(const OffsetCoordinateType& c1, const OffsetCoordinateType& c2) const noexcept
@@ -343,7 +343,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is directly south of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is directly south of c1.
      */
     [[nodiscard]] bool is_south_of(const OffsetCoordinateType& c1, const OffsetCoordinateType& c2) const noexcept
@@ -354,7 +354,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is directly west of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is directly west of c1.
      */
     [[nodiscard]] constexpr bool is_west_of(const OffsetCoordinateType& c1,
@@ -366,7 +366,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is either directly north, east, south, or west of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is either directly north, east, south, or west of c1.
      */
     [[nodiscard]] bool is_adjacent_of(const OffsetCoordinateType& c1, const OffsetCoordinateType& c2) const noexcept
@@ -377,7 +377,7 @@ class cartesian_layout
      * Similar to is_adjacent_of but also considers c1's elevation, i.e., if c2 is adjacent to above(c1) or below(c1).
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is either directly north, east, south, or west of c1 or c1's elevations.
      */
     [[nodiscard]] bool is_adjacent_elevation_of(const OffsetCoordinateType& c1,
@@ -389,7 +389,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is directly above coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is directly above c1.
      */
     [[nodiscard]] bool is_above(const OffsetCoordinateType& c1, const OffsetCoordinateType& c2) const noexcept
@@ -400,7 +400,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is directly below coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is directly below c1.
      */
     [[nodiscard]] constexpr bool is_below(const OffsetCoordinateType& c1, const OffsetCoordinateType& c2) const noexcept
@@ -411,7 +411,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is somewhere north of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is somewhere north of c1.
      */
     [[nodiscard]] constexpr bool is_northwards_of(const OffsetCoordinateType& c1,
@@ -423,7 +423,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is somewhere east of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is somewhere east of c1.
      */
     [[nodiscard]] constexpr bool is_eastwards_of(const OffsetCoordinateType& c1,
@@ -435,7 +435,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is somewhere south of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is somewhere south of c1.
      */
     [[nodiscard]] constexpr bool is_southwards_of(const OffsetCoordinateType& c1,
@@ -447,7 +447,7 @@ class cartesian_layout
      * Returns true iff coordinate c2 is somewhere west of coordinate c1.
      *
      * @param c1 Base coordinate.
-     * @param c2 Coordinate to test for its location in relation to c1.
+     * @param c2 Coordinate to test for its loc in relation to c1.
      * @return True iff c2 is somewhere west of c1.
      */
     [[nodiscard]] constexpr bool is_westwards_of(const OffsetCoordinateType& c1,
@@ -458,7 +458,7 @@ class cartesian_layout
     /**
      * Returns whether the given coordinate is located at the layout's northern border where y is minimal.
      *
-     * @param c Coordinate to check for border location.
+     * @param c Coordinate to check for border loc.
      * @return True iff c is located at the layout's northern border.
      */
     [[nodiscard]] constexpr bool is_at_northern_border(const OffsetCoordinateType& c) const noexcept
@@ -468,7 +468,7 @@ class cartesian_layout
     /**
      * Returns whether the given coordinate is located at the layout's eastern border where x is maximal.
      *
-     * @param c Coordinate to check for border location.
+     * @param c Coordinate to check for border loc.
      * @return True iff c is located at the layout's northern border.
      */
     [[nodiscard]] bool is_at_eastern_border(const OffsetCoordinateType& c) const noexcept
@@ -478,7 +478,7 @@ class cartesian_layout
     /**
      * Returns whether the given coordinate is located at the layout's southern border where y is maximal.
      *
-     * @param c Coordinate to check for border location.
+     * @param c Coordinate to check for border loc.
      * @return True iff c is located at the layout's southern border.
      */
     [[nodiscard]] bool is_at_southern_border(const OffsetCoordinateType& c) const noexcept
@@ -488,7 +488,7 @@ class cartesian_layout
     /**
      * Returns whether the given coordinate is located at the layout's western border where x is minimal.
      *
-     * @param c Coordinate to check for border location.
+     * @param c Coordinate to check for border loc.
      * @return True iff c is located at the layout's western border.
      */
     [[nodiscard]] constexpr bool is_at_western_border(const OffsetCoordinateType& c) const noexcept
@@ -499,7 +499,7 @@ class cartesian_layout
      * Returns whether the given coordinate is located at any of the layout's borders where x or y are either minimal or
      * maximal.
      *
-     * @param c Coordinate to check for border location.
+     * @param c Coordinate to check for border loc.
      * @return True iff c is located at any of the layout's borders.
      */
     [[nodiscard]] bool is_at_any_border(const OffsetCoordinateType& c) const noexcept

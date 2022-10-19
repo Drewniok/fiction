@@ -20,7 +20,7 @@ namespace fiction
 {
 
 /**
- * Provides offset coordinates. An offset coordinate is a coordinate that defines a location via an offset from a fixed
+ * Provides offset coordinates. An offset coordinate is a coordinate that defines a loc via an offset from a fixed
  * point (origin). Cartesian coordinates are offset coordinates.
  */
 namespace offset

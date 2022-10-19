@@ -62,9 +62,9 @@ namespace fiction
  * checked for via is_inv.
  *
  * - each create_... function requires a tile parameter that determines its placement. If the provided tile is dead, the
- * location will not be stored and the node will not count towards number of gates or wires.
+ * loc will not be stored and the node will not count towards number of gates or wires.
  *
- * - a node can be overwritten by creating another node on its location. This can, however, lead to unwanted effects and
+ * - a node can be overwritten by creating another node on its loc. This can, however, lead to unwanted effects and
  * should be avoided.
  *
  * - nodes can be moved via the move_node function. This function can also be used to update their children, i.e.,
@@ -587,7 +587,7 @@ class gate_level_layout : public ClockedLayout
      * The inverse function of get_node. Fetches the tile that the provided node is placed on. Returns a default dead
      * tile if the node is not placed.
      *
-     * @param n Node whose location is desired.
+     * @param n Node whose loc is desired.
      * @return Tile at which n is placed or a default dead tile if n is not placed.
      */
     [[nodiscard]] tile get_tile(const node n) const noexcept

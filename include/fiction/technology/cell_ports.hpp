@@ -19,7 +19,7 @@
 namespace fiction
 {
 /**
- * A port position is a relative location of a cell within a tile.
+ * A port position is a relative loc of a cell within a tile.
  */
 struct port_position
 {
