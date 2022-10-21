@@ -90,29 +90,10 @@ bool sortPairs(std::vector<unsigned long> const& s1, std::vector<unsigned long> 
     return s1[0] < s2[0];
 }
 
-namespace Circuits
-{
 
-std::string mux = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/sam_layouts/mux_mu32.sqd";
-std::string and_gate = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/21_hex_inputsdbp_and_v19.sqd";
-std::string or_gate = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/22_hex_inputsdbp_hourglass_v0.sqd";
-
-    };
-
-    //std::string path = "C:/Users/jan-d/OneDrive/Dokumente/PhD/FCN/sqd/";
-    std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/";
-    //std::string folder = "/gates_sqd";
-    std::string folder = "/template/";
-    //std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/wrapper_files/";
+    std::string path = "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/select_gates/gates_sqd/";
 
 
-    std::vector<unsigned long> convert_coordinate(const std::vector<unsigned long> &vector_loc_siqad)
-    {
-        std::vector<unsigned long> output(2,0);
-        output[0] = vector_loc_siqad[0];
-        output[1] = vector_loc_siqad[1] + vector_loc_siqad[2];
-        return output;
-    };
 
 int main()
 {
@@ -120,27 +101,21 @@ int main()
         bool EXGS_on   = true;
 
         int loop_count = 0;
-        std::ofstream result_file(path + "random_3_/" + "all_results.txt");
+        std::ofstream result_file(path + "../wrapper_files/" + "all_results.txt");
         result_file << "TTS_EXGS;"  << "TTS_EQ;" << "energy1;"<< "layout;" << "number_sidb" << std::endl;
-        //result_file << "TTS_EXGS;" << "energy1;"<< "layout;" << "number_sidb" << std::endl;
 
-
-        for (int circuit_num = 1; circuit_num<2; circuit_num++)
+//        for (int circuit_num = 1; circuit_num<2; circuit_num++)
+//        {
+        for (const auto& file : directory_iterator(path))
         {
-       // for (const auto& file : directory_iterator(path + folder))
-       // {
 
 
-     //       std::string selection = file.path();
-     //       std::cout << file.path() << std::endl;
-
-
-
+std::cout << file.path() << std::endl;
             std::vector<float> smallest_energy;
             std::vector<float> time;
 
 
-            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(path + folder + "sidb_template_4.sqd");
+            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt>(file.path());
 
             std::vector<std::vector<unsigned long>> location;
             std::vector<cell<sidb_cell_clk_lyt>>    all_cells{};
@@ -157,7 +132,9 @@ int main()
                 location.push_back({X, Y, Z});
             }
 
+            if (false)
 
+            {
                 std::random_device                                       dev;
                 std::mt19937                                             rng(dev());
                 std::uniform_int_distribution<std::mt19937::result_type> dist6(185, 189);
@@ -189,7 +166,8 @@ int main()
 
                 for (int l = 0; l < numbers_y.size(); l++)
                 {
-                    collect_set.insert({static_cast<unsigned long>(numbers_x[l]), static_cast<unsigned long>(numbers_z[l]),
+                    collect_set.insert({static_cast<unsigned long>(numbers_x[l]),
+                                        static_cast<unsigned long>(numbers_z[l]),
                                         static_cast<unsigned long>(numbers_y[l])});
                 };
 
@@ -197,20 +175,9 @@ int main()
                 {
                     location.push_back(*it);
                 }
-
-            //std::string selection = file.path();
-            // std::string selection = path;
-            //std::cout << selection << std::endl;
+            }
 
 
-//                    std::for_each(std::execution::par, all_cells.cbegin(), all_cells.cend(),
-//                                  [&loc](const auto& c)
-//                                  {
-//                                      auto          X = c.x;
-//                                      unsigned long Y = ((c.y) - ((c.y) % 2)) * 0.5;
-//                                      unsigned long Z = ((c.y) % 2);
-//                                      loc.push_back({X, Y, Z});
-//                                  });
 
 //            std::cout << std::endl
 //                      << fmt::format("There are {} SiDBs in the circuit", loc.size()) << std::endl
@@ -220,19 +187,17 @@ int main()
             std::sort(location.begin(), location.end(), sortPairs);
 
             // print all SiDB loc
-
-
             std::vector<int> charge;
             std::vector<int> initial_sign(location.size(), -1);
 
             Energyscr check(location, initial_sign);
             check.toeuc();
 
+            std::string selection = file.path();
 
 
-
-         //   std::string filename = selection.substr(0, selection.find("sqd/"));
-         //   filename = selection.substr(filename.size()+4, selection.find("sqd/"));
+         std::string filename = selection.substr(0, selection.find("sqd/"));
+         filename = selection.substr(filename.size()+4, selection.find("sqd/"));
             //std::string filename = "test";
             //
   //      std::ofstream File_python(path + "/random_3/"  + "_wrapper.txt");
@@ -242,8 +207,8 @@ int main()
             float energy_file_read = MAX_FLOAT;
 
 //           std::fstream my_file;
-//           std::cout << path + "/energy/" + filename << std::endl;
-//           my_file.open(path + "/energy/" + filename + "_energy.txt", std::ios::in);
+//           std::cout << filename << std::endl;
+//           my_file.open(path + "/../wrapper_files/energy/" + filename + "_energy.txt", std::ios::in);
 //           if (!my_file) {
 //               std::cout << "No such file";
 //           }
@@ -259,8 +224,8 @@ int main()
 //               }
 //               energy_file_read = energy_file;
 //           }
-
-        //  std::cout << energy_file_read << std::endl;
+//
+//          std::cout << energy_file_read << std::endl;
 
 
             check.distance();
@@ -291,9 +256,12 @@ int main()
 
 
 
-           std::ofstream File_python(path + "/random_3_/loc/" + std::to_string(circuit_num) + "_wrapper.txt");
-           std::ofstream energy_python(path + "/random_3_/energy/" + std::to_string(circuit_num) + "_energy.txt");
-          check.location_infile(File_python);
+//     std::ofstream File_python(path + "../wrapper_files/loc/" + std::to_string(circuit_num) + "_wrapper.txt");
+//     std::ofstream energy_python(path + "/wrapper_files/energy/" + std::to_string(circuit_num) + "_energy.txt");
+//
+     std::ofstream File_python(path + "../wrapper_files/loc/" + filename + "_wrapper.txt");
+     std::ofstream energy_python(path + "../wrapper_files/energy/" + filename + "_energy.txt");
+     check.location_infile(File_python);
             // std::vector<int> v{0,1,2,4,8,16,32,64,128,256,512};
 
            //  int circuit_num    = 1;
@@ -305,7 +273,7 @@ int main()
 //                                     std::to_string(number_of_sidb) + "_charge.txt");
 
             //
-         std::ofstream outFile(path + folder + "sidb_template_4.txt");
+      //   std::ofstream outFile(path + folder + "sidb_template_4.txt");
          //  std::ofstream chargeFile(path + folder + std::to_string(circuit_num) + "_charge.txt");
 
             // the important part
@@ -315,11 +283,13 @@ int main()
 //            outFile << "x;"
 //                    << "y;"
 //                    << "z;" << std::endl;
-            for (int i = 0; i < location.size(); i++)
-            {
-                for (const auto& e : location[i]) outFile << std::to_string(e) << ";";
-                outFile << std::endl;
-            };
+
+
+//            for (int i = 0; i < location.size(); i++)
+//            {
+//                for (const auto& e : location[i]) outFile << std::to_string(e) << ";";
+//                outFile << std::endl;
+//            };
 //
 
 //            for (int i = 0; i < loc.size(); i++)
@@ -392,9 +362,9 @@ int main()
                 // after all charge configurations are evaluated, the energetically lowest charge which is physically valid at the same time is printed
                 std::cout << "smallest energy found: " << system_energy_min << std::endl;
         //        std::cout << "charge configuration: |";
-                for (auto it = charge.begin(); it != charge.end(); it++)
+                for (int & it : charge)
                 {
-                    std::cout << (*it) << " | ";
+                    std::cout << it << " | ";
                   //chargeFile << std::to_string(*it) << ";";
                 }
          //       chargeFile << "EXGS;";
@@ -411,9 +381,10 @@ int main()
   //              chargeFile << std::to_string(system_energy_min);
                 result_file << std::to_string(diff_first.count()) << ";";
             }
+
             //result_file << std::to_string(100) << ";";
 
-            energy_python << std::to_string(system_energy_min) << std::endl;
+         energy_python << std::to_string(system_energy_min) << std::endl;
             // -------------------------------------------------------------------------------------------------------------------------------
 
             // ---------------------------------------------- MAX-MIN DIVERSITY APPROACH
@@ -453,7 +424,7 @@ int main()
                 std::vector<int> charge_config;
 
                 // std::for_each(std::execution::par, iterator_helper.cbegin(), iterator_helper.cend(), [&](const auto& b){
-                const int threashold_num     = 100;
+                const int threashold_num     = 80;
                 int count_equal_energy = 0;
 
 
@@ -500,7 +471,7 @@ int main()
 
                         };
                     };
-                    if (count_equal_energy > 6)
+                    if (count_equal_energy > 8)
                     {
                         break;
                     }
@@ -526,12 +497,12 @@ int main()
                 unidentical += 1;
             }
 
-            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) < 0.001))
+            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) < 0.0001))
             {
                 identical += 1;
             }
 
-            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) > 0.001))
+            else if ((!EXGS_on) && (std::abs(system_energy - energy_exact) > 0.0001))
             {
                 unidentical += 1;
             }
@@ -586,23 +557,23 @@ int main()
     }
 
     std::cout << "\n\n";
-    //result_file << std::to_string(TTS) << ";" << std::to_string(v_uniques_int[0]) << ";" << filename << ";" << std::to_string(loc.size()) << std::endl;
-    result_file << std::to_string(TTS) << ";" << std::to_string(write_energy) << ";" << std::to_string(circuit_num) << ";" << std::to_string(location.size()) << std::endl;
+    result_file << std::to_string(TTS) << ";" << std::to_string(v_uniques_int[0]) << ";" << filename << ";" << std::to_string(location.size()) << std::endl;
+   // result_file << std::to_string(TTS) << ";" << std::to_string(write_energy) << ";" << std::to_string(circuit_num) << ";" << std::to_string(location.size()) << std::endl;
 
-    if (identical>=0)
-    {
-        sidb_cell_clk_lyt location_to_fiction_layout{{50, 50}};
-
-        for (const auto& c : location)
-        {
-            cell<sidb_cell_clk_lyt> cell_new;
-            cell_new.x = c[0];
-            cell_new.y = c[1] * 2 + c[2];
-            location_to_fiction_layout.assign_cell_type(cell_new, sidb_technology::cell_type::NORMAL);
-        }
-
-    write_sqd_layout(location_to_fiction_layout, path + "random_3_/sqd/" + std::to_string(circuit_num) + "test.sqd");
-    }
+//    if (identical>=0)
+//    {
+//        sidb_cell_clk_lyt location_to_fiction_layout{{50, 50}};
+//
+//        for (const auto& c : location)
+//        {
+//            cell<sidb_cell_clk_lyt> cell_new;
+//            cell_new.x = c[0];
+//            cell_new.y = c[1] * 2 + c[2];
+//            location_to_fiction_layout.assign_cell_type(cell_new, sidb_technology::cell_type::NORMAL);
+//        }
+//
+//    write_sqd_layout(location_to_fiction_layout, path + "random_3_/sqd/" + std::to_string(circuit_num) + "test.sqd");
+//    }
 
   }
 

@@ -312,7 +312,7 @@ void Energyscr::find_new_best_neighbor_GRC(
         if (count1 > 0)
         {
             const float& zero_equiv      = Params::POP_STABILITY_ERR;
-            if (distance_min >= 0.80 * max_value)
+            if (distance_min >= 0.7 * max_value)
             {
                 random.push_back(l);
             }
