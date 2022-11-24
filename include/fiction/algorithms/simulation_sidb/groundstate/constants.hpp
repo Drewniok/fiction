@@ -7,7 +7,7 @@
 
 namespace fiction
 {
-struct TechnologyParameter
+struct Constants
 {
     static constexpr float epsilon           = 8.854f * 1E-12f;
     static constexpr float e                 = 1.602f * 1E-19f;
