@@ -7,16 +7,41 @@
 
 namespace fiction
 {
-struct Constants
+struct constants
 {
-    static constexpr float epsilon           = 8.854f * 1E-12f;
-    static constexpr float e                 = 1.602f * 1E-19f;
-    static constexpr float POP_STABILITY_ERR = 1E-6f;
-    static constexpr float lat_a = 3.84f * 1E-10f;  // lattice vector in x, angstroms (intra dimer row)
-    static constexpr float lat_b = 7.68f * 1E-10f;  // lattice vector in y, angstroms (inter dimer row)
-    static constexpr float lat_c = 2.25f * 1E-10f;  // dimer pair separation, angstroms
+    constexpr explicit constants(const double a = 3.84 * 1E-10, const double b = 7.68 * 1E-10,
+                                 const double c = 2.25 * 1E-10) noexcept :
+
+            lat_a{a},
+            lat_b{b},
+            lat_c{c}
+    {}
+    /**
+     * lattice vector in x, angstroms (intra dimer row)
+     */
+    const double lat_a;
+    /**
+     * lattice vector in y, angstroms (inter dimer row)
+     */
+    const double lat_b;
+    /**
+     * dimer pair separation, angstroms
+     */
+    const double lat_c;
+    /**
+     * vacuum permittivity
+     */
+    const double epsilon           = 8.854 * 1E-12;
+    /**
+     * electric charge
+     */
+    const double e                 = 1.602 * 1E-19;
+    /**
+     * stability threashold
+     */
+    const double POP_STABILITY_ERR = 1E-6;
 };
 
-}
+}  // namespace fiction
 
 #endif  // FICTION_TECHNOLOGY_PARAMETER_HPP

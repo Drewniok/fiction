@@ -9,13 +9,35 @@
 
 namespace fiction
 {
-struct SimulationParameter
+struct simulation_parameter
 {
-    static constexpr float epsilon_screen = 5.6f;
-    static constexpr float tf             = 5.0f * 1E-9f;
-    static constexpr float k              = 1.0f / (4.0f * 3.141592653f * fiction::Constants::epsilon * epsilon_screen);
-    static constexpr float mu             = -0.32f;
-    static constexpr float mu_p           = mu - 0.59f;
+    constexpr explicit simulation_parameter(const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9, const double mu_ = -0.32) noexcept:
+            epsilon_r{relative_permittivity},
+            k{1.0 / (4.0 * 3.141592653 * fiction::constants().epsilon * epsilon_r)},
+            lambda_tf{screening_distance},
+            mu{mu_},
+            mu_p{mu - 0.59}
+    {}
+    /**
+     * Electric permittivity.
+     */
+    const double epsilon_r;
+    /**
+     * Coulomb constant.
+     */
+    const double k;
+    /**
+     * Thomas-Fermi screening distance in nm.
+     */
+    const double lambda_tf;
+    /**
+     * µ-
+     */
+    const double mu;
+    /**
+     * µ+
+     */
+    const double mu_p;
 };
 }  // namespace fiction
 
