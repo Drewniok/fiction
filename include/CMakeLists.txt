@@ -1,4 +1,4 @@
-add_library(libfiction INTERFACE fiction/algorithms/simulation_sidb/groundstate/ExGS.hpp)
+add_library(libfiction INTERFACE)
 target_include_directories(libfiction INTERFACE ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR}/include/)
 
 # Add configuration file
