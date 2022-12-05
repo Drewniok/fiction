@@ -100,7 +100,12 @@ class charge_distribution_surface: public Lyt
     {
         if (!Lyt::is_empty_cell(c))
         {
-            strg->charge_coordinates.insert({c, cs});
+            if (const auto it = strg->charge_coordinates.find(c); it != strg->charge_coordinates.cend())
+            {
+                strg->charge_coordinates.erase(c);
+                strg->charge_coordinates.insert({c,cs});
+            }
+            strg->charge_coordinates.insert({c,cs});
         }
     }
     /**
