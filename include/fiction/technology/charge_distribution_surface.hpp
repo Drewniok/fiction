@@ -5,8 +5,7 @@
 #ifndef FICTION_EXGS_HPP
 #define FICTION_EXGS_HPP
 
-#include "fiction/algorithms/simulation_sidb/groundstate/constants.hpp"
-#include "fiction/algorithms/simulation_sidb/groundstate/simulation_parameter.hpp"
+
 #include "fiction/technology/cell_technologies.hpp"
 #include "fiction/technology/sidb_defects.hpp"
 #include "fiction/traits.hpp"
@@ -69,6 +68,7 @@ class charge_distribution_surface: public Lyt
 
     struct charge_distribution_storage
     {
+        //explicit charge_distribution_storage() : charge_coordinates{} {}
         std::unordered_map<coordinate<Lyt>, sidb_charge> charge_coordinates{};
     };
 
@@ -77,14 +77,15 @@ class charge_distribution_surface: public Lyt
     /**
      * Standard constructor for empty layouts.
      */
-    explicit charge_distribution_surface() : Lyt()
+    explicit charge_distribution_surface() : Lyt(), strg{std::make_shared<charge_distribution_storage>()}
     {
+
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(std::is_same_v<technology<Lyt>, sidb_technology>, "Lyt is not an SiDB layout");
 
     }
 
-    explicit charge_distribution_surface(const Lyt& lyt) : Lyt(lyt)
+    explicit charge_distribution_surface(const Lyt& lyt) : Lyt(lyt), strg{std::make_shared<charge_distribution_storage>()}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(std::is_same_v<technology<Lyt>, sidb_technology>, "Lyt is not an SiDB layout");
@@ -97,11 +98,10 @@ class charge_distribution_surface: public Lyt
      */
     void assign_charge_state(const coordinate<Lyt>& c, const sidb_charge& cs) noexcept
     {
-        if (!(this->is_empty_cell(c)))
+        if (!Lyt::is_empty_cell(c))
         {
             strg->charge_coordinates.insert({c, cs});
         }
-
     }
     /**
      * Returns the given coordinate's assigned charge state.
