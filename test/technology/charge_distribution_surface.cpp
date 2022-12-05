@@ -14,10 +14,6 @@
 #include <fiction/technology/cell_technologies.hpp>
 #include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/technology/sidb_surface.hpp>
-#include <fiction/traits.hpp>
-
-#include <set>
-#include <type_traits>
 
 using namespace fiction;
 
@@ -51,15 +47,15 @@ TEMPLATE_TEST_CASE(
         charge_layout.assign_charge_state({5, 4}, sidb_charge{sidb_charge_states::POSITIVE});
         charge_layout.assign_charge_state({5, 5}, sidb_charge{sidb_charge_states::NEUTRAL});
         charge_layout.assign_charge_state({5, 6}, sidb_charge{sidb_charge_states::NEGATIVE});
-        CHECK(charge_layout.get_chargestate({5, 4}).charge_state == sidb_charge_states::POSITIVE);
-        CHECK(charge_layout.get_chargestate({5, 5}).charge_state == sidb_charge_states::NEUTRAL);
-        CHECK(charge_layout.get_chargestate({5, 6}).charge_state == sidb_charge_states::NEGATIVE);
+        CHECK(charge_layout.get_charge_state({5, 4}).charge_state == sidb_charge_states::POSITIVE);
+        CHECK(charge_layout.get_charge_state({5, 5}).charge_state == sidb_charge_states::NEUTRAL);
+        CHECK(charge_layout.get_charge_state({5, 6}).charge_state == sidb_charge_states::NEGATIVE);
 
         // check if charge state for empty cell is 'NONE'
-        CHECK(charge_layout.get_chargestate({5, 7}).charge_state == sidb_charge_states::NONE);
+        CHECK(charge_layout.get_charge_state({5, 7}).charge_state == sidb_charge_states::NONE);
     }
 
-    SECTION("assign several charge states")
+    SECTION("assign different charge states to the same cell")
     {
         // check if the charge state can be overwritten
         charge_layout.assign_cell_type({5, 1}, TestType::cell_type::NORMAL);
@@ -67,10 +63,10 @@ TEMPLATE_TEST_CASE(
         charge_layout.assign_charge_state({5, 1}, sidb_charge{sidb_charge_states::NONE});
         charge_layout.assign_charge_state({5, 1}, sidb_charge{sidb_charge_states::POSITIVE});
         charge_layout.assign_charge_state({5, 1}, sidb_charge{sidb_charge_states::NEGATIVE});
-        CHECK(charge_layout.get_chargestate({5, 1}).charge_state == sidb_charge_states::NEGATIVE);
+        CHECK(charge_layout.get_charge_state({5, 1}).charge_state == sidb_charge_states::NEGATIVE);
     }
 
-    SECTION("assign several charge states to empty cell")
+    SECTION("assign different charge states to empty cell")
     {
         // check if charge state stays 'NONE' for empty cell after several charge state assignments
         charge_layout.assign_cell_type({5, 1}, TestType::cell_type::EMPTY);
@@ -78,6 +74,6 @@ TEMPLATE_TEST_CASE(
         charge_layout.assign_charge_state({5, 1}, sidb_charge{sidb_charge_states::NONE});
         charge_layout.assign_charge_state({5, 1}, sidb_charge{sidb_charge_states::POSITIVE});
         charge_layout.assign_charge_state({5, 1}, sidb_charge{sidb_charge_states::NEGATIVE});
-        CHECK(charge_layout.get_chargestate({5, 1}).charge_state == sidb_charge_states::NONE);
+        CHECK(charge_layout.get_charge_state({5, 1}).charge_state == sidb_charge_states::NONE);
     }
 }
