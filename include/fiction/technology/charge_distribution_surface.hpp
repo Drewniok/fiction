@@ -6,7 +6,6 @@
 #define FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 
 #include "fiction/technology/cell_technologies.hpp"
-#include "fiction/technology/sidb_defects.hpp"
 #include "fiction/traits.hpp"
 
 #include <unordered_map>
@@ -68,13 +67,13 @@ class charge_distribution_surface : public Lyt
      */
     void assign_charge_state(const coordinate<Lyt>& c, const sidb_charge_state& cs) noexcept
     {
-        if (!Lyt::is_empty_cell(c) && cs!=sidb_charge_state::NONE)
+        if (!Lyt::is_empty_cell(c) && cs != sidb_charge_state::NONE)
         {
-            if (const auto it = strg->charge_coordinates.find(c); it != strg->charge_coordinates.cend())
-            {
-                strg->charge_coordinates.at(c) = cs;
-            }
-            strg->charge_coordinates.insert({c, cs});
+            strg->charge_coordinates.insert_or_assign(c,cs);
+        }
+        else if (!Lyt::is_empty_cell(c) && cs == sidb_charge_state::NONE)
+        {
+            strg->charge_coordinates.erase(c);
         }
     }
     /**
@@ -89,8 +88,21 @@ class charge_distribution_surface : public Lyt
         {
             return it->second;
         }
-        return sidb_charge_state{sidb_charge_state::NONE};
+        return sidb_charge_state::NONE;
     }
+    /**
+     * Applies a function to all SiDBs' charge states on the surface. Since the charge states are fetched directly from the
+     * storage map, the given function has to receive a pair of a coordinate and a charge state as its parameter.
+     *
+     * @tparam Fn Functor type that has to comply with the restrictions imposed by mockturtle::foreach_element.
+     * @param fn Functor to apply to each charge coordinate.
+     */
+        template <typename Fn>
+        void foreach_sidb_charge_state(Fn&& fn) const
+        {
+            mockturtle::detail::foreach_element(strg->charge_coordinates.cbegin(), strg->charge_coordinates.cend(),
+                                                std::forward<Fn>(fn));
+        }
 
   private:
     storage strg;
