@@ -12,7 +12,6 @@
 #include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/technology/sidb_surface.hpp>
 
-
 using namespace fiction;
 
 TEMPLATE_TEST_CASE(

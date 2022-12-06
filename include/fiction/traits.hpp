@@ -697,6 +697,50 @@ template <class Lyt>
 inline constexpr bool has_foreach_sidb_defect_v = has_foreach_sidb_defect<Lyt>::value;
 #pragma endregion
 
+#pragma region has_assign_charge_state
+template <class Lyt, class = void>
+struct has_assign_charge_state : std::false_type
+{};
+
+template <class Lyt>
+struct has_assign_charge_state<
+    Lyt, std::void_t<decltype(std::declval<Lyt>().assign_charge_state(coordinate<Lyt>(), sidb_defect()))>>
+        : std::true_type
+{};
+
+template <class Lyt>
+inline constexpr bool has_assign_charge_state_v = has_assign_charge_state<Lyt>::value;
+#pragma endregion
+
+#pragma region has_get_charge_state
+template <class Lyt, class = void>
+struct has_get_charge_state : std::false_type
+{};
+
+template <class Lyt>
+struct has_get_charge_state<Lyt, std::void_t<decltype(std::declval<Lyt>().get_charge_state(coordinate<Lyt>()))>>
+        : std::true_type
+{};
+
+template <class Lyt>
+inline constexpr bool has_get_charge_state_v = has_get_sidb_defect<Lyt>::value;
+#pragma endregion
+
+#pragma region has_foreach_charge_state
+template <class Lyt, class = void>
+struct has_foreach_charge_state : std::false_type
+{};
+
+template <class Lyt>
+struct has_foreach_charge_state<Lyt, std::void_t<decltype(std::declval<Lyt>().foreach_charge_state(
+                                         std::declval<void(std::pair<coordinate<Lyt>, sidb_defect>, uint32_t)>()))>>
+        : std::true_type
+{};
+
+template <class Lyt>
+inline constexpr bool has_foreach_charge_state_v = has_foreach_charge_state<Lyt>::value;
+#pragma endregion
+
 /**
  * Gate-level layouts
  */

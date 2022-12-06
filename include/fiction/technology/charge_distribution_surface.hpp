@@ -29,9 +29,24 @@ enum class sidb_charge_state
  * SiDBs' charge states.
  *
  * @tparam Lyt SiDB cell-level layout.
+ * @tparam has_sidb_charge_distribution Automatically determines whether a charge distribution interface is already
+ * present.
  */
-template <typename Lyt>
+
+template <typename Lyt, bool has_charge_distribution_interface =
+                            std::conjunction_v<has_assign_charge_state<Lyt>, has_get_charge_state<Lyt>>>
 class charge_distribution_surface : public Lyt
+{};
+
+template <typename Lyt>
+class charge_distribution_surface<Lyt, true> : public Lyt
+{
+  public:
+    explicit charge_distribution_surface(const Lyt& lyt) : Lyt(lyt) {}
+};
+
+template <typename Lyt>
+class charge_distribution_surface<Lyt, false> : public Lyt
 {
   public:
     struct charge_distribution_storage
@@ -69,7 +84,7 @@ class charge_distribution_surface : public Lyt
     {
         if (!Lyt::is_empty_cell(c) && cs != sidb_charge_state::NONE)
         {
-            strg->charge_coordinates.insert_or_assign(c,cs);
+            strg->charge_coordinates.insert_or_assign(c, cs);
         }
         else if (!Lyt::is_empty_cell(c) && cs == sidb_charge_state::NONE)
         {
@@ -91,18 +106,18 @@ class charge_distribution_surface : public Lyt
         return sidb_charge_state::NONE;
     }
     /**
-     * Applies a function to all SiDBs' charge states on the surface. Since the charge states are fetched directly from the
-     * storage map, the given function has to receive a pair of a coordinate and a charge state as its parameter.
+     * Applies a function to all SiDBs' charge states on the surface. Since the charge states are fetched directly from
+     * the storage map, the given function has to receive a pair of a coordinate and a charge state as its parameter.
      *
      * @tparam Fn Functor type that has to comply with the restrictions imposed by mockturtle::foreach_element.
      * @param fn Functor to apply to each charge coordinate.
      */
-        template <typename Fn>
-        void foreach_sidb_charge_state(Fn&& fn) const
-        {
-            mockturtle::detail::foreach_element(strg->charge_coordinates.cbegin(), strg->charge_coordinates.cend(),
-                                                std::forward<Fn>(fn));
-        }
+    template <typename Fn>
+    void foreach_sidb_charge_state(Fn&& fn) const
+    {
+        mockturtle::detail::foreach_element(strg->charge_coordinates.cbegin(), strg->charge_coordinates.cend(),
+                                            std::forward<Fn>(fn));
+    }
 
   private:
     storage strg;
