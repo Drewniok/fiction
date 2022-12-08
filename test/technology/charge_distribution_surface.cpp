@@ -2,8 +2,7 @@
 // Created by Jan Drewniok on 05.12.22.
 //
 
-#include "catch.hpp"
-
+#include <catch2/catch_template_test_macros.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>
 #include <fiction/layouts/clocked_layout.hpp>
@@ -13,6 +12,37 @@
 #include <fiction/technology/sidb_surface.hpp>
 
 using namespace fiction;
+
+TEMPLATE_TEST_CASE(
+    "charge distribution surface traits and construction", "[sidb-surface]",
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<offset::ucoord_t>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>>))
+{
+    REQUIRE(is_cell_level_layout_v<TestType>);
+    CHECK(has_assign_sidb_defect_v<TestType>);
+    CHECK(has_get_sidb_defect_v<TestType>);
+    CHECK(has_foreach_sidb_defect_v<TestType>);
+
+    TestType lyt{};
+
+    using charge_layout = charge_distribution_surface<TestType>;
+    CHECK(is_cell_level_layout_v<charge_layout>);
+    CHECK(has_assign_charge_state_v<charge_layout>);
+    CHECK(has_get_charge_state_v<charge_layout>);
+    CHECK(has_foreach_charge_state_v<charge_layout>);
+
+    const charge_layout defect_lyt{};
+    const charge_layout charge_lyt_from_lyt{lyt};
+
+    using charge_charge_layout = sidb_surface<charge_layout>;
+    CHECK(is_cell_level_layout_v<charge_charge_layout>);
+    CHECK(has_assign_charge_state_v<charge_charge_layout>);
+    CHECK(has_get_charge_state_v<charge_charge_layout>);
+    CHECK(has_foreach_charge_state_v<charge_charge_layout>);
+}
 
 TEMPLATE_TEST_CASE(
     "assign and delete charge states", "[charge-distribution-surface]",
@@ -86,7 +116,7 @@ TEMPLATE_TEST_CASE(
         charge_layout.assign_charge_state({5, 6}, sidb_charge_state::NEGATIVE);
 
         // all SiDBs' charge states are set to positive
-        charge_layout.foreach_sidb_charge_state(
+        charge_layout.foreach_charge_state(
             [&charge_layout](const auto& cd)
             { charge_layout.assign_charge_state(cd.first, sidb_charge_state::POSITIVE); });
 
@@ -96,12 +126,12 @@ TEMPLATE_TEST_CASE(
         CHECK(charge_layout.get_charge_state({5, 6}) == sidb_charge_state::POSITIVE);
         CHECK(charge_layout.get_charge_state({5, 1}) == sidb_charge_state::NONE);
 
-        charge_layout.foreach_sidb_charge_state(
+        charge_layout.foreach_charge_state(
             [&charge_layout](const auto& c)
             { CHECK(charge_layout.get_charge_state(c.first) == sidb_charge_state::POSITIVE); });
 
         // all SiDBs' charge states are set to neutral
-        charge_layout.foreach_sidb_charge_state(
+        charge_layout.foreach_charge_state(
             [&charge_layout](const auto& cd)
             { charge_layout.assign_charge_state(cd.first, sidb_charge_state::NEUTRAL); });
 
@@ -111,12 +141,12 @@ TEMPLATE_TEST_CASE(
         CHECK(charge_layout.get_charge_state({5, 6}) == sidb_charge_state::NEUTRAL);
         CHECK(charge_layout.get_charge_state({5, 1}) == sidb_charge_state::NONE);
 
-        charge_layout.foreach_sidb_charge_state(
+        charge_layout.foreach_charge_state(
             [&charge_layout](const auto& c)
             { CHECK(charge_layout.get_charge_state(c.first) == sidb_charge_state::NEUTRAL); });
 
         // all SiDBs' charge states are set to negative
-        charge_layout.foreach_sidb_charge_state(
+        charge_layout.foreach_charge_state(
             [&charge_layout](const auto& cd)
             { charge_layout.assign_charge_state(cd.first, sidb_charge_state::NEGATIVE); });
 
@@ -126,7 +156,7 @@ TEMPLATE_TEST_CASE(
         CHECK(charge_layout.get_charge_state({5, 6}) == sidb_charge_state::NEGATIVE);
         CHECK(charge_layout.get_charge_state({5, 1}) == sidb_charge_state::NONE);
 
-        charge_layout.foreach_sidb_charge_state(
+        charge_layout.foreach_charge_state(
             [&charge_layout](const auto& c)
             { CHECK(charge_layout.get_charge_state(c.first) == sidb_charge_state::NEGATIVE); });
     }

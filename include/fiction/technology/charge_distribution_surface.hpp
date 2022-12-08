@@ -6,6 +6,7 @@
 #define FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 
 #include "fiction/technology/cell_technologies.hpp"
+#include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
 
 #include <unordered_map>
@@ -13,16 +14,6 @@
 namespace fiction
 {
 
-/**
- * Possible SiDB charges.
- */
-enum class sidb_charge_state
-{
-    NONE,  // assigned when layout cell is empty
-    POSITIVE,
-    NEUTRAL,
-    NEGATIVE
-};
 
 /**
  * A layout type to layer on top of any SiDB cell-level layout. It implements an interface to store and access
@@ -113,7 +104,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param fn Functor to apply to each charge coordinate.
      */
     template <typename Fn>
-    void foreach_sidb_charge_state(Fn&& fn) const
+    void foreach_charge_state(Fn&& fn) const
     {
         mockturtle::detail::foreach_element(strg->charge_coordinates.cbegin(), strg->charge_coordinates.cend(),
                                             std::forward<Fn>(fn));

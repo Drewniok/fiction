@@ -9,6 +9,7 @@
 #include "fiction/layouts/shifted_cartesian_layout.hpp"
 #include "fiction/technology/cell_ports.hpp"
 #include "fiction/technology/cell_technologies.hpp"
+#include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/technology/sidb_defects.hpp"
 
 #include <mockturtle/traits.hpp>
@@ -704,7 +705,7 @@ struct has_assign_charge_state : std::false_type
 
 template <class Lyt>
 struct has_assign_charge_state<
-    Lyt, std::void_t<decltype(std::declval<Lyt>().assign_charge_state(coordinate<Lyt>(), sidb_defect()))>>
+    Lyt, std::void_t<decltype(std::declval<Lyt>().assign_charge_state(coordinate<Lyt>(), sidb_charge_state()))>>
         : std::true_type
 {};
 
@@ -732,8 +733,9 @@ struct has_foreach_charge_state : std::false_type
 {};
 
 template <class Lyt>
-struct has_foreach_charge_state<Lyt, std::void_t<decltype(std::declval<Lyt>().foreach_charge_state(
-                                         std::declval<void(std::pair<coordinate<Lyt>, sidb_defect>, uint32_t)>()))>>
+struct has_foreach_charge_state<Lyt,
+                                std::void_t<decltype(std::declval<Lyt>().foreach_charge_state(
+                                    std::declval<void(std::pair<coordinate<Lyt>, sidb_charge_state>, uint32_t)>()))>>
         : std::true_type
 {};
 
