@@ -14,7 +14,6 @@
 namespace fiction
 {
 
-
 /**
  * A layout type to layer on top of any SiDB cell-level layout. It implements an interface to store and access
  * SiDBs' charge states.
