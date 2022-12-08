@@ -55,8 +55,8 @@ class sidb_surface<Lyt, false> : public Lyt
     {
         explicit sidb_surface_storage(sidb_surface_params ps = {}) : params(std::move(ps)) {}
 
-        sidb_surface_params                              params{};
-        std::unordered_map<coordinate<Lyt>, sidb_defect> defective_coordinates{};
+        sidb_surface_params                                       params{};
+        std::unordered_map<typename Lyt::coordinate, sidb_defect> defective_coordinates{};
     };
 
     using storage = std::shared_ptr<sidb_surface_storage>;
@@ -87,6 +87,22 @@ class sidb_surface<Lyt, false> : public Lyt
         assert(strg->params.ignore.count(sidb_defect_type::NONE) == 0 && "The defect type 'NONE' cannot be ignored");
     }
 
+
+    /**
+     * Standard constructor that layers the SiDB defect interface onto a layout with aspect ratio ar as input.
+     *
+     * @param ar aspect ratio of the layout.
+     */
+    explicit sidb_surface(const typename Lyt::aspect_ratio& ar, const sidb_surface_params& ps = {}) :
+            Lyt(ar),
+            strg{std::make_shared<sidb_surface_storage>(ps)}
+    {
+        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+
+        assert(strg->params.ignore.count(sidb_defect_type::NONE) == 0 && "The defect type 'NONE' cannot be ignored");
+    }
+
     /**
      * Standard constructor that layers the SiDB defect interface onto an existing layout.
      *
@@ -107,7 +123,7 @@ class sidb_surface<Lyt, false> : public Lyt
      * @param c Coordinate to assign defect d to.
      * @param d Defect to assign to coordinate c.
      */
-    void assign_sidb_defect(const coordinate<Lyt>& c, const sidb_defect& d) noexcept
+    void assign_sidb_defect(const typename Lyt::coordinate& c, const sidb_defect& d) noexcept
     {
         if (d.type == sidb_defect_type::NONE)  // delete defect
         {
@@ -124,7 +140,7 @@ class sidb_surface<Lyt, false> : public Lyt
      * @param c Coordinate to check.
      * @return Defect type previously assigned to c or NONE if no defect was yet assigned.
      */
-    [[nodiscard]] sidb_defect get_sidb_defect(const coordinate<Lyt>& c) const noexcept
+    [[nodiscard]] sidb_defect get_sidb_defect(const typename Lyt::coordinate& c) const noexcept
     {
         if (auto it = strg->defective_coordinates.find(c); it != strg->defective_coordinates.cend())
         {
@@ -164,9 +180,9 @@ class sidb_surface<Lyt, false> : public Lyt
      * @param c Coordinate whose defect extent is to be determined.
      * @return All SiDB positions affected by the defect at coordinate c.
      */
-    [[nodiscard]] std::set<coordinate<Lyt>> affected_sidbs(const coordinate<Lyt>& c) const noexcept
+    [[nodiscard]] std::set<typename Lyt::coordinate> affected_sidbs(const typename Lyt::coordinate& c) const noexcept
     {
-        std::set<coordinate<Lyt>> influenced_sidbs{};
+        std::set<typename Lyt::coordinate> influenced_sidbs{};
 
         if (const auto d = get_sidb_defect(c); d.type != sidb_defect_type::NONE)
         {
@@ -178,7 +194,7 @@ class sidb_surface<Lyt, false> : public Lyt
                 for (auto x = static_cast<int64_t>(c.x - horizontal_extent);
                      x <= static_cast<int64_t>(c.x + horizontal_extent); ++x)
                 {
-                    if (const auto affected = coordinate<Lyt>{x, y, c.z}; Lyt::is_within_bounds(affected))
+                    if (const auto affected = typename Lyt::coordinate{x, y, c.z}; Lyt::is_within_bounds(affected))
                     {
                         influenced_sidbs.insert(affected);
                     }
@@ -196,9 +212,9 @@ class sidb_surface<Lyt, false> : public Lyt
      *
      * @return All SiDB positions affected by any defect on the surface.
      */
-    [[nodiscard]] std::set<coordinate<Lyt>> all_affected_sidbs() const noexcept
+    [[nodiscard]] std::set<typename Lyt::coordinate> all_affected_sidbs() const noexcept
     {
-        std::set<coordinate<Lyt>> influenced_sidbs{};
+        std::set<typename Lyt::coordinate> influenced_sidbs{};
 
         foreach_sidb_defect([&influenced_sidbs, this](const auto& it)
                             { influenced_sidbs.merge(affected_sidbs(it.first)); });
