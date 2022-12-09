@@ -22,7 +22,6 @@ namespace fiction
  * @tparam has_sidb_charge_distribution Automatically determines whether a charge distribution interface is already
  * present.
  */
-
 template <typename Lyt, bool has_charge_distribution_interface =
                             std::conjunction_v<has_assign_charge_state<Lyt>, has_get_charge_state<Lyt>>>
 class charge_distribution_surface : public Lyt
@@ -41,7 +40,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
   public:
     struct charge_distribution_storage
     {
-        std::unordered_map<coordinate<Lyt>, sidb_charge_state> charge_coordinates{};
+        std::unordered_map<typename Lyt::coordinate, sidb_charge_state> charge_coordinates{};
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -52,7 +51,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     explicit charge_distribution_surface() : Lyt(), strg{std::make_shared<charge_distribution_storage>()}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-        static_assert(std::is_same_v<technology<Lyt>, sidb_technology>, "Lyt is not an SiDB layout");
+        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
     }
     /**
      * Standard constructor for existing layouts.
@@ -62,7 +61,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             strg{std::make_shared<charge_distribution_storage>()}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-        static_assert(std::is_same_v<technology<Lyt>, sidb_technology>, "Lyt is not an SiDB layout");
+        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
     };
     /**
      * Assigns a given charge state to the given coordinate.
@@ -72,13 +71,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void assign_charge_state(const coordinate<Lyt>& c, const sidb_charge_state& cs) noexcept
     {
-        if (!Lyt::is_empty_cell(c) && cs != sidb_charge_state::NONE)
+        if (!Lyt::is_empty_cell(c))
         {
-            strg->charge_coordinates.insert_or_assign(c, cs);
-        }
-        else if (!Lyt::is_empty_cell(c) && cs == sidb_charge_state::NONE)
-        {
-            strg->charge_coordinates.erase(c);
+            if (cs != sidb_charge_state::NONE)
+            {
+                strg->charge_coordinates.insert_or_assign(c, cs);
+            }
+            else
+            {
+                strg->charge_coordinates.erase(c);
+            }
         }
     }
     /**
