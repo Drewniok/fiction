@@ -724,7 +724,7 @@ struct has_get_charge_state<Lyt, std::void_t<decltype(std::declval<Lyt>().get_ch
 {};
 
 template <class Lyt>
-inline constexpr bool has_get_charge_state_v = has_get_sidb_defect<Lyt>::value;
+inline constexpr bool has_get_charge_state_v = has_get_charge_state<Lyt>::value;
 #pragma endregion
 
 #pragma region has_foreach_charge_state

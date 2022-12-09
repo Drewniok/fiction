@@ -3,6 +3,7 @@
 //
 
 #include <catch2/catch_template_test_macros.hpp>
+
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>
 #include <fiction/layouts/clocked_layout.hpp>
@@ -14,17 +15,20 @@
 using namespace fiction;
 
 TEMPLATE_TEST_CASE(
-    "charge distribution surface traits and construction", "[sidb-surface]",
+    "charge distribution surface traits and construction (layer on cell_level_layout)", "[charge-distribution-surface]",
     (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<offset::ucoord_t>>>>),
     (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>>),
-    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>>),
-    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>>),
-    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>>))
+    (sidb_surface<
+        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>>),
+    (sidb_surface<
+        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>>),
+    (sidb_surface<
+        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>>))
 {
     REQUIRE(is_cell_level_layout_v<TestType>);
-    CHECK(has_assign_sidb_defect_v<TestType>);
-    CHECK(has_get_sidb_defect_v<TestType>);
-    CHECK(has_foreach_sidb_defect_v<TestType>);
+    //    CHECK(!has_assign_charge_state_v<TestType>);
+    //    CHECK(!has_get_charge_state_v<TestType>);
+    //    CHECK(!has_foreach_charge_state_v<TestType>);
 
     TestType lyt{};
 
@@ -42,6 +46,33 @@ TEMPLATE_TEST_CASE(
     CHECK(has_assign_charge_state_v<charge_charge_layout>);
     CHECK(has_get_charge_state_v<charge_charge_layout>);
     CHECK(has_foreach_charge_state_v<charge_charge_layout>);
+}
+
+TEMPLATE_TEST_CASE(
+    "charge distribution surface traits (layer on cell_level_layout)", "[charge-distribution-surface]",
+    (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<offset::ucoord_t>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>))
+{
+    REQUIRE(is_cell_level_layout_v<TestType>);
+    CHECK(!has_assign_charge_state_v<TestType>);
+    CHECK(!has_get_charge_state_v<TestType>);
+    CHECK(!has_foreach_charge_state_v<TestType>);
+    CHECK(!has_assign_sidb_defect_v<TestType>);
+    CHECK(!has_get_sidb_defect_v<TestType>);
+    CHECK(!has_foreach_sidb_defect_v<TestType>);
+
+    TestType lyt{};
+    using charge_layout = charge_distribution_surface<TestType>;
+    CHECK(is_cell_level_layout_v<charge_layout>);
+    CHECK(has_assign_charge_state_v<charge_layout>);
+    CHECK(has_get_charge_state_v<charge_layout>);
+    CHECK(has_foreach_charge_state_v<charge_layout>);
+    CHECK(!has_assign_sidb_defect_v<TestType>);
+    CHECK(!has_get_sidb_defect_v<TestType>);
+    CHECK(!has_foreach_sidb_defect_v<TestType>);
 }
 
 TEMPLATE_TEST_CASE(
