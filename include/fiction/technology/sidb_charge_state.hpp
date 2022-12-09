@@ -4,6 +4,7 @@
 
 #ifndef FICTION_SIDB_CHARGE_STATE_HPP
 #define FICTION_SIDB_CHARGE_STATE_HPP
+
 /**
  * Possible SiDB charges.
  */

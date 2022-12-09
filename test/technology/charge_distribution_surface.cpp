@@ -26,9 +26,9 @@ TEMPLATE_TEST_CASE(
         cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>>))
 {
     REQUIRE(is_cell_level_layout_v<TestType>);
-    //    CHECK(!has_assign_charge_state_v<TestType>);
-    //    CHECK(!has_get_charge_state_v<TestType>);
-    //    CHECK(!has_foreach_charge_state_v<TestType>);
+    CHECK(!has_assign_charge_state_v<TestType>);
+    CHECK(!has_get_charge_state_v<TestType>);
+    CHECK(!has_foreach_charge_state_v<TestType>);
 
     TestType lyt{};
 
