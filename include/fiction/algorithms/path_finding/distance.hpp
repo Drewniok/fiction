@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <functional>
 #include <type_traits>
+#include <fiction/technology/real_position.hpp>
 
 namespace fiction
 {
@@ -60,6 +61,29 @@ template <typename Lyt, typename Dist = double>
     const auto y = static_cast<double>(source.y) - static_cast<double>(target.y);
 
     return static_cast<Dist>(std::hypot(x, y));
+}
+
+/**
+ * The Euclidean distance \f$ D \f$ between two SiDBs on the H-Si surface (SiQAD coordinates are required) \f$(x_1, y_1)\f$ and \f$(x_2, y_2)\f$ given by
+ *
+ *  \f$ D = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2} \f$
+ *
+ * @tparam Lyt Coordinate layout type.
+ * @tparam Dist Floating-point type for the distance.
+ * @param lyt Layout.
+ * @param c1 cell coordinate.
+ * @param c2 cell coordinate.
+ * @return Euclidean distance between c1 and c2.
+ */
+template <typename Lyt, typename Dist = double>
+[[nodiscard]] constexpr Dist distance_SiDB_pair([[maybe_unused]] const Lyt& lyt, const cell<Lyt> &c1,const cell<Lyt> &c2)
+{
+    static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "coordinate is not a siqad coordinate");
+    const auto pos_c1 = real_position<Lyt>(c1);
+    const auto pos_c2 = real_position<Lyt>(c2);
+    const auto x = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);
+    const auto y = static_cast<double>(pos_c1.second) - static_cast<double>(pos_c2.second);
+    return static_cast<Dist>(std::hypot(x,y));
 }
 
 // NOLINTBEGIN(*-special-member-functions): virtual destructor is prudent
