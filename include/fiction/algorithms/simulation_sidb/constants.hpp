@@ -7,27 +7,8 @@
 
 namespace fiction
 {
-struct constants
+namespace constants
 {
-    constexpr explicit constants(const double a = 3.84 * 1E-10, const double b = 7.68 * 1E-10,
-                                 const double c = 2.25 * 1E-10) noexcept :
-
-            lat_a{a},
-            lat_b{b},
-            lat_c{c}
-    {}
-    /**
-     * lattice vector in x, angstroms (intra dimer row)
-     */
-    const double lat_a;
-    /**
-     * lattice vector in y, angstroms (inter dimer row)
-     */
-    const double lat_b;
-    /**
-     * dimer pair separation, angstroms
-     */
-    const double lat_c;
     /**
      * vacuum permittivity
      */
@@ -40,7 +21,8 @@ struct constants
      * stability threashold
      */
     const double POP_STABILITY_ERR = 1E-6;
-};
+
+}; // namespace constants
 
 }  // namespace fiction
 

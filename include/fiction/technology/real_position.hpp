@@ -7,16 +7,16 @@
 
 
 #include "fiction/layouts/coordinates.hpp"
-#include "fiction/algorithms/simulation_sidb/constants.hpp"
+#include "fiction/algorithms/simulation_sidb/simulation_parameter.hpp"
 
 namespace fiction
 {
 
 template <typename Lyt, typename Dist = double>
-std::pair<Dist, Dist> real_position(const cell<Lyt>& c)
+std::pair<Dist, Dist> real_position(const cell<Lyt> &c)
 {
-    const auto x = static_cast<Dist>(c.x * fiction::constants{}.lat_a);
-    const auto y = static_cast<Dist>(c.y * fiction::constants{}.lat_b + c.z * fiction::constants{}.lat_c);
+    const auto x = static_cast<Dist>(c.x * fiction::simulation_parameter{}.lat_a);
+    const auto y = static_cast<Dist>(c.y * fiction::simulation_parameter{}.lat_b + c.z * fiction::simulation_parameter{}.lat_c);
     return std::pair(x, y);
 }
 
