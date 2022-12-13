@@ -17,7 +17,7 @@ namespace fiction
  * The distance matrix is an unordered map with pairs of cells as key and the corresponding euclidean distance as value.
  */
 template <typename Lyt, typename Dist = double>
-using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, Dist>;
+using distance_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Dist>;
 
 /**
  * The distance matrix stores all euclidean inter-distances. The euclidean distance between
