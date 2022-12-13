@@ -2,6 +2,7 @@
 // Created by Jan Drewniok on 13.12.22.
 //
 #include <catch2/catch_template_test_macros.hpp>
+
 #include <fiction/algorithms/simulation_sidb/distance_matrix.hpp>
 #include <fiction/algorithms/simulation_sidb/local_potential.hpp>
 #include <fiction/algorithms/simulation_sidb/potential_matrix.hpp>
@@ -15,7 +16,7 @@
 using namespace fiction;
 
 TEMPLATE_TEST_CASE(
-    "Physical validity check, far distance", "[system-energy]",
+    "Physical validity check, far distance of SIDBs, all NEGATIVE", "[validity-check]",
     (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>),
@@ -35,12 +36,12 @@ TEMPLATE_TEST_CASE(
     auto distance  = distance_SiDBs(charge_layout);
     auto potential = potential_SiDBs<charge_distribution_surface<TestType>>(distance);
     auto local_pot = local_potential<charge_distribution_surface<TestType>>(charge_layout, potential);
-    auto valid = validity_check(charge_layout,local_pot,potential);
+    auto valid     = validity_check(charge_layout, local_pot, potential);
     CHECK(valid == 1);
 }
 
 TEMPLATE_TEST_CASE(
-    "Physical validity check, close distance", "[system-energy]",
+    "Physical validity check, small distance, not all can be negatively charged anymore", "[validity-check]",
     (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>),
@@ -52,18 +53,15 @@ TEMPLATE_TEST_CASE(
 
     charge_layout.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({0, 2, 0}, TestType::cell_type::NORMAL);
-    charge_layout.assign_cell_type({0, 3, 0}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({0, 3, 1}, TestType::cell_type::NORMAL);
     charge_layout.assign_charge_state({0, 0, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({0, 2, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({0, 3, 1}, sidb_charge_state::NEGATIVE);
 
+    // closely arranged SiDBs cannot be all negatively charged
     auto distance  = distance_SiDBs(charge_layout);
     auto potential = potential_SiDBs<charge_distribution_surface<TestType>>(distance);
     auto local_pot = local_potential<charge_distribution_surface<TestType>>(charge_layout, potential);
-    auto valid = validity_check(charge_layout,local_pot,potential);
+    auto valid     = validity_check(charge_layout, local_pot, potential);
     CHECK(valid == 0);
-
 }
-
-
-

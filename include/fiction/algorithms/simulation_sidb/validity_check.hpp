@@ -5,20 +5,30 @@
 #ifndef FICTION_VALIDITY_CHECK_HPP
 #define FICTION_VALIDITY_CHECK_HPP
 
+#include <fiction/algorithms/simulation_sidb/local_potential.hpp>
+#include <fiction/algorithms/simulation_sidb/potential_matrix.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>
 #include <fiction/layouts/clocked_layout.hpp>
 #include <fiction/technology/charge_distribution_surface.hpp>
-#include <fiction/algorithms/simulation_sidb/local_potential.hpp>
-#include <fiction/algorithms/simulation_sidb/potential_matrix.hpp>
 
 namespace fiction
 {
+/**
+ * Check the physically validity (configuration and population stability)
+ *
+ * @param lyt charge distribution layout
+ * @param loc_pot local electrostatic potential
+ * @param pot_mat electrostatic potential matrix
+ * @param mu charge transistion level (0-)
+ */
 template <typename Lyt, typename Potential = double>
-bool validity_check(const charge_distribution_surface<Lyt> & lyt, const local_pot<Lyt, Potential> &loc_pot, const potential_matrix<charge_distribution_surface<Lyt>, Potential> &pot_mat, double mu = simulation_parameter{}.mu)
+bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot<Lyt, Potential>& loc_pot,
+                    const potential_matrix<charge_distribution_surface<Lyt>, Potential>& pot_mat,
+                    double                                                               mu = simulation_parameter{}.mu)
 {
-    bool valid=false;
-    for (auto& it:loc_pot)
+    bool valid = false;
+    for (auto& it : loc_pot)
     {
         valid = (((lyt.get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
                   ((it.second + mu) < constants::POP_STABILITY_ERR)) ||
@@ -34,42 +44,38 @@ bool validity_check(const charge_distribution_surface<Lyt> & lyt, const local_po
         }
     }
 
-    auto hopDel = [&lyt, &loc_pot, &pot_mat](const cell<Lyt> &c1,const cell<Lyt> &c2)
+    auto hopDel = [&lyt, &loc_pot, &pot_mat](const cell<Lyt>& c1, const cell<Lyt>& c2)
     {
-        //std::vector<int> charge_sign_saved = chargesign;
-        //float E_ori = this->system_energy_vec(charge_sign_saved);
-
         int dn_i = (lyt.get_charge_state(c1) == sidb_charge_state::NEGATIVE) ? 1 : -1;
         int dn_j = -dn_i;
 
-        //        return v_local[i] * dn_i + v_local[j] * dn_j +
-        //               v_ij(i, j) * ((chargesign[i] + dn_i) * (chargesign[j] + dn_j) - chargesign[i] * chargesign[j]);
-
-        return loc_pot.at(c1)*dn_i + loc_pot.at(c1)*dn_j - pot_mat.at(std::make_pair(c1,c2))*1;
+        return loc_pot.at(c1) * dn_i + loc_pot.at(c1) * dn_j - pot_mat.at(std::make_pair(c1, c2)) * 1;
     };
 
-    for (auto &it:loc_pot)
+    for (auto& it : loc_pot)
     {
         // do nothing with DB+
-        if (lyt.get_charge_state(it.first) == sidb_charge_state::POSITIVE) {
+        if (lyt.get_charge_state(it.first) == sidb_charge_state::POSITIVE)
+        {
             continue;
-}
+        }
 
-        for (auto &it_second:loc_pot)
+        for (auto& it_second : loc_pot)
         {
 
             // attempt hops from more negative charge states to more positive ones
             auto E_del = hopDel(it.first, it_second.first);
-            if ((transform_to_sign(lyt.get_charge_state(it.first)) > transform_to_sign(lyt.get_charge_state(it.first))) && (E_del < -constants::POP_STABILITY_ERR))
+            if ((transform_to_sign(lyt.get_charge_state(it.first)) >
+                 transform_to_sign(lyt.get_charge_state(it.first))) &&
+                (E_del < -constants::POP_STABILITY_ERR))
             {
                 return false;
             }
         }
     }
     return true;
-
 }
 
-} // namespace fiction
+}  // namespace fiction
 
 #endif  // FICTION_VALIDITY_CHECK_HPP
