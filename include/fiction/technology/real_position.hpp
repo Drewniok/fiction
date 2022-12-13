@@ -6,8 +6,8 @@
 #define FICTION_REAL_POSITION_HPP
 
 
-#include "fiction/layouts/coordinates.hpp"
 #include "fiction/algorithms/simulation_sidb/simulation_parameter.hpp"
+#include "fiction/traits.hpp"
 
 namespace fiction
 {
