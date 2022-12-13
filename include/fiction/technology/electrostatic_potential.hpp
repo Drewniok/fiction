@@ -10,7 +10,12 @@
 
 namespace fiction
 {
-
+/**
+ * Caculate the electrostatic potential for a given distance dist.
+ *
+ * @param dist distance
+ * @return electrostatic potential value
+ */
 template <typename Potential = double, typename Dist = double>
 Potential potential_SiDB_pair(const Dist& dist, decltype(simulation_parameter{}.k) k = simulation_parameter{}.k,
                               decltype(simulation_parameter{}.lambda_tf) lambda_tf = simulation_parameter{}.lambda_tf)
@@ -20,7 +25,7 @@ Potential potential_SiDB_pair(const Dist& dist, decltype(simulation_parameter{}.
         return static_cast<Potential>(0.0);
     }
 
-    return static_cast<Potential>(k / dist * std::exp(-dist / lambda_tf));
+    return static_cast<Potential>(-k / dist * std::exp(-dist / lambda_tf) * constants::e);
 }
 
 }  // namespace fiction
