@@ -11,20 +11,17 @@
 namespace fiction
 {
 
-template <typename potential = double, typename Dist = double>
-potential potential_SiDB_pair(const Dist &dist)
+template <typename Potential = double, typename Dist = double>
+Potential potential_SiDB_pair(const Dist& dist, decltype(simulation_parameter{}.k) k = simulation_parameter{}.k, decltype(simulation_parameter{}.lambda_tf) lambda_tf = simulation_parameter{}.lambda_tf)
 {
     if (dist == static_cast<Dist>(0.0))
     {
-        return static_cast<Dist>(0.0);
+        return static_cast<Potential>(0.0);
     }
-    else
-    {
-        const simulation_parameter simulation_parameter {};
-    return simulation_parameter.k / dist * std::exp(-dist / simulation_parameter.lambda_tf);
-};
+
+    return static_cast<Potential>(k / dist * std::exp(-dist / lambda_tf));
 }
 
+}  // namespace fiction
 
-} // namespace fiction
 #endif  // FICTION_ELECTROSTATIC_POTENTIAL_HPP
