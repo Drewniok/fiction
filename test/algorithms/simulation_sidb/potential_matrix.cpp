@@ -16,7 +16,7 @@
 using namespace fiction;
 
 TEMPLATE_TEST_CASE(
-    "Potential Matrix calculation", "[distance-matrix]",
+    "Potential Matrix calculation", "[potential-matrix]",
     (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>),

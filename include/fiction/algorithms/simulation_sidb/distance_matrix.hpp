@@ -20,8 +20,8 @@ template <typename Lyt, typename Dist = double>
 using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, Dist>;
 
 /**
- * The distance matrix stores all possible euclidean distances between two SiDBs. Also the euclidean distance between two identical SiDBs is stored as "0.0" distance.
- *  \f$ D = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2} \f$
+ * The distance matrix stores all euclidean inter-distances. The euclidean distance between
+ * two identical SiDBs is set to 0. \f$ D = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2} \f$
  *
  * @tparam Lyt Coordinate layout type (SiQAD coordinates are required).
  * @tparam Dist Floating-point type for the distance.

@@ -7,11 +7,12 @@
 
 #include "fiction/traits.hpp"
 
+#include <fiction/technology/real_position.hpp>
+
 #include <cmath>
 #include <cstdint>
 #include <functional>
 #include <type_traits>
-#include <fiction/technology/real_position.hpp>
 
 namespace fiction
 {
@@ -76,14 +77,15 @@ template <typename Lyt, typename Dist = double>
  * @return Euclidean distance between c1 and c2.
  */
 template <typename Lyt, typename Dist = double>
-[[nodiscard]] constexpr Dist distance_SiDB_pair([[maybe_unused]] const Lyt& lyt, const cell<Lyt> &c1,const cell<Lyt> &c2)
+[[nodiscard]] constexpr Dist distance_SiDB_pair([[maybe_unused]] const Lyt& lyt, const cell<Lyt>& c1,
+                                                const cell<Lyt>& c2)
 {
     static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "coordinate is not a siqad coordinate");
     const auto pos_c1 = real_position<Lyt>(c1);
     const auto pos_c2 = real_position<Lyt>(c2);
-    const auto x = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);
-    const auto y = static_cast<double>(pos_c1.second) - static_cast<double>(pos_c2.second);
-    return static_cast<Dist>(std::hypot(x,y));
+    const auto x      = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);
+    const auto y      = static_cast<double>(pos_c1.second) - static_cast<double>(pos_c2.second);
+    return static_cast<Dist>(std::hypot(x, y));
 }
 
 // NOLINTBEGIN(*-special-member-functions): virtual destructor is prudent

@@ -156,21 +156,7 @@ TEST_CASE("Euclidean distance", "[distance]")
     }
 }
 
-TEST_CASE("Distance between two SiDBs", "[distance]")
-{
-    using siqad_lyt = cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>;
-
-    siqad_lyt lyt{};
-
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 1}) == 0.0);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {1, 0, 1}) == simulation_parameter{}.lat_a);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) == simulation_parameter{}.lat_b);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) ==
-          distance_SiDB_pair<siqad_lyt>(lyt, {0, 1, 1}, {0, 0, 1}));
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 0}) == simulation_parameter{}.lat_c);
-};
-
-TEST_CASE("Distance between two SiDBs", "[distance]")
+TEST_CASE("Euclidean distance between two SiDBs", "[distance]")
 {
     using siqad_lyt = cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>;
 
