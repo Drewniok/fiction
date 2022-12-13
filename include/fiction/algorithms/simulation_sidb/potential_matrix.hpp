@@ -18,7 +18,7 @@ namespace fiction
  * value.
  */
 template <typename Lyt, typename Potential = double>
-using potential_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, Potential>;
+using potential_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Potential>;
 
 /**
  * The potential matrix stores all electrostatic inter-potentials. The electrostatic potential between two identical
