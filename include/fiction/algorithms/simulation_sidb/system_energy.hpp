@@ -13,14 +13,12 @@
 
 namespace fiction
 {
-
 /**
  * Calculate the system's total electrostatic potential energy.
  *
  * @param lyt charge distribution layout
  * @param loc_pot local electrostatic potential
  */
-
 template <typename Lyt, typename Energy = double, typename Potential = double>
 Energy system_energy(const charge_distribution_surface<Lyt>& lyt, const local_pot<Lyt, Potential> loc_pot)
 
@@ -34,4 +32,5 @@ Energy system_energy(const charge_distribution_surface<Lyt>& lyt, const local_po
 }
 
 }  // namespace fiction
+
 #endif  // FICTION_SYSTEM_ENERGY_HPP
