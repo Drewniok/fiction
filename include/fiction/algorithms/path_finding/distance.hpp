@@ -64,9 +64,9 @@ template <typename Lyt, typename Dist = double>
 }
 
 /**
- * The Euclidean distance \f$ D \f$ between two SiDBs on the H-Si surface (SiQAD coordinates are required) \f$(x_1, y_1)\f$ and \f$(x_2, y_2)\f$ given by
+ * The Euclidean distance between two SiDBs on the H-Si surface (SiQAD coordinates are required) given by
  *
- *  \f$ D = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2} \f$
+ *  \$ D = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}$
  *
  * @tparam Lyt Coordinate layout type.
  * @tparam Dist Floating-point type for the distance.

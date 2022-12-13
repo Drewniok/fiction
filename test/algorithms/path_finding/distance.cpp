@@ -7,10 +7,9 @@
 #include <fiction/algorithms/path_finding/a_star.hpp>
 #include <fiction/algorithms/path_finding/distance.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
+#include <fiction/layouts/cell_level_layout.hpp>
 #include <fiction/layouts/clocked_layout.hpp>
 #include <fiction/layouts/coordinates.hpp>
-#include <fiction/layouts/cell_level_layout.hpp>
-
 
 #include <cmath>
 
@@ -164,11 +163,25 @@ TEST_CASE("Distance between two SiDBs", "[distance]")
     siqad_lyt lyt{};
 
     CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 1}) == 0.0);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {1, 0, 1}) == constants{}.lat_a);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt,{0, 0, 1}, {0, 1, 1}) == constants{}.lat_b);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) == distance_SiDB_pair<siqad_lyt>(lyt, {0, 1, 1}, {0, 0, 1}));
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt,{0, 0, 1}, {0, 0, 0}) == constants{}.lat_c);
-    //
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {1, 0, 1}) == simulation_parameter{}.lat_a);
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) == simulation_parameter{}.lat_b);
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) ==
+          distance_SiDB_pair<siqad_lyt>(lyt, {0, 1, 1}, {0, 0, 1}));
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 0}) == simulation_parameter{}.lat_c);
+};
+
+TEST_CASE("Distance between two SiDBs", "[distance]")
+{
+    using siqad_lyt = cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>;
+
+    siqad_lyt lyt{};
+
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 1}) == 0.0);
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {1, 0, 1}) == simulation_parameter{}.lat_a);
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) == simulation_parameter{}.lat_b);
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) ==
+          distance_SiDB_pair<siqad_lyt>(lyt, {0, 1, 1}, {0, 0, 1}));
+    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 0}) == simulation_parameter{}.lat_c);
 };
 
 TEST_CASE("Euclidean distance functor", "[distance]")
