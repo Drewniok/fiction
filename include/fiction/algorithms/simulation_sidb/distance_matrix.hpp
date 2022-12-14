@@ -29,7 +29,7 @@ using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell
  * @return Distance matrix
  */
 template <typename Lyt, typename Dist = double>
-distance_matrix<Lyt, Dist> distance_SiDBs(const Lyt& lyt)
+distance_matrix<Lyt, Dist> distance_sidbs(const Lyt& lyt)
 {
     distance_matrix<Lyt, Dist> distance_values{};
     lyt.foreach_cell(
@@ -38,7 +38,7 @@ distance_matrix<Lyt, Dist> distance_SiDBs(const Lyt& lyt)
             lyt.foreach_cell(
                 [&distance_values, c1, lyt](const auto& c2) {
                     distance_values.insert(
-                        std::make_pair(std::make_pair(c1, c2), distance_SiDB_pair<Lyt>(lyt, c1, c2)));
+                        std::make_pair(std::make_pair(c1, c2), distance_sidb_pair<Lyt>(lyt, c1, c2)));
                 });
         });
 
