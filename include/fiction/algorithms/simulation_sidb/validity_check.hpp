@@ -31,12 +31,12 @@ bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot
     for (auto& it : loc_pot)
     {
         valid = (((lyt.get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
-                  ((it.second + mu) < constants::POP_STABILITY_ERR)) ||
+                  ((it.second + mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
                  ((lyt.get_charge_state(it.first) == sidb_charge_state::POSITIVE) &&
-                  ((it.second + simulation_parameter{}.mu_p) > constants::POP_STABILITY_ERR)) ||
+                  ((it.second + simulation_parameter{}.mu_p) > physical_sim_constants::POP_STABILITY_ERR)) ||
                  ((lyt.get_charge_state(it.first) == sidb_charge_state::NEUTRAL) &&
-                  ((it.second + mu) > constants::POP_STABILITY_ERR) &&
-                  (it.second + simulation_parameter{}.mu_p) < constants::POP_STABILITY_ERR));
+                  ((it.second + mu) > physical_sim_constants::POP_STABILITY_ERR) &&
+                  (it.second + simulation_parameter{}.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
 
         if (!valid)
         {
@@ -67,7 +67,7 @@ bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot
             auto E_del = hopDel(it.first, it_second.first);
             if ((transform_to_sign(lyt.get_charge_state(it.first)) >
                  transform_to_sign(lyt.get_charge_state(it.first))) &&
-                (E_del < -constants::POP_STABILITY_ERR))
+                (E_del < -physical_sim_constants::POP_STABILITY_ERR))
             {
                 return false;
             }

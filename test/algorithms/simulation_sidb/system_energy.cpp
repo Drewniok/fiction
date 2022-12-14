@@ -33,7 +33,7 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_charge_state({1, 1, 1}, sidb_charge_state::POSITIVE);
 
     // system energy is zero when all SiDBs are positively charged.
-    auto distance  = distance_SiDBs(charge_layout);
+    auto distance  = distance_sidbs(charge_layout);
     auto potential = potential_SiDBs<charge_distribution_surface<TestType>>(distance);
     auto local_pot = local_potential<charge_distribution_surface<TestType>>(charge_layout, potential);
     auto energy = system_energy<TestType>(charge_layout, local_pot);
