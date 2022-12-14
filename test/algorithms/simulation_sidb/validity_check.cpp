@@ -33,8 +33,8 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_charge_state({0, 2, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({4, 1, 1}, sidb_charge_state::NEGATIVE);
 
-    auto distance  = distance_SiDBs(charge_layout);
-    auto potential = potential_SiDBs<charge_distribution_surface<TestType>>(distance);
+    auto distance  = distance_sidbs(charge_layout);
+    auto potential = potential_sidbs<charge_distribution_surface<TestType>>(distance);
     auto local_pot = local_potential<charge_distribution_surface<TestType>>(charge_layout, potential);
     auto valid     = validity_check(charge_layout, local_pot, potential);
     CHECK(valid == 1);
@@ -59,8 +59,8 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_charge_state({0, 3, 1}, sidb_charge_state::NEGATIVE);
 
     // closely arranged SiDBs cannot be all negatively charged
-    auto distance  = distance_SiDBs(charge_layout);
-    auto potential = potential_SiDBs<charge_distribution_surface<TestType>>(distance);
+    auto distance  = distance_sidbs(charge_layout);
+    auto potential = potential_sidbs<charge_distribution_surface<TestType>>(distance);
     auto local_pot = local_potential<charge_distribution_surface<TestType>>(charge_layout, potential);
     auto valid     = validity_check(charge_layout, local_pot, potential);
     CHECK(valid == 0);

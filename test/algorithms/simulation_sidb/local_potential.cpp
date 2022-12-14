@@ -32,8 +32,8 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_charge_state({5, 5, 0}, sidb_charge_state::POSITIVE);
     charge_layout.assign_charge_state({1, 1, 1}, sidb_charge_state::POSITIVE);
 
-    auto distance  = distance_SiDBs(charge_layout);
-    auto potential = potential_SiDBs<charge_distribution_surface<TestType>>(distance);
+    auto distance  = distance_sidbs(charge_layout);
+    auto potential = potential_sidbs<charge_distribution_surface<TestType>>(distance);
 
     auto local_pot = local_potential<charge_distribution_surface<TestType>>(charge_layout, potential);
     CHECK(local_pot.size() == 3);
