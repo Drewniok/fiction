@@ -12,7 +12,7 @@ namespace fiction
 {
 
 template <typename Potential = double, typename Dist = double>
-Potential potential_SiDB_pair(const Dist& dist, decltype(simulation_parameter{}.k) k = simulation_parameter{}.k,
+Potential potential_sidb_pair(const Dist& dist, decltype(simulation_parameter{}.k) k = simulation_parameter{}.k,
                               decltype(simulation_parameter{}.lambda_tf) lambda_tf = simulation_parameter{}.lambda_tf)
 {
     if (dist == static_cast<Dist>(0.0))
