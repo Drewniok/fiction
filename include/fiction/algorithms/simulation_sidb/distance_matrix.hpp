@@ -5,9 +5,9 @@
 //
 
 #include "fiction/algorithms/path_finding/distance.hpp"
-#include "fiction/algorithms/simulation_sidb/constants.hpp"
 #include "fiction/layouts/coordinates.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
+#include "fiction/technology/constants.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
 

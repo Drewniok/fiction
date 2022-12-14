@@ -66,7 +66,7 @@ template <typename Lyt, typename Dist = double>
 
 /**
  * The Euclidean distance between two SiDBs on the H-Si surface (SiQAD coordinates are required).
- * In the first step, SiQAD coordinates are converted to a location on the Si-substrate by taking Si's lattice constants into account (lat_a,lat_b,lat_c. Afterwards, the Euclidean distance is calculated.
+ * In the first step, SiQAD coordinates are converted to a location on the Si-substrate by taking Silicon's lattice constants into account (lat_a, lat_b, lat_c. Afterward, the Euclidean distance is calculated.
  *
  * @tparam Lyt Coordinate layout type.
  * @tparam Dist Floating-point type for the distance.
