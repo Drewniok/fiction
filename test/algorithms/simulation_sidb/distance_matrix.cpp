@@ -29,7 +29,7 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_cell_type({1, 0, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({1, 1, 1}, TestType::cell_type::NORMAL);
 
-    auto distance = distance_SiDBs(charge_layout);
+    auto distance = distance_sidbs(charge_layout);
     CHECK(distance.at({{0, 0, 0}, {0, 0, 0}}) == 0.0);
     CHECK(distance.at({{0, 0, 0}, {1, 0, 0}}) == simulation_parameter{}.lat_a);
     CHECK(distance.at({{1, 0, 0}, {0, 0, 0}}) == simulation_parameter{}.lat_a);

@@ -5,8 +5,8 @@
 // Created by Jan Drewniok on 07.12.22.
 //
 
-#include "fiction/algorithms/simulation_sidb/constants.hpp"
 #include "fiction/algorithms/simulation_sidb/distance_matrix.hpp"
+#include "fiction/technology/constants.hpp"
 #include "fiction/technology/electrostatic_potential.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"

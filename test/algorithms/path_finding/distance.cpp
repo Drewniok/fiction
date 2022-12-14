@@ -162,12 +162,12 @@ TEST_CASE("Euclidean distance between two SiDBs", "[distance]")
 
     siqad_lyt lyt{};
 
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 1}) == 0.0);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {1, 0, 1}) == simulation_parameter{}.lat_a);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) == simulation_parameter{}.lat_b);
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) ==
-          distance_SiDB_pair<siqad_lyt>(lyt, {0, 1, 1}, {0, 0, 1}));
-    CHECK(distance_SiDB_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 0}) == simulation_parameter{}.lat_c);
+    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 1}) == 0.0);
+    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {1, 0, 1}) == simulation_parameter{}.lat_a);
+    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) == simulation_parameter{}.lat_b);
+    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 5, 1}, {20, 1, 1}) ==
+          distance_sidb_pair<siqad_lyt>(lyt, {20, 1, 1}, {0, 5, 1}));
+    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {10, 0, 0}) == std::hypot(simulation_parameter{}.lat_a*10,simulation_parameter{}.lat_c));
 };
 
 TEST_CASE("Euclidean distance functor", "[distance]")

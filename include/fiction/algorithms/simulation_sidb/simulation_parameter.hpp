@@ -5,21 +5,21 @@
 #ifndef FICTION_SIMULATION_PARAMETER_HPP
 #define FICTION_SIMULATION_PARAMETER_HPP
 
-#include "constants.hpp"
+#include "fiction/technology/constants.hpp"
 
 namespace fiction
 {
 struct simulation_parameter
 {
-     explicit simulation_parameter(const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9, const double mu_ = -0.32, const double a = 3.84 * 1E-10, const double b = 7.68 * 1E-10,
+     explicit simulation_parameter(const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9, const double mu_minus = -0.32, const double a = 3.84 * 1E-10, const double b = 7.68 * 1E-10,
                                             const double c = 2.25 * 1E-10) noexcept:
             lat_a{a},
             lat_b{b},
             lat_c{c},
             epsilon_r{relative_permittivity},
-            k{1.0 / (4.0 * 3.141592653 * fiction::constants::epsilon * epsilon_r)},
+            k{1.0 / (4.0 * 3.141592653 * fiction::physical_sim_constants::EPSILON * epsilon_r)},
             lambda_tf{screening_distance},
-            mu{mu_},
+            mu{mu_minus},
             mu_p{mu - 0.59}
 
     {}
