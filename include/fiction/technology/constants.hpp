@@ -7,7 +7,7 @@
 
 namespace fiction
 {
-namespace constants
+namespace physical_sim_constants
 {
     /**
      * vacuum permittivity
@@ -22,7 +22,7 @@ namespace constants
      */
     const double POP_STABILITY_ERR = 1E-6;
 
-}; // namespace constants
+}; // namespace physical_sim_constants
 
 }  // namespace fiction
 
