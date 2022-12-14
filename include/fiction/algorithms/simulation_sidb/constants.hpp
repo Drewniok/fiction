@@ -12,11 +12,11 @@ namespace constants
     /**
      * vacuum permittivity
      */
-    const double epsilon           = 8.854 * 1E-12;
+    const double EPSILON           = 8.854 * 1E-12;
     /**
      * electric charge
      */
-    const double e                 = 1.602 * 1E-19;
+    const double ELECTRIC_CHARGE                 = 1.602 * 1E-19;
     /**
      * stability threashold
      */
