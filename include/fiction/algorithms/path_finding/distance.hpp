@@ -77,7 +77,7 @@ template <typename Lyt, typename Dist = double>
  * @return Euclidean distance between c1 and c2.
  */
 template <typename Lyt, typename Dist = double>
-[[nodiscard]] constexpr Dist distance_SiDB_pair([[maybe_unused]] const Lyt& lyt, const cell<Lyt>& c1,
+[[nodiscard]] constexpr Dist distance_sidb_pair([[maybe_unused]] const Lyt& lyt, const cell<Lyt>& c1,
                                                 const cell<Lyt>& c2)
 {
     static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "coordinate is not a siqad coordinate");
