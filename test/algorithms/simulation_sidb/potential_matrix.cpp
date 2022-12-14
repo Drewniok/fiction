@@ -31,8 +31,8 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_cell_type({1, 0, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({1, 1, 1}, TestType::cell_type::NORMAL);
 
-    auto distance = distance_SiDBs(charge_layout);
-    auto potential = potential_SiDBs<charge_distribution_surface<TestType>>(distance);
+    auto distance = distance_sidbs(charge_layout);
+    auto potential = potential_sidbs<charge_distribution_surface<TestType>>(distance);
 
     CHECK(potential.size() == 9);
     CHECK(potential.at({{0, 0, 0}, {0, 0, 0}}) == 0.0);

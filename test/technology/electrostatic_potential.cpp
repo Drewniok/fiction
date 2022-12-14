@@ -32,15 +32,15 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_cell_type({1, 0, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({1, 1, 1}, TestType::cell_type::NORMAL);
 
-    CHECK(potential_SiDB_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {0, 0, 0})) == 0.0);
+    CHECK(potential_sidb_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {0, 0, 0})) == 0.0);
 
-    CHECK(potential_SiDB_pair(distance_sidb_pair(charge_layout, {1, 0, 0}, {1, 0, 0})) == 0.0);
-    CHECK(potential_SiDB_pair(distance_sidb_pair(charge_layout, {1, 1, 1}, {1, 1, 1})) == 0.0);
+    CHECK(potential_sidb_pair(distance_sidb_pair(charge_layout, {1, 0, 0}, {1, 0, 0})) == 0.0);
+    CHECK(potential_sidb_pair(distance_sidb_pair(charge_layout, {1, 1, 1}, {1, 1, 1})) == 0.0);
 
-    CHECK(potential_SiDB_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})) ==
-          potential_SiDB_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})));
-    CHECK(potential_SiDB_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})) ==
-          potential_SiDB_pair(distance_sidb_pair(charge_layout, {1, 0, 0}, {0, 0, 0})));
-    CHECK(potential_SiDB_pair(distance_sidb_pair(charge_layout, {1, 1, 1}, {0, 0, 0})) <
-          potential_SiDB_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})));
+    CHECK(potential_sidb_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})) ==
+          potential_sidb_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})));
+    CHECK(potential_sidb_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})) ==
+          potential_sidb_pair(distance_sidb_pair(charge_layout, {1, 0, 0}, {0, 0, 0})));
+    CHECK(potential_sidb_pair(distance_sidb_pair(charge_layout, {1, 1, 1}, {0, 0, 0})) <
+          potential_sidb_pair(distance_sidb_pair(charge_layout, {0, 0, 0}, {1, 0, 0})));
 }

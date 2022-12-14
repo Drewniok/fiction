@@ -30,12 +30,12 @@ using potential_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Pot
  * @return Potential matrix
  */
 template <typename Lyt, typename Potential = double, typename Dist = double>
-potential_matrix<Lyt, Potential> potential_SiDBs(const distance_matrix<Lyt, Dist>& dist)
+potential_matrix<Lyt, Potential> potential_sidbs(const distance_matrix<Lyt, Dist>& dist)
 {
     potential_matrix<Lyt, Potential> potential_values{};
     for (auto& it : dist)
     {
-        potential_values.insert(std::make_pair(it.first, potential_SiDB_pair<Potential>(it.second)));
+        potential_values.insert(std::make_pair(it.first, potential_sidb_pair<Potential>(it.second)));
     }
     return potential_values;
 };
