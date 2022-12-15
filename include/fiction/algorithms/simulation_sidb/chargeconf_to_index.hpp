@@ -13,9 +13,9 @@
 namespace fiction
 {
 /**
- * The charge distribution of the charge distribution surface is converted to a unique index. It is useful to map every possible charge distribution in a SiDB layout.
+ * The charge distribution of the charge distribution surface is converted to a unique index. It is used to map every possible charge distribution in a SiDB layout.
  *
- * @tparam Lyt charge distribution layout.
+ * @tparam Lyt cell-level layout.
  * @tparam base number of charge states per SiDB. Base = 2 when only neutrally and negatively charged SiDBs are taken into account, otherwise base = 3.
  * @return a pair with the calculated charge distribution's corresponding charge index and the chosen base as the first and second element, respectively.
  */
@@ -36,7 +36,7 @@ std::pair<uint64_t, uint8_t> chargeconf_to_index(charge_distribution_surface<Lyt
 /**
  *  The unique index is converted to the charge distribution of the charge distribution surface.
  *
- * @tparam Lyt charge distribution layout.
+ * @tparam Lyt cell-level layout.
  * @param cp a pair of the charge index and the chosen base number.
  * @return a pair with the calculated charge distribution's corresponding charge index and the chosen base as the first and second element, respectively.
  */
