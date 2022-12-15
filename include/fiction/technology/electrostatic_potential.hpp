@@ -26,7 +26,7 @@ Potential potential_sidb_pair(const Dist& dist, decltype(simulation_params{}.k) 
         return static_cast<Potential>(0.0);
     }
 
-    return static_cast<Potential>(-k / dist * std::exp(-dist / lambda_tf) * physical_sim_constants::ELECTRIC_CHARGE);
+    return static_cast<Potential>(k / dist * std::exp(-dist / lambda_tf) * physical_sim_constants::ELECTRIC_CHARGE);
 }
 
 }  // namespace fiction
