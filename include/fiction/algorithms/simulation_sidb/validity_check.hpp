@@ -25,7 +25,7 @@ namespace fiction
 template <typename Lyt, typename Potential = double>
 bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot<Lyt, Potential>& loc_pot,
                     const potential_matrix<charge_distribution_surface<Lyt>, Potential>& pot_mat,
-                    double                                                               mu = simulation_parameter{}.mu)
+                    double                                                               mu = simulation_params{}.mu)
 {
     bool valid = false;
     for (auto& it : loc_pot)
@@ -33,10 +33,10 @@ bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot
         valid = (((lyt.get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
                   ((it.second + mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
                  ((lyt.get_charge_state(it.first) == sidb_charge_state::POSITIVE) &&
-                  ((it.second + simulation_parameter{}.mu_p) > physical_sim_constants::POP_STABILITY_ERR)) ||
+                  ((it.second + simulation_params{}.mu_p) > physical_sim_constants::POP_STABILITY_ERR)) ||
                  ((lyt.get_charge_state(it.first) == sidb_charge_state::NEUTRAL) &&
                   ((it.second + mu) > physical_sim_constants::POP_STABILITY_ERR) &&
-                  (it.second + simulation_parameter{}.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
+                  (it.second + simulation_params{}.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
 
         if (!valid)
         {
