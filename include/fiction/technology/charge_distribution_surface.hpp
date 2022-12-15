@@ -98,6 +98,15 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         return sidb_charge_state::NONE;
     }
     /**
+     * Returns the number of SiDBs assigned to a charge state
+     *
+     * @return number (uint64_t)
+     */
+    [[nodiscard]] uint64_t num_charges() const noexcept
+    {
+        return strg->charge_coordinates.size();
+    }
+    /**
      * Applies a function to all SiDBs' charge states on the surface. Since the charge states are fetched directly from
      * the storage map, the given function has to receive a pair of a coordinate and a charge state as its parameter.
      *

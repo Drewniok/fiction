@@ -34,20 +34,24 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_charge_state({1, 3, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({10, 5, 1}, sidb_charge_state::NEGATIVE);
 
-    CHECK(chargeconf_to_index(charge_layout, 3)== 0);
-    CHECK(chargeconf_to_index(charge_layout, 2)== 0);
+    CHECK(chargeconf_to_index(charge_layout, 3).first== 0);
+    CHECK(chargeconf_to_index(charge_layout, 2).first== 0);
 
     charge_layout.foreach_charge_state([&charge_layout](const auto& cd)
                                        { charge_layout.assign_charge_state(cd.first, sidb_charge_state::POSITIVE); });
 
-    CHECK(chargeconf_to_index(charge_layout, 3)== 26);
+    CHECK(chargeconf_to_index(charge_layout, 3).first== 26);
 
     charge_layout.foreach_charge_state([&charge_layout](const auto& cd)
                                        { charge_layout.assign_charge_state(cd.first, sidb_charge_state::NEUTRAL); });
 
-    CHECK(chargeconf_to_index(charge_layout, 3)== 13);
-    CHECK(chargeconf_to_index(charge_layout, 2)== 7);
+    CHECK(chargeconf_to_index(charge_layout, 3).first== 13);
+    CHECK(chargeconf_to_index(charge_layout, 2).first== 7);
 
+    index_to_chargeconf(charge_layout, chargeconf_to_index(charge_layout, 2));
+    CHECK(chargeconf_to_index(charge_layout,2).first == 7);
 
+    index_to_chargeconf(charge_layout, chargeconf_to_index(charge_layout, 3));
+    CHECK(chargeconf_to_index(charge_layout,3).first == 13);
 
 } // namespace fiction
