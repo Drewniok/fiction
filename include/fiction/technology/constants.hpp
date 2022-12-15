@@ -19,7 +19,9 @@ constexpr double ELECTRIC_CHARGE = 1.602 * 1E-19;
  * The pop stability err is used for the physical simulation to avoid floating-point errors.
  */
 constexpr double POP_STABILITY_ERR = 1E-6;
-
+/**
+ * PI is pi and is accurate to 11 decimal places.
+ */
 constexpr double PI = 3.14159265359;
 
 }  // namespace fiction::physical_sim_constants

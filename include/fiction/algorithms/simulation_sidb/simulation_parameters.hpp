@@ -2,8 +2,8 @@
 // Created by Jan Drewniok on 24.11.22.
 //
 
-#ifndef FICTION_SIMULATION_PARAMETER_HPP
-#define FICTION_SIMULATION_PARAMETER_HPP
+#ifndef FICTION_SIMULATION_PARAMETERS_HPP
+#define FICTION_SIMULATION_PARAMETERS_HPP
 
 #include "fiction/technology/constants.hpp"
 
@@ -60,4 +60,4 @@ struct simulation_params
 };
 }  // namespace fiction
 
-#endif  // FICTION_SIMULATION_PARAMETER_HPP
+#endif  // FICTION_SIMULATION_PARAMETERS_HPP
