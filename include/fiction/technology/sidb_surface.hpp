@@ -10,11 +10,11 @@
 #include "fiction/traits.hpp"
 
 #include <cassert>
+#include <cstdint>
 #include <set>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
-#include <cstdint>
 
 namespace fiction
 {

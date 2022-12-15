@@ -2,28 +2,30 @@
 // Created by Jan Drewniok on 24.11.22.
 //
 
-#ifndef FICTION_TECHNOLOGY_PARAMETER_HPP
-#define FICTION_TECHNOLOGY_PARAMETER_HPP
+#ifndef FICTION_CONSTANTS_HPP
+#define FICTION_CONSTANTS_HPP
 
 namespace fiction
 {
 namespace physical_sim_constants
 {
-    /**
-     * vacuum permittivity
-     */
-    const double EPSILON           = 8.854 * 1E-12;
-    /**
-     * electric charge
-     */
-    const double ELECTRIC_CHARGE                 = 1.602 * 1E-19;
-    /**
-     * stability threashold
-     */
-    const double POP_STABILITY_ERR = 1E-6;
+/**
+ * epsilon is the vacuum permittivity [F/m].
+ */
+constexpr double EPSILON = 8.854 * 1E-12;
+/**
+ * electric charge is the elementary charge [C].
+ */
+constexpr double ELECTRIC_CHARGE = 1.602 * 1E-19;
+/**
+ * The pop stability err is used for the physical simulation to avoid floating-point errors.
+ */
+constexpr double POP_STABILITY_ERR = 1E-6;
 
-}; // namespace physical_sim_constants
+constexpr double PI = 3.14159265359;
+
+}  // namespace physical_sim_constants
 
 }  // namespace fiction
 
-#endif  // FICTION_TECHNOLOGY_PARAMETER_HPP
+#endif  // FICTION_CONSTANTS_HPP
