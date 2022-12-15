@@ -17,15 +17,13 @@ template <typename Lyt>
 std::pair<uint64_t, uint8_t> chargeconf_to_index(charge_distribution_surface<Lyt>& lyt, const uint8_t& base)
 {
     uint64_t chargeindex   = 0;
-    uint64_t counter_start = 0;
-    uint64_t counter       = 0;
     lyt.foreach_charge_state(
-        [&chargeindex, &base, &lyt, &counter, &counter_start](const auto& cs)
+        [&chargeindex, &base, &lyt, i = 0u](const auto& cs) mutable
         {
             chargeindex += static_cast<unsigned int>(
                 (transform_to_sign(cs.second) + 1) *
-                std::pow(base, lyt.num_charges() - static_cast<int>(counter - counter_start) - 1));
-            counter += 1;
+                std::pow(base, lyt.num_charges() - i - 1));
+            i++;
         });
     return std::make_pair(chargeindex, base);
 }
@@ -43,15 +41,14 @@ void index_to_chargeconf(charge_distribution_surface<Lyt>& lyt, const std::pair<
         div_t d;  // Structure to represent the result value of an integral division performed by function div.
         d                = div(static_cast<int>(charge_quot), cp.second);
         charge_quot      = static_cast<uint64_t>(d.quot);
-        uint64_t counter = 0;
         lyt.foreach_charge_state(
-            [&chargeindex, &lyt, &counter, &d, &num_charges](const auto& cs)
+            [&chargeindex, &lyt, i = 0u, &d, &num_charges](const auto& cs) mutable
             {
-                if (counter == num_charges)
+                if (i == num_charges)
                 {
                     lyt.assign_charge_state(cs.first,sign_to_label(d.rem - 1));
                 }
-                counter += 1;
+                i++;
             });
         num_charges -= 1;
     }
