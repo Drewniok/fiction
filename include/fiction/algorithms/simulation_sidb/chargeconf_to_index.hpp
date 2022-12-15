@@ -22,6 +22,7 @@ namespace fiction
 template <typename Lyt>
 std::pair<uint64_t, uint8_t> chargeconf_to_index(charge_distribution_surface<Lyt>& lyt, const uint8_t& base)
 {
+    static_assert(is_cell_level_layout_v<Lyt>, "Lyt is cell-level layout");
     uint64_t chargeindex   = 0;
     lyt.foreach_charge_state(
         [&chargeindex, &base, &lyt, i = 0u](const auto& cs) mutable
