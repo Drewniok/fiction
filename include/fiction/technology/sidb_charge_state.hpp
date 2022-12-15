@@ -44,4 +44,29 @@ enum class sidb_charge_state
 
 }
 
+
+[[nodiscard]] sidb_charge_state sign_to_label(const int& sg) noexcept
+{
+    if (sg == 1)
+    {
+        return sidb_charge_state::POSITIVE;
+    }
+    else if (sg == -1)
+    {
+        return sidb_charge_state::NEGATIVE;
+    }
+
+    else if (sg == 0)
+    {
+        return sidb_charge_state::NEUTRAL;
+    }
+
+    else
+    {
+        return sidb_charge_state::NONE;
+    }
+
+}
+
+
 #endif  // FICTION_SIDB_CHARGE_STATE_HPP
