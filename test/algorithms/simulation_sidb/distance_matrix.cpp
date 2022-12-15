@@ -31,11 +31,11 @@ TEMPLATE_TEST_CASE(
 
     auto distance = initialize_sidb_distance_matrix(charge_layout);
     CHECK(distance.at({{0, 0, 0}, {0, 0, 0}}) == 0.0);
-    CHECK(distance.at({{0, 0, 0}, {1, 0, 0}}) == simulation_parameter{}.lat_a);
-    CHECK(distance.at({{1, 0, 0}, {0, 0, 0}}) == simulation_parameter{}.lat_a);
+    CHECK(distance.at({{0, 0, 0}, {1, 0, 0}}) == simulation_params{}.lat_a);
+    CHECK(distance.at({{1, 0, 0}, {0, 0, 0}}) == simulation_params{}.lat_a);
     CHECK(distance.at({{1, 0, 0}, {1, 0, 0}}) == 0.0);
     CHECK(distance.at({{0, 0, 0}, {1, 1, 1}}) ==
-          std::hypot(simulation_parameter{}.lat_a, simulation_parameter{}.lat_b + simulation_parameter{}.lat_c));
+          std::hypot(simulation_params{}.lat_a, simulation_params{}.lat_b + simulation_params{}.lat_c));
     CHECK(distance.at({{1, 1, 1}, {1, 1, 1}}) == 0);
 
 }  // namespace fiction
