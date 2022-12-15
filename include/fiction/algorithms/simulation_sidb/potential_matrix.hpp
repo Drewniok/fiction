@@ -33,6 +33,10 @@ using potential_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cel
 template <typename Lyt, typename Potential = double, typename Dist = double>
 potential_matrix<Lyt, Potential> potential_sidbs(const distance_matrix<Lyt, Dist>& dist)
 {
+    static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+    static_assert(is_cell_level_layout_v<Lyt>,"Lyt is not a cell-level layout");
+    static_assert(std::is_floating_point_v<Dist>, "Dist is not a floating-point type");
+    static_assert(std::is_floating_point_v<Potential>, "Dist is not a floating-point type");
     potential_matrix<Lyt, Potential> potential_values{};
     for (const auto& it : dist)
     {
