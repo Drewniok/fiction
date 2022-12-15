@@ -53,10 +53,10 @@ TEMPLATE_TEST_CASE(
 
     charge_layout.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({0, 2, 0}, TestType::cell_type::NORMAL);
-    charge_layout.assign_cell_type({0, 3, 1}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({0, 2, 1}, TestType::cell_type::NORMAL);
     charge_layout.assign_charge_state({0, 0, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({0, 2, 0}, sidb_charge_state::NEGATIVE);
-    charge_layout.assign_charge_state({0, 3, 1}, sidb_charge_state::NEGATIVE);
+    charge_layout.assign_charge_state({0, 2, 1}, sidb_charge_state::NEGATIVE);
 
     // closely arranged SiDBs cannot be all negatively charged
     auto distance  = initialize_sidb_distance_matrix(charge_layout);
