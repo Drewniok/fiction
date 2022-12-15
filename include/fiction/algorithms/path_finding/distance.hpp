@@ -7,7 +7,7 @@
 
 #include "fiction/traits.hpp"
 
-#include <fiction/technology/real_position.hpp>
+#include <fiction/technology/nm_position.hpp>
 
 #include <cmath>
 #include <cstdint>
@@ -65,8 +65,8 @@ template <typename Lyt, typename Dist = double>
 }
 
 /**
- * The Euclidean distance between two SiDBs on the H-Si surface (SiQAD coordinates are required).
- * In the first step, SiQAD coordinates are converted to a location on the Si-substrate by taking Silicon's lattice constants into account (lat_a, lat_b, lat_c. Afterward, the Euclidean distance is calculated.
+ * The Euclidean distance in nm between two SiDBs on the H-Si surface is calculated (SiQAD coordinates are required).
+ * In the first step, SiQAD coordinates are converted to a nm position on the Si-substrate by taking Silicon's lattice constants into account (lat_a, lat_b, lat_c). Afterward, the Euclidean distance is calculated.
  *
  * @tparam Lyt Coordinate layout type.
  * @tparam Dist Floating-point type for the distance.
@@ -81,8 +81,8 @@ template <typename Lyt, typename Dist = double>
 {
     static_assert(std::is_same_v<decltype(c1),const siqad::coord_t &>, "first cell's coordinate is not a siqad coordinate");
     static_assert(std::is_same_v<decltype(c2),const siqad::coord_t &>, "second cell's coordinate is not a siqad coordinate");
-    const auto pos_c1 = real_position<Lyt>(c1);
-    const auto pos_c2 = real_position<Lyt>(c2);
+    const auto pos_c1 = nm_position<Lyt>(c1);
+    const auto pos_c2 = nm_position<Lyt>(c2);
     const auto x      = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);
     const auto y      = static_cast<double>(pos_c1.second) - static_cast<double>(pos_c2.second);
     return static_cast<Dist>(std::hypot(x, y));
