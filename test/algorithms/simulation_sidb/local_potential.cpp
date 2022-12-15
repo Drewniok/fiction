@@ -32,7 +32,7 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_charge_state({5, 5, 0}, sidb_charge_state::POSITIVE);
     charge_layout.assign_charge_state({1, 1, 1}, sidb_charge_state::POSITIVE);
 
-    auto distance  = distance_sidbs(charge_layout);
+    auto distance  = initialize_sidb_distance_matrix(charge_layout);
     auto potential = potential_sidbs<charge_distribution_surface<TestType>>(distance);
 
     auto local_pot = local_potential<charge_distribution_surface<TestType>>(charge_layout, potential);
@@ -40,7 +40,7 @@ TEMPLATE_TEST_CASE(
 
     for (auto& it : local_pot)
     {
-        CHECK(it.second < 0);
+        CHECK(it.second > 0);
     }
 
     charge_layout.assign_charge_state({0, 0, 0}, sidb_charge_state::NEGATIVE);
@@ -51,7 +51,7 @@ TEMPLATE_TEST_CASE(
 
     for (auto& it : local_pot_new)
     {
-        CHECK(it.second > 0);
+        CHECK(it.second < 0);
     }
 
     charge_layout.foreach_charge_state([&charge_layout](const auto& cd)

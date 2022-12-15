@@ -26,7 +26,7 @@ Energy system_energy(const charge_distribution_surface<Lyt>& lyt, const local_po
     Energy total_energy = 0;
     for (auto& it : loc_pot)
     {
-        total_energy += -0.5 * it.second * transform_to_sign(lyt.get_charge_state(it.first));
+        total_energy += 0.5 * it.second * transform_to_sign(lyt.get_charge_state(it.first));
     }
     return total_energy;
 }
