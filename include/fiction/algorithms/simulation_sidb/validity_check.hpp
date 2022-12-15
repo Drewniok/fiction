@@ -27,7 +27,7 @@ namespace fiction
 template <typename Lyt, typename Potential = double>
 bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot<Lyt, Potential>& loc_pot,
                     const potential_matrix<charge_distribution_surface<Lyt>, Potential>& pot_mat,
-                    const simulation_params &sim_params = simulation_params{})
+                    const simulation_params& sim_params = simulation_params{})
 {
     bool valid = false;
     for (auto& it : loc_pot)
