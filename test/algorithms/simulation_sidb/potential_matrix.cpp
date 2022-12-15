@@ -3,7 +3,6 @@
 //
 
 #include <catch2/catch_template_test_macros.hpp>
-
 #include <fiction/algorithms/simulation_sidb/distance_matrix.hpp>
 #include <fiction/algorithms/simulation_sidb/potential_matrix.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>

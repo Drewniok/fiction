@@ -1,8 +1,8 @@
 //
 // Created by Jan Drewniok on 13.12.22.
 //
-#include <catch2/catch_template_test_macros.hpp>
 
+#include <catch2/catch_template_test_macros.hpp>
 #include <fiction/algorithms/simulation_sidb/distance_matrix.hpp>
 #include <fiction/algorithms/simulation_sidb/local_potential.hpp>
 #include <fiction/algorithms/simulation_sidb/potential_matrix.hpp>
@@ -53,10 +53,10 @@ TEMPLATE_TEST_CASE(
 
     charge_layout.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({0, 2, 0}, TestType::cell_type::NORMAL);
-    charge_layout.assign_cell_type({0, 3, 1}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({0, 2, 1}, TestType::cell_type::NORMAL);
     charge_layout.assign_charge_state({0, 0, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({0, 2, 0}, sidb_charge_state::NEGATIVE);
-    charge_layout.assign_charge_state({0, 3, 1}, sidb_charge_state::NEGATIVE);
+    charge_layout.assign_charge_state({0, 2, 1}, sidb_charge_state::NEGATIVE);
 
     // closely arranged SiDBs cannot be all negatively charged
     auto distance  = initialize_sidb_distance_matrix(charge_layout);
