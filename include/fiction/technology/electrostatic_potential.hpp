@@ -11,14 +11,15 @@
 namespace fiction
 {
 /**
- * Caculate the electrostatic potential for a given distance dist.
+ * The electrostatic potential for a given Euclidean distance is calculated.
  *
- * @param dist distance
- * @return electrostatic potential value
+ * @tparam Dist Euclidean distance, floating-point type for the distance.
+ * @param Potential Floating-point type for the electrostatic potential.
+ * @return electrostatic potential value.
  */
 template <typename Potential = double, typename Dist = double>
-Potential potential_sidb_pair(const Dist& dist, decltype(simulation_parameter{}.k) k = simulation_parameter{}.k,
-                              decltype(simulation_parameter{}.lambda_tf) lambda_tf = simulation_parameter{}.lambda_tf)
+Potential potential_sidb_pair(const Dist& dist, decltype(simulation_params{}.k) k = simulation_params{}.k,
+                              decltype(simulation_params{}.lambda_tf) lambda_tf = simulation_params{}.lambda_tf)
 {
     if (dist == static_cast<Dist>(0.0))
     {

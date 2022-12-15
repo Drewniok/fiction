@@ -1,8 +1,9 @@
-#ifndef FICTION_DISTANCE_MATRIX_HPP
-#define FICTION_DISTANCE_MATRIX_HPP
 //
 // Created by Jan Drewniok on 07.12.22.
 //
+
+#ifndef FICTION_DISTANCE_MATRIX_HPP
+#define FICTION_DISTANCE_MATRIX_HPP
 
 #include "fiction/algorithms/path_finding/distance.hpp"
 #include "fiction/layouts/coordinates.hpp"
@@ -20,8 +21,8 @@ template <typename Lyt, typename Dist = double>
 using distance_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Dist>;
 
 /**
- * The distance matrix stores all euclidean inter-distances. The euclidean distance between
- * two identical SiDBs is set to 0. \f$ D = \sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2} \f$
+ * The Euclidean distance for every cell (needs to exhibit an assigned cell type) pair in the layout is calculated and
+ * stored.
  *
  * @tparam Lyt Coordinate layout type (SiQAD coordinates are required).
  * @tparam Dist Floating-point type for the distance.
@@ -29,8 +30,9 @@ using distance_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Dist
  * @return Distance matrix
  */
 template <typename Lyt, typename Dist = double>
-distance_matrix<Lyt, Dist> distance_sidbs(const Lyt& lyt)
+distance_matrix<Lyt, Dist> initialize_sidb_distance_matrix(const Lyt& lyt)
 {
+    static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Cell level layout is not based on siqad coordinates");
     distance_matrix<Lyt, Dist> distance_values{};
     lyt.foreach_cell(
         [&distance_values, lyt](const auto& c1)

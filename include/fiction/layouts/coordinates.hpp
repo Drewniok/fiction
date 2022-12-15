@@ -915,7 +915,5 @@ struct formatter<fiction::cube::coord_t>
 };
 }  // namespace fmt
 
-
-
 #pragma GCC diagnostic pop
 #endif  // FICTION_COORDINATES_HPP
