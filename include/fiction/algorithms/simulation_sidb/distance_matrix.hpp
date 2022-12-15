@@ -32,7 +32,7 @@ using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell
 template <typename Lyt, typename Dist = double>
 distance_matrix<Lyt, Dist> initialize_sidb_distance_matrix(const Lyt& lyt)
 {
-    static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Cell level layout does not base on siqad coordinates");
+    static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Cell level layout is not based on siqad coordinates");
     distance_matrix<Lyt, Dist> distance_values{};
     lyt.foreach_cell(
         [&distance_values, lyt](const auto& c1)
