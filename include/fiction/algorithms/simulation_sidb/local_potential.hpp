@@ -14,13 +14,23 @@
 
 namespace fiction
 {
-
+/**
+ * Calculate local electrostatic potential at each SiDB position.
+ *
+ * @tparam Lyt cell-level layout.
+ * @tparam Potential data type of the electrostatic potential.
+ * @param lyt charge distribution layout.
+ * @param pot_mat electrostatic potential matrix.
+ */
 template <typename Lyt, typename Potential = double>
 using local_pot = std::unordered_map<cell<Lyt>, Potential>;
 
 template <typename Lyt, typename Potential = double>
-local_pot<Lyt, Potential> local_potential(Lyt &lyt, const potential_matrix<Lyt,Potential> &pot_mat)
+local_pot<Lyt, Potential> local_potential(const Lyt &lyt, const potential_matrix<Lyt,Potential> &pot_mat)
 {
+    static_assert(is_cell_level_layout_v<Lyt>, "Lyt is cell-level layout");
+    static_assert(std::is_floating_point_v<Potential>, "Potential is not a floating-point type");
+
     local_pot<Lyt, Potential> loc_pot{};
     lyt.foreach_cell([&loc_pot, &pot_mat, &lyt](const auto& c){
 
@@ -42,4 +52,5 @@ local_pot<Lyt, Potential> local_potential(Lyt &lyt, const potential_matrix<Lyt,P
 }
 
 } // namespace fiction
+
 #endif  // FICTION_LOCAL_POTENTIAL_HPP

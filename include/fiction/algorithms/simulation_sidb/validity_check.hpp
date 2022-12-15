@@ -15,28 +15,30 @@
 namespace fiction
 {
 /**
- * Check the physically validity (configuration and population stability)
+ * Check the physically validity (configuration and population stability).
  *
- * @param lyt charge distribution layout
- * @param loc_pot local electrostatic potential
- * @param pot_mat electrostatic potential matrix
- * @param mu charge transistion level (0-)
+ * @tparam Lyt cell-level layout.
+ * @tparam Potential Data type of the electrostatic potential.
+ * @param lyt charge distribution layout.
+ * @param loc_pot local electrostatic potential.
+ * @param pot_mat electrostatic potential matrix.
+ * @param sim_params simulation parameters.
  */
 template <typename Lyt, typename Potential = double>
 bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot<Lyt, Potential>& loc_pot,
                     const potential_matrix<charge_distribution_surface<Lyt>, Potential>& pot_mat,
-                    double                                                               mu = simulation_params{}.mu)
+                    const simulation_params &sim_params = simulation_params{})
 {
     bool valid = false;
     for (auto& it : loc_pot)
     {
         valid = (((lyt.get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
-                  ((it.second + mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
+                  ((-it.second + sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
                  ((lyt.get_charge_state(it.first) == sidb_charge_state::POSITIVE) &&
-                  ((it.second + simulation_params{}.mu_p) > physical_sim_constants::POP_STABILITY_ERR)) ||
+                  ((-it.second + sim_params.mu_p) > physical_sim_constants::POP_STABILITY_ERR)) ||
                  ((lyt.get_charge_state(it.first) == sidb_charge_state::NEUTRAL) &&
-                  ((it.second + mu) > physical_sim_constants::POP_STABILITY_ERR) &&
-                  (it.second + simulation_params{}.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
+                  ((-it.second + sim_params.mu) > physical_sim_constants::POP_STABILITY_ERR) &&
+                  (-it.second + sim_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
 
         if (!valid)
         {
@@ -54,7 +56,6 @@ bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot
 
     for (auto& it : loc_pot)
     {
-        // do nothing with DB+
         if (lyt.get_charge_state(it.first) == sidb_charge_state::POSITIVE)
         {
             continue;
@@ -62,8 +63,6 @@ bool validity_check(const charge_distribution_surface<Lyt>& lyt, const local_pot
 
         for (auto& it_second : loc_pot)
         {
-
-            // attempt hops from more negative charge states to more positive ones
             auto E_del = hopDel(it.first, it_second.first);
             if ((transform_to_sign(lyt.get_charge_state(it.first)) >
                  transform_to_sign(lyt.get_charge_state(it.first))) &&
