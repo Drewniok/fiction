@@ -51,7 +51,7 @@ void index_to_chargeconf(charge_distribution_surface<Lyt>& lyt, const std::pair<
     while (charge_quot > 0)
     {
         auto  num_charges = lyt.num_charges() - 1;
-        div_t d;  // Structure to represent the result value of an integral division performed by function div.
+        div_t d;
         d                = div(static_cast<int>(charge_quot), cp.second);
         charge_quot      = static_cast<uint64_t>(d.quot);
         lyt.foreach_charge_state(
