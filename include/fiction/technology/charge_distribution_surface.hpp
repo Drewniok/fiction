@@ -48,18 +48,25 @@ class charge_distribution_surface<Lyt, false> : public Lyt
          * as value.
          */
         using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
-
         /**
          * The potential matrix is an unordered map with pairs of cells as key and the corresponding electrostatic
          * potential as value.
          */
         using potential_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
+        /**
+         * The local electrostatic potential matrix is an unordered map with cells as key and the corresponding local
+         * electrostatic potential as value.
+         */
+        using local_potential = std::unordered_map<cell<Lyt>, double>;
 
       public:
         std::unordered_map<typename Lyt::coordinate, sidb_charge_state> charge_coordinates{};
         distance_matrix                                                 dist_mat{};
         potential_matrix                                                pot_mat{};
+        local_potential                                                 loc_pot{};
         simulation_params                                               sim_params{};
+        double                                                          system_energy;
+        bool validity;
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -191,11 +198,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param lyt Layout.
      * @return Potential matrix
      */
-    void potential_sidbs()
+    void initialize_sidb_potential_matrix()
     {
         for (const auto& it : strg->dist_mat)
         {
-            strg->pot_mat.insert(std::make_pair(it.first, potential_sidb_pair<double>(it.second)));
+            strg->pot_mat.insert(std::make_pair(it.first, potential_sidb_pair(it.first.first, it.first.second)));
         }
     };
 
@@ -239,16 +246,13 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return number (uint64_t)
      */
-    [[nodiscard]] constexpr double pot(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    [[nodiscard]] constexpr std::optional<double> pot(const cell<Lyt>& c1, const cell<Lyt>& c2)
     {
-        for (auto& it : strg->pot_mat)
+        if (auto it = strg->pot_mat.find(std::make_pair(c1, c2)); it != strg->pot_mat.end())
         {
-            if (it.first.first == c1 && it.first.second == c2)
-            {
-                strg->pot_mat.at({c1, c2});
-                return it.second;
-            }
+            return it->second;
         }
+        return std::nullopt;
     }
 
     /**
@@ -259,6 +263,139 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     [[nodiscard]] uint64_t num_charges() const noexcept
     {
         return strg->charge_coordinates.size();
+    }
+
+    /**
+     * The electrostatic potential for a given Euclidean distance is calculated.
+     *
+     * @tparam Potential Data type for the electrostatic potential.
+     * @tparam Dist Euclidean distance.
+     * @param dist Euclidean distance value.
+     * @param k Coulomb constant (default value).
+     * @param lambda_tf Thomas-Fermi screening distance (default value).
+     * @return Electrostatic potential value.
+     */
+
+    [[nodiscard]] double potential_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    {
+        if (auto it = strg->dist_mat.find(std::make_pair(c1, c2)); it != strg->dist_mat.end())
+        {
+            auto dis = it->second;
+            if (dis == 0.0)
+            {
+                return 0.0;
+            }
+            return (strg->sim_params.k / dis * std::exp(-dis / strg->sim_params.lambda_tf) *
+                    physical_sim_constants::ELECTRIC_CHARGE);
+        }
+    }
+
+    void local_potential()
+    {
+        this->foreach_charge_state(
+            [this](const auto& cs)
+            {
+                double collect = 0;
+                for (auto& it : strg->pot_mat)
+                {
+
+                    if (it.first.first == cs.first)
+                    {
+                        collect += it.second * transform_to_sign(get_charge_state(cs.first));
+                    }
+                }
+                strg->loc_pot.insert_or_assign(cs.first, collect);
+            });
+    }
+
+    std::optional<double> get_loc_pot(const cell<Lyt>& c1)
+    {
+        if (auto it = strg->loc_pot.find(c1); it != strg->loc_pot.end())
+        {
+            return strg->loc_pot[c1];
+        }
+        return std::nullopt;
+    };
+
+    /**
+     * Calculate the system's total electrostatic potential energy.
+     *
+     * @param lyt charge distribution layout
+     * @param loc_pot local electrostatic potential
+     */
+    void system_energy()
+    {
+        double total_energy = 0;
+        for (auto& it : strg->loc_pot)
+        {
+            total_energy += 0.5 * it.second * transform_to_sign(get_charge_state(it.first));
+        }
+        strg->system_energy = total_energy;
+    }
+
+    [[nodiscard]] double get_system_energy()
+    {
+        return strg->system_energy;
+    }
+
+
+    void validity_check()
+    {
+        bool valid = false;
+        for (auto& it : strg->loc_pot)
+        {
+            valid = (((this->get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
+                      ((-it.second + strg->sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
+                     ((this->get_charge_state(it.first) == sidb_charge_state::POSITIVE) &&
+                      ((-it.second + strg->sim_params.mu_p) > physical_sim_constants::POP_STABILITY_ERR)) ||
+                     ((this->get_charge_state(it.first) == sidb_charge_state::NEUTRAL) &&
+                      ((-it.second + strg->sim_params.mu) > physical_sim_constants::POP_STABILITY_ERR) &&
+                      (-it.second + strg->sim_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
+
+            if (!valid)
+            {
+                strg->validity = false;
+                break;
+            }
+
+            else
+            {
+                strg->validity = true;
+            }
+        }
+
+        auto hopDel = [this](const cell<Lyt>& c1, const cell<Lyt>& c2)
+        {
+            int dn_i = (this->get_charge_state(c1) == sidb_charge_state::NEGATIVE) ? 1 : -1;
+            int dn_j = -dn_i;
+
+            return strg->loc_pot.at(c1) * dn_i + strg->loc_pot.at(c1) * dn_j - strg->pot_mat.at(std::make_pair(c1, c2)) * 1;
+        };
+
+        for (auto& it : strg->loc_pot)
+        {
+            if (this->get_charge_state(it.first) == sidb_charge_state::POSITIVE)
+            {
+                continue;
+            }
+
+            for (auto& it_second : strg->loc_pot)
+            {
+                auto E_del = hopDel(it.first, it_second.first);
+                if ((transform_to_sign(get_charge_state(it.first)) >
+                     transform_to_sign(get_charge_state(it.first))) &&
+                    (E_del < -physical_sim_constants::POP_STABILITY_ERR))
+                {
+                    strg->validity = false;
+                }
+            }
+        }
+        //strg->validity = true;
+    }
+
+    [[nodiscard]] bool get_validity()
+    {
+        return strg->validity;
     }
 
   private:
