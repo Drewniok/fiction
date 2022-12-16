@@ -11,6 +11,7 @@
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
 
+#include <cassert>
 #include <unordered_map>
 
 namespace fiction
@@ -234,6 +235,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
+    /**
+     * Returns the potential between two cells in the layout.
+     *
+     * @return number (uint64_t)
+     */
     [[nodiscard]] constexpr double pot(const cell<Lyt>& c1, const cell<Lyt>& c2)
     {
         for (auto& it : strg->pot_mat)
@@ -244,6 +250,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 return it.second;
             }
         }
+    }
+
+    /**
+     * Returns the number of SiDBs assigned to a charge state
+     *
+     * @return number (uint64_t)
+     */
+    [[nodiscard]] uint64_t num_charges() const noexcept
+    {
+        return strg->charge_coordinates.size();
     }
 
   private:

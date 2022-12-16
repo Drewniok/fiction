@@ -234,13 +234,13 @@ SECTION("Distance matrix")
     charge_layout.initialize_sidb_distance_matrix();
     charge_layout.potential_sidbs();
 
-    CHECK(potential.size() == 9);
-    CHECK(potential.at({{0, 0, 0}, {0, 0, 0}}) == 0.0);
-    CHECK(potential.at({{1, 0, 0}, {1, 0, 0}}) == 0.0);
-    CHECK(potential.at({{1, 1, 1}, {1, 1, 1}}) == 0.0);
-    CHECK((potential.at({{1, 1, 1}, {0, 0, 0}}) - 0.19518121) < 0.00000001);
-    CHECK(potential.at({{0, 0, 0}, {1, 1, 1}}) == potential.at({{1, 1, 1}, {0, 0, 0}}));
-    CHECK(potential.at({{0, 0, 0}, {1, 1, 1}}) < potential.at({{1, 0, 0}, {0, 0, 0}}));
+    CHECK(charge_layout.num_charges() == 0);
+    CHECK(charge_layout.pot({0, 0, 0}, {0, 0, 0}) == 0.0);
+    CHECK(charge_layout.pot({1, 0, 0}, {1, 0, 0}) == 0.0);
+    CHECK(charge_layout.pot({1, 1, 1}, {1, 1, 1}) == 0.0);
+    CHECK((charge_layout.pot({1, 1, 1}, {0, 0, 0}) - 0.19518121) < 0.00000001);
+    CHECK(charge_layout.pot({0, 0, 0}, {1, 1, 1}) == charge_layout.pot({1, 1, 1}, {0, 0, 0}));
+    CHECK(charge_layout.pot({0, 0, 0}, {1, 1, 1}) < charge_layout.pot({1, 0, 0}, {0, 0, 0}));
 }
 
 }
