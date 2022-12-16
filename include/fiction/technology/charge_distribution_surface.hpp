@@ -5,7 +5,9 @@
 #ifndef FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 #define FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 
+#include "fiction/algorithms/path_finding/distance.hpp"
 #include "fiction/technology/cell_technologies.hpp"
+#include "fiction/technology/electrostatic_potential.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
 
@@ -18,7 +20,7 @@ namespace fiction
  * A layout type to layer on top of any SiDB cell-level layout. It implements an interface to store and access
  * SiDBs' charge states.
  *
- * @tparam Lyt SiDB cell-level layout.
+ * @tparam Lyt SiDB cell-level layout based in SiQAD-coordinates.
  * @tparam has_sidb_charge_distribution Automatically determines whether a charge distribution interface is already
  * present.
  */
@@ -40,7 +42,24 @@ class charge_distribution_surface<Lyt, false> : public Lyt
   public:
     struct charge_distribution_storage
     {
+      private:
+        /**
+         * The distance matrix is an unordered map with pairs of cells as key and the corresponding euclidean distance
+         * as value.
+         */
+        using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
+
+        /**
+         * The potential matrix is an unordered map with pairs of cells as key and the corresponding electrostatic
+         * potential as value.
+         */
+        using potential_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
+
+      public:
         std::unordered_map<typename Lyt::coordinate, sidb_charge_state> charge_coordinates{};
+        distance_matrix                                                 dist_mat{};
+        potential_matrix                                                pot_mat{};
+        simulation_params                                               sim_params{};
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -50,9 +69,21 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     explicit charge_distribution_surface() : Lyt(), strg{std::make_shared<charge_distribution_storage>()}
     {
+        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
     }
+    /**
+     * Standard constructor for existing layouts and simulation parameter as input.
+     */
+    explicit charge_distribution_surface(const Lyt& lyt, const simulation_params& sim_params) :
+            Lyt(lyt),
+            strg{std::make_shared<charge_distribution_storage>(sim_params)}
+    {
+        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+    };
     /**
      * Standard constructor for existing layouts.
      */
@@ -60,6 +91,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>()}
     {
+        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
     };
@@ -109,6 +141,109 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         mockturtle::detail::foreach_element(strg->charge_coordinates.cbegin(), strg->charge_coordinates.cend(),
                                             std::forward<Fn>(fn));
+    }
+
+    /**
+     * The Euclidean distance for every cell (needs to exhibit an assigned cell type) pair in the layout is calculated
+     * and returned as a matrix (unordered map).
+     *
+     * @tparam Lyt Cell-level layout type (SiQAD coordinates are required).
+     * @tparam Dist Floating-point type for the distance.
+     * @param lyt Layout.
+     * @return Distance matrix
+     */
+    void initialize_sidb_distance_matrix()
+    {
+        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+        this->foreach_cell(
+            [this](const auto& c1)
+            {
+                this->foreach_cell(
+                    [c1, this](const auto& c2)
+                    { strg->dist_mat.insert(std::make_pair(std::make_pair(c1, c2), distance_sidb_pair(c1, c2))); });
+            });
+    };
+
+    /**
+     * SiQAD coordinates are converted to a nm location on the Si-substrate by taking Silicon's lattice constants into
+     * account (see simulation_parameters.hpp).
+     *
+     * @tparam Lyt cell layout type (SiQAD coordinates are required).
+     * @tparam Dist Data type for the distance.
+     * @param c cell of the layout Lyt.
+     * @return nm position
+     */
+    std::pair<double, double> nm_position(const cell<Lyt>& c)
+    {
+        const auto x = static_cast<double>(c.x * strg->sim_params.lat_a);
+        const auto y = static_cast<double>(c.y * strg->sim_params.lat_b + c.z * strg->sim_params.lat_c);
+        return std::make_pair(x, y);
+    }
+
+    /**
+     * All electrostatic inter-potentials between two cells are calculated. The Euclidean distance is provided by the
+     * distance matrix. Electrostatic potential between identical cells is set to 0.
+     *
+     * @tparam Lyt Cell-level layout type (SiQAD coordinates are required).
+     * @tparam Dist Floating-point type for the distance.
+     * @tparam Potential Floating-point type for the electrostatic potential.
+     * @param lyt Layout.
+     * @return Potential matrix
+     */
+    void potential_sidbs()
+    {
+        for (const auto& it : strg->dist_mat)
+        {
+            strg->pot_mat.insert(std::make_pair(it.first, potential_sidb_pair<double>(it.second)));
+        }
+    };
+
+    /**
+     * The Euclidean distance in nm between two SiDBs on the H-Si surface is calculated (SiQAD coordinates are
+     * required). In the first step, SiQAD coordinates are converted to a nm position on the Si-substrate by taking
+     * Silicon's lattice constants into account (see simulation_parameters.hpp). Afterward, the Euclidean distance is
+     * calculated.
+     *
+     * @tparam Lyt cell-level layout type.
+     * @tparam Dist Floating-point type for the distance.
+     * @param lyt Layout.
+     * @param c1 cell coordinate.
+     * @param c2 cell coordinate.
+     * @return Euclidean distance between c1 and c2.
+     */
+
+    [[nodiscard]] constexpr double distance_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    {
+        const auto pos_c1 = nm_position(c1);
+        const auto pos_c2 = nm_position(c2);
+        const auto x      = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);
+        const auto y      = static_cast<double>(pos_c1.second) - static_cast<double>(pos_c2.second);
+        return std::hypot(x, y);
+    }
+
+    [[nodiscard]] constexpr double dist(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    {
+        for (auto& it : strg->dist_mat)
+        {
+            if (it.first.first == c1 && it.first.second == c2)
+            {
+                strg->dist_mat.at({c1, c2});
+                return it.second;
+            }
+        }
+    }
+
+    [[nodiscard]] constexpr double pot(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    {
+        for (auto& it : strg->pot_mat)
+        {
+            if (it.first.first == c1 && it.first.second == c2)
+            {
+                strg->pot_mat.at({c1, c2});
+                return it.second;
+            }
+        }
     }
 
   private:

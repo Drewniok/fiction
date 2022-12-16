@@ -16,14 +16,13 @@ using namespace fiction;
 
 TEMPLATE_TEST_CASE(
     "charge distribution surface traits and construction (layer on cell_level_layout)", "[charge-distribution-surface]",
-    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<offset::ucoord_t>>>>),
-    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>>),
     (sidb_surface<
-        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>>),
+        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_column_hex>>>>),
     (sidb_surface<
-        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>>),
-    (sidb_surface<
-        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>>))
+        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_column_hex>>>>))
 {
     REQUIRE(is_cell_level_layout_v<TestType>);
     CHECK(!has_assign_charge_state_v<TestType>);
@@ -50,11 +49,11 @@ TEMPLATE_TEST_CASE(
 
 TEMPLATE_TEST_CASE(
     "charge distribution surface traits (layer on cell_level_layout)", "[charge-distribution-surface]",
-    (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<offset::ucoord_t>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>))
+    (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_column_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_column_hex>>>))
 {
     REQUIRE(is_cell_level_layout_v<TestType>);
     CHECK(!has_assign_charge_state_v<TestType>);
@@ -77,20 +76,19 @@ TEMPLATE_TEST_CASE(
 
 TEMPLATE_TEST_CASE(
     "assign and delete charge states", "[charge-distribution-surface]",
-    (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<offset::ucoord_t>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>),
-    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_column_hex>>>),
+    (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_column_hex>>>),
 
-    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<offset::ucoord_t>>>>),
-    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_row_hex>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>>),
     (sidb_surface<
-        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_row_hex>>>>),
+        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_column_hex>>>>),
     (sidb_surface<
-        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, odd_column_hex>>>>),
-    (sidb_surface<
-        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<offset::ucoord_t, even_column_hex>>>>))
+        cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_column_hex>>>>))
 
 {
     TestType                    lyt{{11, 9}};
@@ -209,4 +207,40 @@ TEMPLATE_TEST_CASE(
         CHECK(charge_layout.get_charge_state({5, 5}) == sidb_charge_state::NONE);
         CHECK(charge_layout.get_charge_state({5, 6}) == sidb_charge_state::POSITIVE);
     }
+
+    SECTION("Distance matrix")
+    {
+
+    charge_layout.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({1, 0, 0}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({1, 1, 1}, TestType::cell_type::NORMAL);
+
+    charge_layout.initialize_sidb_distance_matrix();
+    CHECK(charge_layout.dist({0, 0, 0}, {0, 0, 0}) == 0.0);
+    CHECK(charge_layout.dist({0, 0, 0}, {1, 0, 0}) == simulation_params{}.lat_a);
+    CHECK(charge_layout.dist({1, 0, 0}, {0, 0, 0}) == simulation_params{}.lat_a);
+    CHECK(charge_layout.dist({1, 0, 0}, {1, 0, 0}) == 0.0);
+    CHECK(charge_layout.dist({0, 0, 0}, {1, 1, 1}) ==
+          std::hypot(simulation_params{}.lat_a, simulation_params{}.lat_b + simulation_params{}.lat_c));
+    CHECK(charge_layout.dist({1, 1, 1}, {1, 1, 1}) == 0);
+}
+
+SECTION("Distance matrix")
+{
+    charge_layout.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({1, 0, 0}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({1, 1, 1}, TestType::cell_type::NORMAL);
+
+    charge_layout.initialize_sidb_distance_matrix();
+    charge_layout.potential_sidbs();
+
+    CHECK(potential.size() == 9);
+    CHECK(potential.at({{0, 0, 0}, {0, 0, 0}}) == 0.0);
+    CHECK(potential.at({{1, 0, 0}, {1, 0, 0}}) == 0.0);
+    CHECK(potential.at({{1, 1, 1}, {1, 1, 1}}) == 0.0);
+    CHECK((potential.at({{1, 1, 1}, {0, 0, 0}}) - 0.19518121) < 0.00000001);
+    CHECK(potential.at({{0, 0, 0}, {1, 1, 1}}) == potential.at({{1, 1, 1}, {0, 0, 0}}));
+    CHECK(potential.at({{0, 0, 0}, {1, 1, 1}}) < potential.at({{1, 0, 0}, {0, 0, 0}}));
+}
+
 }
