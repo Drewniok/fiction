@@ -12,7 +12,7 @@ namespace fiction
 {
 /**
  * SiQAD coordinates are converted to a nm location on the Si-substrate by taking Silicon's lattice constants into
- * account (lat_a, lat_b, lat_c).
+ * account (see simulation_parameters.hpp).
  *
  * @tparam Lyt cell layout type (SiQAD coordinates are required).
  * @tparam Dist Data type for the distance.

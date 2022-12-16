@@ -24,7 +24,7 @@ using potential_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Pot
  * All electrostatic inter-potentials between two cells are calculated. The Euclidean distance is provided by the
  * distance matrix. Electrostatic potential between identical cells is set to 0.
  *
- * @tparam Lyt Coordinate layout type (SiQAD coordinates are required).
+ * @tparam Lyt Cell-level layout type (SiQAD coordinates are required).
  * @tparam Dist Floating-point type for the distance.
  * @tparam Potential Floating-point type for the electrostatic potential.
  * @param lyt Layout.
@@ -36,7 +36,7 @@ potential_matrix<Lyt, Potential> potential_sidbs(const distance_matrix<Lyt, Dist
     static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(std::is_floating_point_v<Dist>, "Dist is not a floating-point type");
-    static_assert(std::is_floating_point_v<Potential>, "Dist is not a floating-point type");
+    static_assert(std::is_floating_point_v<Potential>, "Potential is not a floating-point type");
     potential_matrix<Lyt, Potential> potential_values{};
     for (const auto& it : dist)
     {
