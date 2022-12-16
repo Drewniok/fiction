@@ -9,6 +9,7 @@
 #include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/technology/sidb_charge_state.hpp>
 #include <fiction/traits.hpp>
+#include <cassert>
 
 namespace fiction
 {
@@ -22,6 +23,8 @@ namespace fiction
 template <typename Lyt>
 std::pair<uint64_t, uint8_t> chargeconf_to_index(charge_distribution_surface<Lyt>& lyt, const uint8_t& base)
 {
+    assert(base == 2 || base == 3 && "base must be 2 or 3");
+    // TODO check if in uint64
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is cell-level layout");
     uint64_t chargeindex   = 0;
     lyt.foreach_charge_state(

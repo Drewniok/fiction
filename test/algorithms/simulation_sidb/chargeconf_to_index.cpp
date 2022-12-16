@@ -4,14 +4,13 @@
 
 #include <catch2/catch_template_test_macros.hpp>
 
+#include <fiction/algorithms/simulation_sidb/chargeconf_to_index.hpp>
 #include <fiction/algorithms/simulation_sidb/distance_matrix.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>
 #include <fiction/layouts/clocked_layout.hpp>
 #include <fiction/layouts/hexagonal_layout.hpp>
 #include <fiction/technology/cell_technologies.hpp>
-#include <fiction/algorithms/simulation_sidb/chargeconf_to_index.hpp>
-
 
 using namespace fiction;
 
@@ -23,7 +22,7 @@ TEMPLATE_TEST_CASE(
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_column_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_column_hex>>>))
 {
-    TestType lyt{{10,10}};
+    TestType lyt{{10, 10}};
 
     charge_distribution_surface charge_layout{lyt};
 
@@ -34,24 +33,24 @@ TEMPLATE_TEST_CASE(
     charge_layout.assign_charge_state({1, 3, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({10, 5, 1}, sidb_charge_state::NEGATIVE);
 
-    CHECK(chargeconf_to_index(charge_layout, 3).first== 0);
-    CHECK(chargeconf_to_index(charge_layout, 2).first== 0);
+    CHECK(chargeconf_to_index(charge_layout, 3).first == 0);
+    CHECK(chargeconf_to_index(charge_layout, 2).first == 0);
 
     charge_layout.foreach_charge_state([&charge_layout](const auto& cd)
                                        { charge_layout.assign_charge_state(cd.first, sidb_charge_state::POSITIVE); });
 
-    CHECK(chargeconf_to_index(charge_layout, 3).first== 26);
+    CHECK(chargeconf_to_index(charge_layout, 3).first == 26);
 
     charge_layout.foreach_charge_state([&charge_layout](const auto& cd)
                                        { charge_layout.assign_charge_state(cd.first, sidb_charge_state::NEUTRAL); });
 
-    CHECK(chargeconf_to_index(charge_layout, 3).first== 13);
-    CHECK(chargeconf_to_index(charge_layout, 2).first== 7);
+    CHECK(chargeconf_to_index(charge_layout, 3).first == 13);
+    CHECK(chargeconf_to_index(charge_layout, 2).first == 7);
 
     index_to_chargeconf(charge_layout, chargeconf_to_index(charge_layout, 2));
-    CHECK(chargeconf_to_index(charge_layout,2).first == 7);
+    CHECK(chargeconf_to_index(charge_layout, 2).first == 7);
 
     index_to_chargeconf(charge_layout, chargeconf_to_index(charge_layout, 3));
-    CHECK(chargeconf_to_index(charge_layout,3).first == 13);
+    CHECK(chargeconf_to_index(charge_layout, 3).first == 13);
 
-} // namespace fiction
+}  // namespace fiction
