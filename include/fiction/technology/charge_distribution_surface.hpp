@@ -12,7 +12,6 @@
 #include "fiction/traits.hpp"
 
 #include <cassert>
-#include <unordered_map>
 
 namespace fiction
 {
