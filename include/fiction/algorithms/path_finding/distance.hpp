@@ -64,9 +64,9 @@ template <typename Lyt, typename Dist = double>
 
 /**
  * The Euclidean distance in nm between two SiDBs on the H-Si surface is calculated (SiQAD coordinates are required).
- * In the first step, SiQAD coordinates are converted to a nm position on the Si-substrate by taking Silicon's lattice constants into account (lat_a, lat_b, lat_c). Afterward, the Euclidean distance is calculated.
+ * In the first step, SiQAD coordinates are converted to a nm position on the Si-substrate by taking Silicon's lattice constants into account (see simulation_parameters.hpp). Afterward, the Euclidean distance is calculated.
  *
- * @tparam Lyt Coordinate layout type.
+ * @tparam Lyt cell-level layout type.
  * @tparam Dist Floating-point type for the distance.
  * @param lyt Layout.
  * @param c1 cell coordinate.
@@ -80,6 +80,7 @@ template <typename Lyt, typename Dist = double>
     static_assert(is_cell_level_layout_v<Lyt>,"Lyt is not a cell-level layout");
     static_assert(std::is_same_v<decltype(c1),const siqad::coord_t &>, "first cell's coordinate is not a SiQAD coordinate");
     static_assert(std::is_same_v<decltype(c2),const siqad::coord_t &>, "second cell's coordinate is not a SiQAD coordinate");
+    static_assert(std::is_floating_point_v<Dist>, "Dist is not a floating-point type");
     const auto pos_c1 = nm_position<Lyt>(c1);
     const auto pos_c2 = nm_position<Lyt>(c2);
     const auto x      = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);

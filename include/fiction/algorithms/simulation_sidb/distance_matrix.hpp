@@ -22,9 +22,9 @@ using distance_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Dist
 
 /**
  * The Euclidean distance for every cell (needs to exhibit an assigned cell type) pair in the layout is calculated and
- * stored in the matrix (unordered map).
+ * returned as a matrix (unordered map).
  *
- * @tparam Lyt Coordinate layout type (SiQAD coordinates are required).
+ * @tparam Lyt Cell-level layout type (SiQAD coordinates are required).
  * @tparam Dist Floating-point type for the distance.
  * @param lyt Layout.
  * @return Distance matrix
@@ -32,6 +32,7 @@ using distance_matrix = std::unordered_map<std::pair<cell<Lyt>, cell<Lyt>>, Dist
 template <typename Lyt, typename Dist = double>
 distance_matrix<Lyt, Dist> initialize_sidb_distance_matrix(const Lyt& lyt)
 {
+    static_assert(is_cell_level_layout_v<Lyt>,"Lyt is not a cell-level layout");
     static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
     distance_matrix<Lyt, Dist> distance_values{};
     lyt.foreach_cell(
