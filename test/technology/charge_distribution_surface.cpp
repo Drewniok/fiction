@@ -332,10 +332,10 @@ SECTION("Physical validity check, far distance of SIDBs, all NEGATIVE")
 
 SECTION("Physical validity check, small distance, not all can be negatively charged anymore")
 {
-    charge_layout.assign_cell_type({1, 2, 0}, TestType::cell_type::NORMAL);
+    charge_layout.assign_cell_type({1, 0, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({0, 2, 0}, TestType::cell_type::NORMAL);
     charge_layout.assign_cell_type({0, 2, 1}, TestType::cell_type::NORMAL);
-    charge_layout.assign_charge_state({1, 2, 0}, sidb_charge_state::NEGATIVE);
+    charge_layout.assign_charge_state({1, 0, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({0, 2, 0}, sidb_charge_state::NEGATIVE);
     charge_layout.assign_charge_state({0, 2, 1}, sidb_charge_state::NEGATIVE);
 
@@ -343,7 +343,6 @@ SECTION("Physical validity check, small distance, not all can be negatively char
     charge_layout.initialize_sidb_distance_matrix();
     charge_layout.initialize_sidb_potential_matrix();
     charge_layout.local_potential();
-    //CHECK(*charge_layout.get_loc_pot({1,2,0})==0);
     charge_layout.system_energy();
     charge_layout.validity_check();
     CHECK(charge_layout.get_validity() == 0);
