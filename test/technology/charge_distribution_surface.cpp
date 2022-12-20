@@ -311,24 +311,61 @@ TEMPLATE_TEST_CASE(
 
     SECTION("Physical validity check, far distance of SIDBs, all NEGATIVE")
     {
-        charge_layout.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
-        charge_layout.assign_cell_type({0, 2, 0}, TestType::cell_type::NORMAL);
-        charge_layout.assign_cell_type({4, 1, 1}, TestType::cell_type::NORMAL);
-        charge_layout.assign_charge_state({0, 0, 0}, sidb_charge_state::NEGATIVE);
-        charge_layout.assign_charge_state({0, 2, 0}, sidb_charge_state::NEGATIVE);
-        charge_layout.assign_charge_state({4, 1, 1}, sidb_charge_state::NEGATIVE);
 
-        charge_layout.initialize_sidb_distance_matrix();
-        charge_layout.initialize_sidb_potential_matrix();
-        charge_layout.local_potential();
-        charge_layout.system_energy();
-        charge_layout.validity_check();
+        TestType                    layout{{11, 11}};
+        layout.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
+        layout.assign_cell_type({0, 2, 0}, TestType::cell_type::NORMAL);
+        layout.assign_cell_type({4, 1, 1}, TestType::cell_type::NORMAL);
 
-        charge_distribution_surface<TestType> charge_new = charge_layout;
-        charge_new.assign_charge_state({4, 1, 1}, sidb_charge_state::POSITIVE);
-        charge_new.validity_check();
+        charge_distribution_surface charge_layout_five{layout, simulation_params{}};
+        CHECK(charge_layout_five.get_charge_state({0, 0,0}) == sidb_charge_state::NEGATIVE);
+        CHECK(charge_layout_five.get_charge_state({0, 2,0}) == sidb_charge_state::NEGATIVE);
+        CHECK(charge_layout_five.get_charge_state({4, 1,1}) == sidb_charge_state::NEGATIVE);
 
-        CHECK(charge_new.get_validity() == 0);
+        charge_layout_five.initialize_sidb_distance_matrix();
+        charge_layout_five.initialize_sidb_potential_matrix();
+        charge_layout_five.local_potential();
+        charge_layout_five.system_energy();
+        charge_layout_five.validity_check();
+        CHECK(charge_layout_five.get_charge_index().first == 0);
+
+        charge_layout_five.assign_charge_state({4, 1, 1}, sidb_charge_state::POSITIVE);
+        CHECK(charge_layout_five.get_charge_state({4, 1,1}) == sidb_charge_state::POSITIVE);
+        charge_layout_five.chargeconf_to_index();
+        CHECK(charge_layout_five.get_charge_index().first == 2);
+
+        charge_distribution_surface<TestType> charge_new{charge_layout_five};
+        CHECK(charge_new.get_charge_state({4, 1,1}) == sidb_charge_state::POSITIVE);
+
+
+        charge_new.chargeconf_to_index();
+        CHECK(charge_new.get_charge_index().first == 2);
+        charge_new.increase_charge_index();
+
+        CHECK(charge_new.get_charge_state({0, 0,0}) == sidb_charge_state::NEGATIVE);
+        CHECK(charge_new.get_charge_state({0, 2,0}) == sidb_charge_state::NEGATIVE);
+        CHECK(charge_new.get_charge_state({4, 1,1}) == sidb_charge_state::POSITIVE);
+
+        CHECK(charge_new.get_charge_index().first == 3);
+        charge_new.increase_charge_index();
+        CHECK(charge_new.get_charge_index().first == 4);
+        charge_new.increase_charge_index();
+        CHECK(charge_new.get_charge_index().first == 5);
+        charge_new.increase_charge_index();
+        CHECK(charge_new.get_charge_index().first == 6);
+        charge_new.increase_charge_index();
+        CHECK(charge_new.get_charge_index().first == 7);
+        charge_new.increase_charge_index();
+        CHECK(charge_new.get_charge_index().first == 8);
+        charge_new.increase_charge_index();
+        CHECK(charge_new.get_charge_index().first == 9);
+        charge_new.increase_charge_index();
+        CHECK(charge_new.get_charge_index().first == 10);
+
+        charge_new.index_to_chargeconf();
+
+        CHECK(charge_new.get_charge_state({0, 0,0}) == sidb_charge_state::NEGATIVE);
+        CHECK(charge_new.get_charge_state({0, 2,0}) == sidb_charge_state::NEGATIVE);
         CHECK(charge_new.get_charge_state({4, 1,1}) == sidb_charge_state::POSITIVE);
     }
 
@@ -371,22 +408,22 @@ TEMPLATE_TEST_CASE(
         TestType                lyt_new{{11, 11}};
         const simulation_params params{5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10, 3};
 
-        charge_distribution_surface charge_layout_new{lyt, params};
 
-        charge_layout_new.assign_cell_type({0, 0, 1}, TestType::cell_type::NORMAL);
-        charge_layout_new.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);
-        charge_layout_new.assign_cell_type({10, 5, 1}, TestType::cell_type::NORMAL);
-        charge_layout_new.assign_charge_state({0, 0, 1}, sidb_charge_state::NEGATIVE);
-        charge_layout_new.assign_charge_state({1, 3, 0}, sidb_charge_state::NEGATIVE);
-        charge_layout_new.assign_charge_state({10, 5, 1}, sidb_charge_state::NEGATIVE);
+        lyt_new.assign_cell_type({0, 0, 1}, TestType::cell_type::NORMAL);
+        lyt_new.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);
+        lyt_new.assign_cell_type({10, 5, 1}, TestType::cell_type::NORMAL);
 
-        charge_layout_new.chargeconf_to_index();
+        charge_distribution_surface charge_layout_new{lyt_new, params};
         CHECK(charge_layout_new.get_charge_index().first == 0);
-
 
         charge_layout_new.foreach_charge_state(
             [&charge_layout_new](const auto& cd)
             { charge_layout_new.assign_charge_state(cd.first, sidb_charge_state::POSITIVE); });
+        CHECK(charge_layout_new.get_charge_state({0,0,1}) == sidb_charge_state::POSITIVE);
+        CHECK(charge_layout_new.get_charge_state({1,3,0}) == sidb_charge_state::POSITIVE);
+        CHECK(charge_layout_new.get_charge_state({10,5,1}) == sidb_charge_state::POSITIVE);
+
+        CHECK(charge_layout_new.num_coord_vec() == 3);
 
         charge_layout_new.chargeconf_to_index();
         CHECK(charge_layout_new.get_charge_index().first == 26);
@@ -397,6 +434,12 @@ TEMPLATE_TEST_CASE(
 
         charge_layout_new.chargeconf_to_index();
         CHECK(charge_layout_new.get_charge_index().first == 13);
+
+        charge_layout_new.increase_charge_index();
+        charge_layout_new.chargeconf_to_index();
+        CHECK(charge_layout_new.get_charge_index().first == 14);
+        charge_layout_new.increase_charge_index();
+        CHECK(charge_layout_new.get_charge_index().first == 15);
     }
 }
 

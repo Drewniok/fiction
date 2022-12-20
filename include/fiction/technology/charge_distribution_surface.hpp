@@ -10,6 +10,7 @@
 #include "fiction/technology/electrostatic_potential.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
+#include "fiction/types.hpp"
 
 #include <cassert>
 
@@ -61,19 +62,18 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         using local_potential = std::unordered_map<cell<Lyt>, double>;
 
       public:
-        explicit charge_distribution_storage(const simulation_params& sim_param) : sim_params{sim_param} {};
+        explicit charge_distribution_storage(const simulation_params& sim_param_default = simulation_params{}) : sim_params{sim_param_default} {};
 
-        explicit charge_distribution_storage() : sim_params{} {};
-
+        simulation_params                                               sim_params{};
         std::unordered_map<typename Lyt::coordinate, sidb_charge_state> charge_coordinates{};
+        std::vector<typename Lyt::coordinate>                           coord_vec;
         distance_matrix                                                 dist_mat{};
         potential_matrix                                                pot_mat{};
         local_potential                                                 loc_pot{};
-        simulation_params                                               sim_params{};
         double                                                          system_energy{};
-        bool                                                            validity;
+        bool                                                            validity{};
         std::pair<uint64_t, uint8_t>                                    charge_index{};
-        const uint64_t                                                  max_charge_index{};
+
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -81,10 +81,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * Standard constructor for empty layouts.
      */
-    explicit charge_distribution_surface() : Lyt(), strg{std::make_shared<charge_distribution_storage>()}
+    explicit charge_distribution_surface(const sidb_charge_state &cs = sidb_charge_state::NEGATIVE,  const simulation_params& sim_param_default = simulation_params{}) : Lyt(), strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
-
-
+        initialize(cs);
         static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -92,31 +91,37 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * Standard constructor for existing layouts and simulation parameter as input.
      */
-    explicit charge_distribution_surface(const Lyt& lyt, const simulation_params& sim_par) :
+    explicit charge_distribution_surface(const Lyt& lyt, const simulation_params& sim_param_default = simulation_params{}, const sidb_charge_state &cs = sidb_charge_state::NEGATIVE) :
             Lyt(lyt),
-            strg{std::make_shared<charge_distribution_storage>(sim_par)}
+            strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
+        initialize(cs);
         static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
     };
 
-//    explicit charge_distribution_surface(const charge_distribution_surface<Lyt> &lyt)
-//    {
-//        strg = std::make_shared<charge_distribution_storage>(*lyt.strg);
-//    }
     /**
-     * Standard constructor for existing layouts.
+     * Copy constructor.
      */
-    explicit charge_distribution_surface(const Lyt& lyt) :
-            Lyt(lyt),
-            strg{std::make_shared<charge_distribution_storage>()}
+    explicit charge_distribution_surface(const charge_distribution_surface<Lyt> &lyt)
     {
+        strg = std::make_shared<charge_distribution_storage>(*lyt.strg);
+    }
 
-        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
-        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
-    };
+//    /**
+//     * Standard constructor for existing layouts.
+//     */
+//    explicit charge_distribution_surface(const Lyt& lyt, const sidb_charge_state &cs = sidb_charge_state::NEGATIVE) :
+//            Lyt(lyt),
+//            strg{std::make_shared<charge_distribution_storage>()}
+//    {
+//        initialize(cs);
+//        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+//        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+//        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+//    };
+
     /**
      * Assigns a given charge state to the given coordinate.
      *
@@ -138,11 +143,19 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
-    void initialize_charge_state(const sidb_charge_state &cs) const noexcept
+    int num_coord_vec() const
     {
+        return strg->coord_vec.size();
+    }
+
+    void initialize(const sidb_charge_state &cs) const noexcept
+    {
+        strg->coord_vec.reserve(this->num_cells());
+        this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
         this->foreach_cell(
             [this, &cs](const auto& c1)
             { strg->charge_coordinates.insert(std::make_pair(c1, cs)); });
+        this->chargeconf_to_index();
     };
     /**
      * Returns the given coordinate's assigned charge state.
@@ -321,9 +334,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 for (auto& it : strg->pot_mat)
                 {
 
-                    if (it.first.first == cs.first)
+                    if (it.first.second == cs.first)
                     {
-                        collect += it.second * transform_to_sign(get_charge_state(cs.first));
+                        collect += it.second * transform_to_sign(get_charge_state(it.first.first));
                     }
                 }
                 strg->loc_pot.insert_or_assign(cs.first, collect);
@@ -448,14 +461,23 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         assert(base == 2 || base == 3 && "base must be 2 or 3");
         // TODO check if in uint64
         uint64_t chargeindex   = 0;
-        this->foreach_charge_state(
-            [&chargeindex, &base, this, i = 0u](const auto& cs) mutable
-            {
-                chargeindex += static_cast<unsigned int>(
-                    (transform_to_sign(cs.second) + 1) *
-                    std::pow(base, this->num_charges() - i - 1));
-                i++;
-            });
+        int counter = 0;
+        for (auto &c: strg->coord_vec)
+        {
+            chargeindex += static_cast<unsigned int>(
+                (transform_to_sign(this->get_charge_state(c)) + 1) *
+                std::pow(base, this->num_charges() - counter - 1));
+            counter +=1;
+        }
+
+//        this->foreach_charge_state(
+//            [&chargeindex, &base, this, i = 0u](const auto& cs) mutable
+//            {
+//                chargeindex += static_cast<unsigned int>(
+//                    (transform_to_sign(cs.second) + 1) *
+//                    std::pow(base, this->num_charges() - i - 1));
+//                counter++;
+//            });
         strg->charge_index = {chargeindex, base};
     }
 
@@ -473,33 +495,34 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void index_to_chargeconf() const
     {
-        uint64_t chargeindex = 0;
 
         auto charge_quot = strg->charge_index.first;
+        auto  num_charges = this->num_charges() - 1;
 
         while (charge_quot > 0)
         {
-            auto  num_charges = this->num_charges() - 1;
+
             div_t d;
             d                = div(static_cast<int>(charge_quot), strg->charge_index.second);
             charge_quot      = static_cast<uint64_t>(d.quot);
-            this->foreach_charge_state(
-                [&chargeindex, this, i = 0u, &d, &num_charges](const auto& cs) mutable
-                {
-                    if (i == num_charges)
+            int counter = 0;
+            for (auto &it: strg->coord_vec)
+            {
+
+                    if (counter == num_charges)
                     {
-                        this->assign_charge_state(cs.first,sign_to_label(d.rem - 1));
+                        this->assign_charge_state(it,sign_to_label(d.rem - 1));
                     }
-                    i++;
-                });
+                    counter++;
+                }
             num_charges -= 1;
         }
     }
 
     void increase_charge_index()
     {
-        strg->charge_index.first =  strg->charge_index.first + 1;
-        //this->index_to_chargeconf();
+        strg->charge_index=  std::make_pair(strg->charge_index.first + 1,strg->charge_index.second);
+        this->index_to_chargeconf();
     }
 
 
