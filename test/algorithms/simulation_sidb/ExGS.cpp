@@ -15,31 +15,32 @@ using namespace fiction;
 using namespace detail;
 
 TEMPLATE_TEST_CASE(
-    "Local potential", "[local-potential]",
+    "exhaustive ground state search", "[ExGS]",
     (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_column_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_column_hex>>>))
 {
-    TestType                    lyt{{100, 22}};
-
+    TestType                    lyt{{10, 10}};
     lyt.assign_cell_type({5, 0, 1}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({1, 5, 0}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({1, 1, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({2, 3, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({3, 3, 0}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({1, 6, 0}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({1, 7, 0}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({50, 0, 1}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({10, 3, 0}, TestType::cell_type::NORMAL);
 
 
     charge_distribution_surface charge_layout{lyt};
+    std::vector<charge_distribution_surface<TestType>> output = metastable_layouts<TestType>(charge_layout);
+    CHECK(output.size() > 0);
 
-    CHECK(charge_layout.get_charge_state({5, 0,1}) == sidb_charge_state::NEGATIVE);
-
-   std::vector<std::pair<charge_distribution_surface<TestType>, double>> output = GS<TestType>(charge_layout);
-
-
-
+    const simulation_params params{5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10, 2};
+    charge_distribution_surface charge_layout_new{lyt, params};
+    std::vector<charge_distribution_surface<TestType>> output_new = metastable_layouts<TestType>(charge_layout_new);
+    CHECK(output_new.size() > 0);
+    for (auto &it: output_new)
+    {
+        it.foreach_charge_state([&it](const auto& c)
+                                                { CHECK(it.get_charge_state(c.first) != sidb_charge_state::POSITIVE); });
+    }
 }

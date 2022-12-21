@@ -13,6 +13,7 @@
 #include "fiction/types.hpp"
 
 #include <cassert>
+#include <limits>
 
 namespace fiction
 {
@@ -25,6 +26,7 @@ namespace fiction
  * @tparam has_sidb_charge_distribution Automatically determines whether a charge distribution interface is already
  * present.
  */
+
 template <typename Lyt, bool has_charge_distribution_interface =
                             std::conjunction_v<has_assign_charge_state<Lyt>, has_get_charge_state<Lyt>>>
 class charge_distribution_surface : public Lyt
@@ -62,7 +64,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         using local_potential = std::unordered_map<cell<Lyt>, double>;
 
       public:
-        explicit charge_distribution_storage(const simulation_params& sim_param_default = simulation_params{}) : sim_params{sim_param_default} {};
+        explicit charge_distribution_storage(const simulation_params& sim_param_default = simulation_params{}) :
+                sim_params{sim_param_default} {};
 
         simulation_params                                               sim_params{};
         std::unordered_map<typename Lyt::coordinate, sidb_charge_state> charge_coordinates{};
@@ -73,7 +76,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         double                                                          system_energy{};
         bool                                                            validity{};
         std::pair<uint64_t, uint8_t>                                    charge_index{};
-
+        uint64_t                                                        max_charge_index{};
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -81,7 +84,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * Standard constructor for empty layouts.
      */
-    explicit charge_distribution_surface(const sidb_charge_state &cs = sidb_charge_state::NEGATIVE,  const simulation_params& sim_param_default = simulation_params{}) : Lyt(), strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
+    explicit charge_distribution_surface(const sidb_charge_state& cs                = sidb_charge_state::NEGATIVE,
+                                         const simulation_params& sim_param_default = simulation_params{}) :
+            Lyt(),
+            strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
         initialize(cs);
         static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
@@ -91,7 +97,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * Standard constructor for existing layouts and simulation parameter as input.
      */
-    explicit charge_distribution_surface(const Lyt& lyt, const simulation_params& sim_param_default = simulation_params{}, const sidb_charge_state &cs = sidb_charge_state::NEGATIVE) :
+    explicit charge_distribution_surface(const Lyt&               lyt,
+                                         const simulation_params& sim_param_default = simulation_params{},
+                                         const sidb_charge_state& cs                = sidb_charge_state::NEGATIVE) :
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
@@ -100,28 +108,27 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
     };
-
     /**
      * Copy constructor.
      */
-    explicit charge_distribution_surface(const charge_distribution_surface<Lyt> &lyt)
+    explicit charge_distribution_surface(const charge_distribution_surface<Lyt>& lyt) :
+            strg{std::make_shared<charge_distribution_storage>(*lyt.strg)}
+    {}
+    /**
+     * initialisation function used for the construction of the charge distribution layout.
+     *
+     * @param cs charge state assigned to all SiDBs.
+     */
+    void initialize(const sidb_charge_state& cs) const noexcept
     {
-        strg = std::make_shared<charge_distribution_storage>(*lyt.strg);
-    }
-
-//    /**
-//     * Standard constructor for existing layouts.
-//     */
-//    explicit charge_distribution_surface(const Lyt& lyt, const sidb_charge_state &cs = sidb_charge_state::NEGATIVE) :
-//            Lyt(lyt),
-//            strg{std::make_shared<charge_distribution_storage>()}
-//    {
-//        initialize(cs);
-//        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
-//        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-//        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
-//    };
-
+        strg->coord_vec.reserve(this->num_cells());
+        this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
+        this->foreach_cell([this, &cs](const auto& c1) { strg->charge_coordinates.insert(std::make_pair(c1, cs)); });
+        assert((std::pow(strg->sim_params.base, this->num_cells()) - 1) < std::numeric_limits<uint64_t>::max() &&
+               "number of SiDBs is too large");
+        strg->max_charge_index = std::pow(strg->sim_params.base, this->num_cells()) - 1;
+        this->chargeconf_to_index();
+    };
     /**
      * Assigns a given charge state to the given coordinate.
      *
@@ -143,20 +150,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
-    int num_coord_vec() const
-    {
-        return strg->coord_vec.size();
-    }
-
-    void initialize(const sidb_charge_state &cs) const noexcept
-    {
-        strg->coord_vec.reserve(this->num_cells());
-        this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
-        this->foreach_cell(
-            [this, &cs](const auto& c1)
-            { strg->charge_coordinates.insert(std::make_pair(c1, cs)); });
-        this->chargeconf_to_index();
-    };
     /**
      * Returns the given coordinate's assigned charge state.
      *
@@ -254,7 +247,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param c2 cell coordinate.
      * @return Euclidean distance between c1 and c2.
      */
-
     [[nodiscard]] constexpr double distance_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2) const
     {
         const auto pos_c1 = nm_position(c1);
@@ -264,6 +256,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         return std::hypot(x, y);
     }
 
+    /**
+     * The euclidean distance of two cells (in this case two SiDBs) is returned.
+     *
+     * @tparam Lyt cell-level layout type.
+     * @param c1 cell coordinate.
+     * @param c2 cell coordinate.
+     * @return Euclidean distance between c1 and c2.
+     */
     [[nodiscard]] constexpr double dist(const cell<Lyt>& c1, const cell<Lyt>& c2)
     {
         for (auto& it : strg->dist_mat)
@@ -291,7 +291,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * Returns the number of SiDBs assigned to a charge state
+     * Returns the number of SiDBs to which a charge state is assigned.
      *
      * @return number (uint64_t)
      */
@@ -310,7 +310,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param lambda_tf Thomas-Fermi screening distance (default value).
      * @return Electrostatic potential value.
      */
-
     [[nodiscard]] double potential_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2) const
     {
         if (auto it = strg->dist_mat.find(std::make_pair(c1, c2)); it != strg->dist_mat.end())
@@ -325,6 +324,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
+    /**
+     * The local electrostatic potential is calculated for each SiDB position.
+     * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
+     * charge distribution is updated.
+     */
     void local_potential()
     {
         this->foreach_charge_state(
@@ -342,7 +346,13 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 strg->loc_pot.insert_or_assign(cs.first, collect);
             });
     }
-
+    /**
+     * The local electrostatic potential is calculated for each SiDB position.
+     * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
+     * charge distribution is updated.
+     * @param c1 cell for which the value of the local electrostatic potential is wanted.
+     * @return local potential is returned if an SiDB is at position c1. Otherwise, std::nullopt is returned.
+     */
     std::optional<double> get_loc_pot(const cell<Lyt>& c1)
     {
         if (auto it = strg->loc_pot.find(c1); it != strg->loc_pot.end())
@@ -367,17 +377,25 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
         strg->system_energy = total_energy;
     }
-
+    /**
+     * Return the system's total electrostatic potential energy.
+     *
+     * @return system's total electrostatic potential energy.
+     */
     [[nodiscard]] double get_system_energy()
     {
         return strg->system_energy;
     }
-
-
+    /**
+     * The physically validity of the current charge distribution is evaluated and stored in the storage struct.
+     * A charge distribution is valid if the *Population Stability* and the *Configuration Stability* is given.
+     *
+     * @return bool indicating the validity.
+     */
     void validity_check()
     {
-        bool valid = false;
-        int flag_fd=0;
+        bool valid   = false;
+        int  flag_fd = 0;
         for (auto& it : strg->loc_pot)
         {
             valid = (((this->get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
@@ -417,7 +435,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 }
 
                 int flag_value = 0;
-                for (auto &it_second : strg->loc_pot)
+                for (auto& it_second : strg->loc_pot)
                 {
                     if (flag_value == 1)
                     {
@@ -430,7 +448,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                          transform_to_sign(get_charge_state(it.first))) &&
                         (E_del < -physical_sim_constants::POP_STABILITY_ERR))
                     {
-                        flag_value     = 1;
+                        flag_value = 1;
                         break;
                     }
                 }
@@ -449,83 +467,92 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
- * The charge distribution of the charge distribution surface is converted to a unique index. It is used to map every possible charge distribution in a SiDB layout.
- *
- * @tparam Lyt cell-level layout.
- * @tparam base number of charge states per SiDB. Base = 2 when only neutrally and negatively charged SiDBs are taken into account, otherwise base = 3.
- * @return a pair with the calculated charge distribution's corresponding charge index and the chosen base as the first and second element, respectively.
+     * The charge distribution of the charge distribution surface is converted to a unique index. It is used to map
+     * every possible charge distribution in a SiDB layout.
+     *
+     * @tparam Lyt cell-level layout.
+     * @tparam base number of charge states per SiDB. Base = 2 when only neutrally and negatively charged SiDBs are
+     * taken into account, otherwise base = 3.
+     * @return a pair with the calculated charge distribution's corresponding charge index and the chosen base as the
+     * first and second element, respectively.
      */
     void chargeconf_to_index() const
     {
-        auto base = strg->sim_params.base;
+        uint8_t base = strg->sim_params.base;
         assert(base == 2 || base == 3 && "base must be 2 or 3");
-        // TODO check if in uint64
-        uint64_t chargeindex   = 0;
-        int counter = 0;
-        for (auto &c: strg->coord_vec)
+        uint64_t chargeindex = 0;
+        int      counter     = 0;
+        for (auto& c : strg->coord_vec)
         {
-            chargeindex += static_cast<unsigned int>(
-                (transform_to_sign(this->get_charge_state(c)) + 1) *
-                std::pow(base, this->num_charges() - counter - 1));
-            counter +=1;
+            chargeindex += static_cast<unsigned int>((transform_to_sign(this->get_charge_state(c)) + 1) *
+                                                     std::pow(base, this->num_charges() - counter - 1));
+            counter += 1;
         }
-
-//        this->foreach_charge_state(
-//            [&chargeindex, &base, this, i = 0u](const auto& cs) mutable
-//            {
-//                chargeindex += static_cast<unsigned int>(
-//                    (transform_to_sign(cs.second) + 1) *
-//                    std::pow(base, this->num_charges() - i - 1));
-//                counter++;
-//            });
         strg->charge_index = {chargeindex, base};
     }
 
-    [[nodiscard]] std::pair<uint64_t,uint8_t> get_charge_index()
+    /**
+     * The charge index of the current charge distribution is returned.
+     *
+     * @return a pair with the charge index and the used base is returned.
+     */
+    [[nodiscard]] std::pair<uint64_t, uint8_t> get_charge_index()
     {
         return strg->charge_index;
     }
 
     /**
- *  The unique index is converted to the charge distribution of the charge distribution surface.
- *
- * @tparam Lyt cell-level layout.
- * @param cp a pair of the charge index and the chosen base number.
- * @return a pair with the calculated charge distribution's corresponding charge index and the chosen base as the first and second element, respectively.
+     *  The unique index is converted to the charge distribution of the charge distribution surface.
+     *
+     * @tparam Lyt cell-level layout.
+     * @param cp a pair of the charge index and the chosen base number.
+     * @return a pair with the calculated charge distribution's corresponding charge index and the chosen base as the
+     * first and second element, respectively.
      */
     void index_to_chargeconf() const
     {
 
-        auto charge_quot = strg->charge_index.first;
-        auto  num_charges = this->num_charges() - 1;
+        int charge_quot = strg->charge_index.first;
+        int base        = strg->charge_index.second;
+        int num_charges = this->num_charges() - 1;
 
         while (charge_quot > 0)
         {
-
             div_t d;
-            d                = div(static_cast<int>(charge_quot), strg->charge_index.second);
-            charge_quot      = static_cast<uint64_t>(d.quot);
+            d           = div(charge_quot, base);
+            charge_quot = d.quot;
             int counter = 0;
-            for (auto &it: strg->coord_vec)
+            for (auto& it : strg->coord_vec)
             {
 
-                    if (counter == num_charges)
-                    {
-                        this->assign_charge_state(it,sign_to_label(d.rem - 1));
-                    }
-                    counter++;
+                if (counter == num_charges)
+                {
+                    this->assign_charge_state(it, sign_to_label(d.rem - 1));
                 }
+                counter++;
+            }
             num_charges -= 1;
         }
     }
 
+    /**
+     *  The unique index is increased by one, but only if it is less than or equal to the maximum charge index after it has been increased. If that's the case, it is increased and
+     *  afterward, the charge configuration is updated by invoking the index_to_chargeconf() function.
+     *
+     */
     void increase_charge_index()
     {
-        strg->charge_index=  std::make_pair(strg->charge_index.first + 1,strg->charge_index.second);
-        this->index_to_chargeconf();
+        if (strg->charge_index.first == strg->max_charge_index)
+        {
+            std::cout << "maximal index is exceeded";
+        }
+        else
+        {
+            strg->charge_index =
+                std::make_pair(strg->charge_index.first + 1, static_cast<uint8_t>(strg->charge_index.second));
+            this->index_to_chargeconf();
+        }
     }
-
-
 
   private:
     storage strg;
