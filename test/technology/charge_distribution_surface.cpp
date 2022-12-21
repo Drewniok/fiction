@@ -389,7 +389,6 @@ TEMPLATE_TEST_CASE(
         TestType                lyt_new{{11, 11}};
         const simulation_params params{5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10, 3};
 
-
         lyt_new.assign_cell_type({0, 0, 1}, TestType::cell_type::NORMAL);
         lyt_new.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);
         lyt_new.assign_cell_type({10, 5, 1}, TestType::cell_type::NORMAL);
@@ -421,6 +420,3 @@ TEMPLATE_TEST_CASE(
         CHECK(charge_layout_new.get_charge_index().first == 15);
     }
 }
-
-
-

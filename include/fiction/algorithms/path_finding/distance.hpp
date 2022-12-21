@@ -6,7 +6,6 @@
 #define FICTION_DISTANCE_HPP
 
 #include "fiction/traits.hpp"
-#include <fiction/technology/nm_position.hpp>
 #include <cmath>
 #include <cstdint>
 #include <functional>

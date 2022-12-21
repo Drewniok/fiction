@@ -3,7 +3,6 @@
 //
 
 #include <catch2/catch_template_test_macros.hpp>
-#include <fiction/algorithms/simulation_sidb/distance_matrix.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>
 #include <fiction/layouts/clocked_layout.hpp>
@@ -22,23 +21,25 @@ TEMPLATE_TEST_CASE(
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_column_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_column_hex>>>))
 {
-    TestType                    lyt{{10, 10}};
+    TestType lyt{{20, 10}};
     lyt.assign_cell_type({5, 0, 1}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({2, 3, 0}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({3, 3, 0}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({1, 6, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({12, 0, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({14, 3, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({20, 3, 1}, TestType::cell_type::NORMAL);
 
-
-    charge_distribution_surface charge_layout{lyt};
+    charge_distribution_surface                        charge_layout{lyt};
     std::vector<charge_distribution_surface<TestType>> output = metastable_layouts<TestType>(charge_layout);
     CHECK(output.size() > 0);
 
-    const simulation_params params{5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10, 2};
+    const simulation_params     params{5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10, 2};
     charge_distribution_surface charge_layout_new{lyt, params};
     std::vector<charge_distribution_surface<TestType>> output_new = metastable_layouts<TestType>(charge_layout_new);
     CHECK(output_new.size() > 0);
-    for (auto &it: output_new)
+    for (auto& it : output_new)
     {
         it.foreach_charge_state([&it](const auto& c)
                                                 { CHECK(it.get_charge_state(c.first) != sidb_charge_state::POSITIVE); });

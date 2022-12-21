@@ -6,8 +6,8 @@
 #define FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 
 #include "fiction/algorithms/path_finding/distance.hpp"
+#include "fiction/algorithms/simulation_sidb/simulation_parameters.hpp"
 #include "fiction/technology/cell_technologies.hpp"
-#include "fiction/technology/electrostatic_potential.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
@@ -394,11 +394,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void validity_check()
     {
-        bool valid   = false;
         int  flag_fd = 0;
         for (auto& it : strg->loc_pot)
         {
-            valid = (((this->get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
+            bool valid = (((this->get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
                       ((-it.second + strg->sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
                      ((this->get_charge_state(it.first) == sidb_charge_state::POSITIVE) &&
                       ((-it.second + strg->sim_params.mu_p) > -physical_sim_constants::POP_STABILITY_ERR)) ||
