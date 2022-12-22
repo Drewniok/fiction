@@ -9,6 +9,7 @@
 #include <fiction/layouts/hexagonal_layout.hpp>
 #include <fiction/technology/cell_technologies.hpp>
 #include "fiction/algorithms/simulation_sidb/ExGS.hpp"
+#include "fiction/algorithms/simulation_sidb/new_approach.hpp"
 
 using namespace fiction;
 using namespace detail;
@@ -25,11 +26,15 @@ TEMPLATE_TEST_CASE(
     lyt.assign_cell_type({5, 0, 1}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({2, 3, 0}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({3, 3, 0}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({1, 6, 0}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({12, 0, 1}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({14, 3, 1}, TestType::cell_type::NORMAL);
-    lyt.assign_cell_type({20, 3, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({10, 3, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({10, 5, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({5, 10, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({1, 9, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({2, 4, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({7, 10, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({5, 9, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({6, 4, 0}, TestType::cell_type::NORMAL);
+
 
     charge_distribution_surface                        charge_layout{lyt};
     std::vector<charge_distribution_surface<TestType>> output = metastable_layouts<TestType>(charge_layout);
@@ -44,4 +49,7 @@ TEMPLATE_TEST_CASE(
         it.foreach_charge_state([&it](const auto& c)
                                                 { CHECK(it.get_charge_state(c.first) != sidb_charge_state::POSITIVE); });
     }
+
+    //std::vector<charge_distribution_surface<TestType>> output_sim = Sim<TestType>(charge_layout_new);
+    std::unordered_map<double, charge_distribution_surface<TestType>> output_sim = Sim<TestType>(charge_layout_new);
 }

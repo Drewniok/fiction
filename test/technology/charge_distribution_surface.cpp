@@ -11,6 +11,7 @@
 #include <fiction/technology/cell_technologies.hpp>
 #include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/technology/sidb_surface.hpp>
+#include <fiction/algorithms/simulation_sidb/new_approach.hpp>
 
 using namespace fiction;
 

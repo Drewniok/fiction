@@ -67,16 +67,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         explicit charge_distribution_storage(const simulation_params& sim_param_default = simulation_params{}) :
                 sim_params{sim_param_default} {};
 
-        simulation_params                                               sim_params{};
-        std::unordered_map<typename Lyt::coordinate, sidb_charge_state> charge_coordinates{};
-        std::vector<typename Lyt::coordinate>                           coord_vec;
-        distance_matrix                                                 dist_mat{};
-        potential_matrix                                                pot_mat{};
-        local_potential                                                 loc_pot{};
-        double                                                          system_energy{};
-        bool                                                            validity{};
-        std::pair<uint64_t, uint8_t>                                    charge_index{};
-        uint64_t                                                        max_charge_index{};
+        simulation_params                                sim_params{};
+        std::unordered_map<cell<Lyt>, sidb_charge_state> charge_coordinates{};
+        std::vector<cell<Lyt>>                           coord_vec;
+        distance_matrix                                  dist_mat{};
+        potential_matrix                                 pot_mat{};
+        local_potential                                  loc_pot{};
+        double                                           system_energy{};
+        bool                                             validity{};
+        std::pair<uint64_t, uint8_t>                     charge_index{};
+        uint64_t                                         max_charge_index{};
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -500,6 +500,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         return strg->charge_index;
     }
 
+    std::unordered_map<cell<Lyt>, sidb_charge_state> get_charge_coordinates()
+    {
+        return strg->charge_coordinates;
+    }
     /**
      *  The unique index is converted to the charge distribution of the charge distribution surface.
      *
@@ -551,6 +555,113 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 std::make_pair(strg->charge_index.first + 1, static_cast<uint8_t>(strg->charge_index.second));
             this->index_to_chargeconf();
         }
+    }
+
+    void next_N()
+    {
+        auto                                 count    = 0;
+        auto                                 dist_min = MAXFLOAT;
+        float                                dist_max = 0;
+        cell<Lyt>                            coord{};
+        std::unordered_map<cell<Lyt>, float> max_dist_unocc_occ{};
+
+        for (auto& unocc : strg->charge_coordinates)
+        {
+            if (unocc.second != sidb_charge_state::NEUTRAL)
+            {
+                continue;
+            }
+            count += 1;
+
+            for (auto& occ : strg->charge_coordinates)
+            {
+                if (((occ.second == sidb_charge_state::NEGATIVE) || (occ.second == sidb_charge_state::POSITIVE)) &&
+                    (distance_sidb_pair(unocc.first, occ.first) < dist_min))
+                {
+                    dist_min = distance_sidb_pair(unocc.first, occ.first);
+                    coord    = unocc.first;
+                }
+            }
+
+            if (count == 1)
+            {
+                max_dist_unocc_occ.insert(std::pair(coord, dist_min));
+                dist_max = dist_min;
+            }
+            else if (count > 1)
+            {
+                max_dist_unocc_occ.insert(std::pair(coord, dist_min));
+
+                if (dist_min > dist_max)
+                {
+                    dist_max = dist_min;
+                }
+
+                else if ((dist_min == dist_max) && (sum_distance(coord, unocc.first)))
+                {
+                    dist_max = dist_min;
+                }
+            }
+        }
+
+        auto it = max_dist_unocc_occ.begin();
+        while (it != max_dist_unocc_occ.end())
+        {
+            if (it->second < 0.4 * dist_max)
+            {
+                it = max_dist_unocc_occ.erase(it);
+            }
+            else
+            {
+                it++;
+            }
+        }
+
+        auto candidate = max_dist_unocc_occ.begin();
+        auto end       = max_dist_unocc_occ.end();
+
+        // Generate a random number of steps to advance from the beginning iterator
+        std::random_device              rd;
+        std::mt19937                    gen(rd());
+        std::uniform_int_distribution<> dis(0, std::distance(candidate, end) - 1);
+        int                             steps = dis(gen);
+
+        // Advance the iterator by the random number of steps
+        std::advance(candidate, steps);
+        // candidate += steps;
+
+        this->assign_charge_state(candidate->first, sidb_charge_state::NEGATIVE);
+
+
+        for (auto& loop : strg->pot_mat)
+        {
+            if (loop.first.second== candidate->first)
+            {
+//                strg->loc_pot.insert_or_assign(
+//                    std::pair(loop.first.second, -this->pot(loop.first.first, candidate->first).value()));
+            strg->loc_pot[loop.first.first] += -this->pot(loop.first.first, candidate->first).value();
+            }
+        }
+
+        strg->system_energy += -this->get_loc_pot(candidate->first).value();
+
+
+    }
+
+    bool sum_distance(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    {
+        float sum_old = 0;
+        float sum_now = 0;
+        for (auto& it : strg->charge_coordinates)
+        {
+            if (it.second == sidb_charge_state::NEUTRAL)
+            {
+                continue;
+            }
+            sum_old += distance_sidb_pair(it.first, c1);
+            sum_now += distance_sidb_pair(it.first, c2);
+        }
+        return sum_now > sum_old;
     }
 
   private:
