@@ -18,10 +18,10 @@ namespace fiction::detail
  * @return a vector of different charge distribution layouts, all of which satisfy the validity test.
  */
 template <typename Lyt>
-std::vector<charge_distribution_surface<Lyt>> metastable_layouts(charge_distribution_surface<Lyt>& lyt)
+std::unordered_map<double, charge_distribution_surface<Lyt>> metastable_layouts(charge_distribution_surface<Lyt>& lyt)
 
 {
-    std::vector<charge_distribution_surface<Lyt>> collect{};
+    std::unordered_map<double, charge_distribution_surface<Lyt>> collect{};
 
     lyt.initialize_sidb_distance_matrix();
     lyt.initialize_sidb_potential_matrix();
@@ -33,7 +33,8 @@ std::vector<charge_distribution_surface<Lyt>> metastable_layouts(charge_distribu
 
     if (lyt.get_validity() == 1)
     {
-        collect.emplace_back(lyt);
+        charge_distribution_surface<Lyt> lyt_new{lyt};
+        collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
     }
 
     auto max_charge_index = static_cast<uint64_t>(std::pow(lyt.get_charge_index().second, lyt.num_cells()) - 1);
@@ -47,7 +48,8 @@ std::vector<charge_distribution_surface<Lyt>> metastable_layouts(charge_distribu
 
         if (lyt.get_validity() == 1)
         {
-            collect.emplace_back(lyt);
+            charge_distribution_surface<Lyt> lyt_new{lyt};
+            collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
         }
     }
     return collect;

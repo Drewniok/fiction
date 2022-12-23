@@ -382,7 +382,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return system's total electrostatic potential energy.
      */
-    [[nodiscard]] double get_system_energy()
+    [[nodiscard]] double get_system_energy() const
     {
         return strg->system_energy;
     }
@@ -557,10 +557,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
-    void next_N()
+    void next_N(const double &alpha)
     {
         auto                                 count    = 0;
-        auto                                 dist_min = MAXFLOAT;
         float                                dist_max = 0;
         cell<Lyt>                            coord{};
         std::unordered_map<cell<Lyt>, float> max_dist_unocc_occ{};
@@ -573,6 +572,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             }
             count += 1;
 
+            auto                                 dist_min = MAXFLOAT;
             for (auto& occ : strg->charge_coordinates)
             {
                 if (((occ.second == sidb_charge_state::NEGATIVE) || (occ.second == sidb_charge_state::POSITIVE)) &&
@@ -607,7 +607,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         auto it = max_dist_unocc_occ.begin();
         while (it != max_dist_unocc_occ.end())
         {
-            if (it->second < 0.4 * dist_max)
+            if (it->second < alpha * dist_max)
             {
                 it = max_dist_unocc_occ.erase(it);
             }
@@ -632,6 +632,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
         this->assign_charge_state(candidate->first, sidb_charge_state::NEGATIVE);
 
+        strg->system_energy += -this->get_loc_pot(candidate->first).value();
 
         for (auto& loop : strg->pot_mat)
         {
@@ -643,7 +644,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             }
         }
 
-        strg->system_energy += -this->get_loc_pot(candidate->first).value();
+
 
 
     }

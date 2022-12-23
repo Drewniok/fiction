@@ -12,10 +12,9 @@ namespace fiction::detail
 {
 
 template <typename Lyt>
-//std::vector<charge_distribution_surface<Lyt>> Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 80)
-std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 1000)
+
+std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 3, const double alpha = 0.7)
 {
-    //std::vector<charge_distribution_surface<Lyt>> collect{};
     std::unordered_map<double, charge_distribution_surface<Lyt>> collect{};
     lyt.initialize_sidb_distance_matrix();
     lyt.initialize_sidb_potential_matrix();
@@ -26,7 +25,8 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
 
     if (lyt.get_validity())
     {
-        //collect.emplace_back(lyt);
+        charge_distribution_surface<Lyt> lyt_new{lyt};
+        collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
     }
 
     for (int z = 0; z < iteration_steps; z++)
@@ -41,8 +41,7 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
 
             for (int num = 0; num < lyt.num_cells()-1; num++)
             {
-                lyt.next_N();
-
+                lyt.next_N(alpha);
                 lyt.chargeconf_to_index();
                 lyt.local_potential();
                 lyt.system_energy();
@@ -50,11 +49,7 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
 
                 if (lyt.get_validity())
                 {
-                    //std::cout << lyt.get_charge_index().first << std::endl;
-                    //collect.emplace_back(lyt);
                     charge_distribution_surface<Lyt> lyt_new{lyt};
-                    //collect[lyt.get_charge_index().first] = lyt_new;
-                    //std::cout << lyt.get_system_energy() << std::endl;
                     collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
                 }
             }
