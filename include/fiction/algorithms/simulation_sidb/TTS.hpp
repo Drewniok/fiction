@@ -52,35 +52,38 @@ bool found_groundstate(const std::unordered_map<double, charge_distribution_surf
 }
 
 template <typename Lyt>
-uint64_t sim_acc(charge_distribution_surface<Lyt>& lyt, const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_exact, const int &pp = 1000)
+[[nodiscard]] uint64_t sim_acc(charge_distribution_surface<Lyt>&                                   lyt,
+                               const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_exact,
+                               const int& pp = 1000, const double& convlevel = 0.997, const int iteration_steps = 3, const double alpha = 0.7)
 {
-    int count = 0;
+    int                                                          count = 0;
     std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap{};
-    auto  t_start                = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i< pp; i++)
+    auto                                                         t_start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < pp; i++)
     {
-        std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap = detail::Sim<Lyt>(lyt, 20, 0.8);
+        std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap = detail::Sim<Lyt>(lyt, iteration_steps, alpha);
 
         if (found_groundstate(output_ap, result_exact))
         {
             count += 1;
         }
     }
-    auto                    t_end        = std::chrono::high_resolution_clock::now();
-    auto elapsed = t_end - t_start;
-    auto                       diff_first = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-    auto                   single_runtime = static_cast<uint64_t>(diff_first) / static_cast<uint64_t>(pp);
-    auto acc = static_cast<uint64_t>(count) / static_cast<uint64_t>(pp);
+    auto t_end          = std::chrono::high_resolution_clock::now();
+    auto elapsed        = t_end - t_start;
+    auto diff_first     = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+    auto single_runtime = static_cast<double>(diff_first) / static_cast<double>(pp);
+    auto acc            = static_cast<uint64_t>(count) / static_cast<uint64_t>(pp);
 
     auto tts = std::numeric_limits<uint64_t>::max();
 
     if (acc == 1)
-    {    tts = single_runtime;
+    {
+        tts = static_cast<uint64_t>(single_runtime);
     }
 
     else
     {
-        tts = static_cast<uint64_t>(single_runtime * log(1.0 - 0.997) / log(1.0 - static_cast<double>(acc)));
+        tts = static_cast<uint64_t>(single_runtime * log(1.0 - convlevel) / log(1.0 - static_cast<double>(acc)));
     }
 
     return tts;
