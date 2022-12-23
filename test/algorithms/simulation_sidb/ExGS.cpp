@@ -59,5 +59,6 @@ TEMPLATE_TEST_CASE(
 
     CHECK(found_groundstate(output_AP, output_exact));
 
-    auto acc = sim_acc<TestType>(charge_layout_new, output_exact, 100);
+    auto acc = sim_acc_tts<TestType>(charge_layout_new, output_exact, 100);
+
 }
