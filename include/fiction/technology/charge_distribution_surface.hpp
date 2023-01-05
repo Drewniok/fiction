@@ -74,7 +74,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         potential_matrix                                 pot_mat{};
         local_potential                                  loc_pot{};
         double                                           system_energy{};
-        bool                                             validity{};
+        bool                                             validity = false;
         std::pair<uint64_t, uint8_t>                     charge_index{};
         uint64_t                                         max_charge_index{};
     };
@@ -119,8 +119,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @param cs charge state assigned to all SiDBs.
      */
-    void initialize(const sidb_charge_state& cs) const noexcept
+    void initialize(const sidb_charge_state& cs)
     {
+        //this->foreach_cell([this](const auto& c) { c = to_siqad_coord<fiction::siqad::coord_t>(c); });
         strg->coord_vec.reserve(this->num_cells());
         this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
         this->foreach_cell([this, &cs](const auto& c1) { strg->charge_coordinates.insert(std::make_pair(c1, cs)); });
@@ -128,6 +129,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                "number of SiDBs is too large");
         strg->max_charge_index = std::pow(strg->sim_params.base, this->num_cells()) - 1;
         this->chargeconf_to_index();
+        this->initialize_sidb_distance_matrix();
+        this->initialize_sidb_potential_matrix();
+        this->local_potential();
+        this->system_energy();
+        this->validity_check();
     };
     /**
      * Assigns a given charge state to the given coordinate.
@@ -425,7 +431,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                        strg->pot_mat.at(std::make_pair(c1, c2)) * 1;
             };
 
-            int flag_value_out = 0;
+            int flag_value = 0;
             for (auto& it : strg->loc_pot)
             {
                 if (this->get_charge_state(it.first) == sidb_charge_state::POSITIVE)
@@ -433,12 +439,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                     continue;
                 }
 
-                int flag_value = 0;
                 for (auto& it_second : strg->loc_pot)
                 {
                     if (flag_value == 1)
                     {
-                        flag_value_out = 1;
                         break;
                     }
 
@@ -453,7 +457,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 }
             }
 
-            if (flag_value_out == 0)
+            if (flag_value == 0)
             {
                 strg->validity = true;
             }
@@ -555,6 +559,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 std::make_pair(strg->charge_index.first + 1, static_cast<uint8_t>(strg->charge_index.second));
             this->index_to_chargeconf();
         }
+    }
+
+    uint64_t get_max_charge_index()
+    {
+        return strg->max_charge_index;
     }
 
     void next_N(const double &alpha)

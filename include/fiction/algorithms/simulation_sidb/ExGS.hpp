@@ -26,7 +26,6 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> metastable_layouts(
     lyt.initialize_sidb_distance_matrix();
     lyt.initialize_sidb_potential_matrix();
 
-    lyt.increase_charge_index();
     lyt.local_potential();
     lyt.system_energy();
     lyt.validity_check();
@@ -37,15 +36,17 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> metastable_layouts(
         collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
     }
 
-    auto max_charge_index = static_cast<uint64_t>(std::pow(lyt.get_charge_index().second, lyt.num_cells()) - 1);
-
-    while (lyt.get_charge_index().first <= max_charge_index - 1)
+    while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
     {
         lyt.increase_charge_index();
         lyt.local_potential();
         lyt.system_energy();
         lyt.validity_check();
 
+        if (lyt.get_charge_index().first % 1000 == 0)
+        {
+            std::cout << lyt.get_charge_index().first << std::endl;
+        }
         if (lyt.get_validity() == 1)
         {
             charge_distribution_surface<Lyt> lyt_new{lyt};

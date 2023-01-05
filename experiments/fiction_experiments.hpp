@@ -49,7 +49,17 @@ inline constexpr uint64_t xor5_maj         = 0b000000000000000000000000000000000
 inline constexpr uint64_t parity           = 0b0000000000000000000000000000000000000000010000000000000000000000;
 inline constexpr uint64_t fontes18         = 0b0000000000000000000000000000000000000000011111111111111110000000;
 
-inline constexpr uint64_t all              = 0b0000000000000000000000000000000000000000011111111111111111111111;
+
+
+inline constexpr uint64_t xor_00           = 0b0000000000000000000000000000000000000000100000000000000000000000;
+inline constexpr uint64_t xor_01           = 0b0000000000000000000000000000000000000001000000000000000000000000;
+inline constexpr uint64_t xor_10           = 0b0000000000000000000000000000000000000010000000000000000000000000;
+inline constexpr uint64_t xor_11           = 0b0000000000000000000000000000000000000100000000000000000000000000;
+inline constexpr uint64_t xor_wo           = 0b0000000000000000000000000000000000001000000000000000000000000000;
+
+inline constexpr uint64_t cal              = 0b0000000000000000000000000000000000010000000000000000000000000000;
+
+inline constexpr uint64_t all              = 0b0000000000000000000000000000000000011111111111111111111111111111;
 
 static constexpr const std::array benchmarks {
     "trindade16/mux21", "trindade16/xor2", "trindade16/xnor2", "trindade16/par_gen",
@@ -57,7 +67,10 @@ static constexpr const std::array benchmarks {
 
     "fontes18/xor", "fontes18/1bitAdderAOIG", "fontes18/t", "fontes18/t_5", "fontes18/c17", "fontes18/b1_r2",
     "fontes18/majority", "fontes18/majority_5_r1", "fontes18/newtag", "fontes18/clpl", "fontes18/xor5_r1",
-    "fontes18/1bitAdderMaj", "fontes18/cm82a_5", "fontes18/2bitAdderMaj", "fontes18/xor5Maj", "fontes18/parity"};
+    "fontes18/1bitAdderMaj", "fontes18/cm82a_5", "fontes18/2bitAdderMaj", "fontes18/xor5Maj", "fontes18/parity",
+
+    "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/gates/xor/test_to_calibrate.sqd", "../bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_01", "gates/xor_10", "gates/xor_11", "gates/xor_wo",
+"/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/gates/xor/test_to_calibrate.sqd"};
 
 // clang-format on
 // NOLINTEND(readability-identifier-naming)
@@ -79,6 +92,20 @@ std::vector<std::string> trindade16_benchmarks(uint64_t selection = trindade16)
 std::vector<std::string> fontes18_benchmarks(uint64_t selection = fontes18)
 {
     std::vector<std::string> result{};
+    for (uint64_t i = 23u; i < 28u; ++i)
+    {
+        if (((selection >> i) & 1u) != 0u)
+        {
+            result.emplace_back(benchmarks.at(i));
+        }
+    }
+
+    return result;
+}
+
+std::vector<std::string> gate_benchmarks(uint64_t selection = fontes18)
+{
+    std::vector<std::string> result{};
     for (uint64_t i = 7u; i < 23u; ++i)
     {
         if (((selection >> i) & 1u) != 0u)
@@ -93,7 +120,7 @@ std::vector<std::string> fontes18_benchmarks(uint64_t selection = fontes18)
 std::vector<std::string> all_benchmarks(uint64_t selection = all)
 {
     std::vector<std::string> result{};
-    for (uint64_t i = 0u; i < 23u; ++i)
+    for (uint64_t i = 0u; i < 29u; ++i)
     {
         if (((selection >> i) & 1u) != 0u)
         {

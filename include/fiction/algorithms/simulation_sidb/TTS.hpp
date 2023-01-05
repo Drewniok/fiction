@@ -52,7 +52,7 @@ bool found_groundstate(const std::unordered_map<double, charge_distribution_surf
 }
 
 template <typename Lyt>
-[[nodiscard]] std::pair<uint64_t,uint64_t> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
+[[nodiscard]] std::pair<float,uint64_t> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
                                const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_exact,
                                const int& pp = 1000, const double& convlevel = 0.997, const int iteration_steps = 10, const double alpha = 0.7)
 {
@@ -72,7 +72,7 @@ template <typename Lyt>
     auto elapsed        = t_end - t_start;
     auto diff_first     = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
     auto single_runtime = static_cast<double>(diff_first) / static_cast<double>(pp);
-    auto acc            = static_cast<uint64_t>(count) / static_cast<uint64_t>(pp);
+    auto acc            = static_cast<float>(count / pp);
 
     auto tts = std::numeric_limits<uint64_t>::max();
 
@@ -86,7 +86,7 @@ template <typename Lyt>
         tts = static_cast<uint64_t>(single_runtime * log(1.0 - convlevel) / log(1.0 - static_cast<double>(acc)));
     }
 
-    return std::make_pair(acc,tts);
+    return std::make_pair(acc*100,tts);
 }
 
 } // namespace fiction
