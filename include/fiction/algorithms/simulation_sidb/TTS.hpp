@@ -54,7 +54,7 @@ bool found_groundstate(const std::unordered_map<double, charge_distribution_surf
 template <typename Lyt>
 [[nodiscard]] std::pair<float,uint64_t> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
                                const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_exact,
-                               const int& pp = 1000, const double& convlevel = 0.997, const int iteration_steps = 10, const double alpha = 0.7)
+                               const int& pp = 1000, const int iteration_steps = 100, const double alpha = 0.7, const double& convlevel = 0.997)
 {
     int                                                          count = 0;
     std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap{};

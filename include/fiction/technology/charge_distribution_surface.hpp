@@ -343,13 +343,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 double collect = 0;
                 for (auto& it : strg->pot_mat)
                 {
-
                     if (it.first.second == cs.first)
                     {
                         collect += it.second * transform_to_sign(get_charge_state(it.first.first));
                     }
                 }
-                strg->loc_pot.insert_or_assign(cs.first, collect);
+                strg->loc_pot[cs.first] = collect;
             });
     }
     /**
@@ -461,6 +460,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             {
                 strg->validity = true;
             }
+            else
+            {
+                strg->validity = false;
+            }
         }
     }
 
@@ -555,8 +558,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
         else
         {
-            strg->charge_index =
-                std::make_pair(strg->charge_index.first + 1, static_cast<uint8_t>(strg->charge_index.second));
+            strg->charge_index.first += 1;
             this->index_to_chargeconf();
         }
     }
@@ -564,6 +566,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     uint64_t get_max_charge_index()
     {
         return strg->max_charge_index;
+    }
+
+    void assign_charge_index(const uint64_t &index)
+    {
+        strg->charge_index.first = index;
+        this->index_to_chargeconf();
     }
 
     void next_N(const double &alpha)

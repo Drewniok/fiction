@@ -18,42 +18,44 @@ namespace fiction::detail
  * @return a vector of different charge distribution layouts, all of which satisfy the validity test.
  */
 template <typename Lyt>
-std::unordered_map<double, charge_distribution_surface<Lyt>> metastable_layouts(charge_distribution_surface<Lyt>& lyt)
+std::pair<uint32_t , std::unordered_map<double, charge_distribution_surface<Lyt>>> metastable_layouts(charge_distribution_surface<Lyt>& lyt)
 
 {
+
+    auto                                                         t_start = std::chrono::high_resolution_clock::now();
+
     std::unordered_map<double, charge_distribution_surface<Lyt>> collect{};
 
-    lyt.initialize_sidb_distance_matrix();
-    lyt.initialize_sidb_potential_matrix();
+    while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
+    {
+        lyt.local_potential();
+        lyt.system_energy();
+        lyt.validity_check();
+
+        if (lyt.get_validity())
+        {
+            charge_distribution_surface<Lyt> lyt_new{lyt};
+            collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
+        }
+
+        lyt.increase_charge_index();
+    }
 
     lyt.local_potential();
     lyt.system_energy();
     lyt.validity_check();
 
-    if (lyt.get_validity() == 1)
+    if (lyt.get_validity())
     {
         charge_distribution_surface<Lyt> lyt_new{lyt};
         collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
     }
 
-    while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
-    {
-        lyt.increase_charge_index();
-        lyt.local_potential();
-        lyt.system_energy();
-        lyt.validity_check();
+    auto t_end          = std::chrono::high_resolution_clock::now();
+    auto elapsed        = t_end - t_start;
+    auto diff_first     = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
 
-        if (lyt.get_charge_index().first % 1000 == 0)
-        {
-            std::cout << lyt.get_charge_index().first << std::endl;
-        }
-        if (lyt.get_validity() == 1)
-        {
-            charge_distribution_surface<Lyt> lyt_new{lyt};
-            collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
-        }
-    }
-    return collect;
+    return std::pair(diff_first,collect);
 };
 
 };  // namespace fiction::detail

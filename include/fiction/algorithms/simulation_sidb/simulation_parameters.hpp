@@ -11,10 +11,9 @@ namespace fiction
 {
 struct simulation_params
 {
-    explicit simulation_params(const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9,
+    explicit simulation_params(const uint8_t base_number = 3, const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9,
                                const double mu_minus = -0.25, const double a = 3.84 * 1E-10,
-                               const double b = 7.68 * 1E-10, const double c = 2.25 * 1E-10,
-                               const uint8_t base_number = 3) noexcept :
+                               const double b = 7.68 * 1E-10, const double c = 2.25 * 1E-10) noexcept :
             lat_a{a},
             lat_b{b},
             lat_c{c},

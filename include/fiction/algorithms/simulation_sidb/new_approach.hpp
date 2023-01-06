@@ -47,6 +47,7 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
                 lyt.system_energy();
                 lyt.validity_check();
 
+
                 if (lyt.get_validity())
                 {
                     charge_distribution_surface<Lyt> lyt_new{lyt};

@@ -57,9 +57,7 @@ inline constexpr uint64_t xor_10           = 0b000000000000000000000000000000000
 inline constexpr uint64_t xor_11           = 0b0000000000000000000000000000000000000100000000000000000000000000;
 inline constexpr uint64_t xor_wo           = 0b0000000000000000000000000000000000001000000000000000000000000000;
 
-inline constexpr uint64_t cal              = 0b0000000000000000000000000000000000010000000000000000000000000000;
-
-inline constexpr uint64_t all              = 0b0000000000000000000000000000000000011111111111111111111111111111;
+inline constexpr uint64_t all              = 0b0000000000000000000000000000000000001111111111111111111111111111;
 
 static constexpr const std::array benchmarks {
     "trindade16/mux21", "trindade16/xor2", "trindade16/xnor2", "trindade16/par_gen",
@@ -69,8 +67,14 @@ static constexpr const std::array benchmarks {
     "fontes18/majority", "fontes18/majority_5_r1", "fontes18/newtag", "fontes18/clpl", "fontes18/xor5_r1",
     "fontes18/1bitAdderMaj", "fontes18/cm82a_5", "fontes18/2bitAdderMaj", "fontes18/xor5Maj", "fontes18/parity",
 
-    "/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/gates/xor/test_to_calibrate.sqd", "../bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_01", "gates/xor_10", "gates/xor_11", "gates/xor_wo",
-"/Users/jandrewniok/CLionProjects/fiction/experiments/bestagon/layouts/gates/xor/test_to_calibrate.sqd"};
+        "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_00.sqd",
+        "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_01.sqd",
+        "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_10.sqd",
+        "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_11.sqd",
+        "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_10.sqd",
+        "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1.sqd",
+
+};
 
 // clang-format on
 // NOLINTEND(readability-identifier-naming)
