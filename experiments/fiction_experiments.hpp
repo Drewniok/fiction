@@ -71,8 +71,8 @@ static constexpr const std::array benchmarks {
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_01.sqd",
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_10.sqd",
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_11.sqd",
-        "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_10.sqd",
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1.sqd",
+
 
 };
 
