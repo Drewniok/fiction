@@ -29,7 +29,7 @@ int main()
     static constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::fontes18 &
                                                    ~fiction_experiments::trindade16 & ~fiction_experiments::xor_00
                                                    & ~fiction_experiments::xor_01
-                                                   & ~fiction_experiments::xor_10 & ~fiction_experiments::xor_11;
+                                                   & ~fiction_experiments::xor_11 & ~fiction_experiments::xor_wo;
 
     std::cout << fiction_experiments::all_benchmarks(bench_select).size() << std::endl;
 
