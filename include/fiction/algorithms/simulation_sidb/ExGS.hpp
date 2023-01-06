@@ -18,7 +18,7 @@ namespace fiction::detail
  * @return a vector of different charge distribution layouts, all of which satisfy the validity test.
  */
 template <typename Lyt>
-std::pair<uint32_t , std::unordered_map<double, charge_distribution_surface<Lyt>>> metastable_layouts(charge_distribution_surface<Lyt>& lyt)
+std::pair<uint32_t, std::unordered_map<double, charge_distribution_surface<Lyt>>> metastable_layouts(charge_distribution_surface<Lyt>& lyt)
 
 {
 
@@ -29,12 +29,13 @@ std::pair<uint32_t , std::unordered_map<double, charge_distribution_surface<Lyt>
     while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
     {
         lyt.local_potential();
-        lyt.system_energy();
-        lyt.validity_check();
+        lyt.system_energy_new();
+        lyt.validity_check_new();
+        //std::cout << lyt.get_system_energy() << std::endl;
 
-        if (lyt.get_charge_index().first % 100000==0)
+        if (lyt.get_charge_index().first % 1000== 1)
         {
-            std::cout << lyt.get_charge_index().first << std::endl;
+            //std::cout << lyt.get_charge_index().first << std::endl;
         }
         if (lyt.get_validity())
         {
@@ -46,20 +47,22 @@ std::pair<uint32_t , std::unordered_map<double, charge_distribution_surface<Lyt>
     }
 
     lyt.local_potential();
-    lyt.system_energy();
-    lyt.validity_check();
+    lyt.system_energy_new();
+
+    lyt.validity_check_new();
 
     if (lyt.get_validity())
     {
-        charge_distribution_surface<Lyt> lyt_new{lyt};
-        collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
+       charge_distribution_surface<Lyt> lyt_new{lyt};
+       collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
     }
 
     auto t_end          = std::chrono::high_resolution_clock::now();
     auto elapsed        = t_end - t_start;
     auto diff_first     = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
 
-    return std::pair(diff_first,collect);
+return std::pair(diff_first,collect);
+
 };
 
 };  // namespace fiction::detail

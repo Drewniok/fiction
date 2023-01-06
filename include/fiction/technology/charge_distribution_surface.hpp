@@ -51,32 +51,32 @@ class charge_distribution_surface<Lyt, false> : public Lyt
          * The distance matrix is an unordered map with pairs of cells as key and the corresponding euclidean distance
          * as value.
          */
-        using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
+        using distance_matrix = std::vector<std::vector<double>>;
         /**
          * The potential matrix is an unordered map with pairs of cells as key and the corresponding electrostatic
          * potential as value.
          */
-        using potential_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
+        using potential_matrix = std::vector<std::vector<double>>;
         /**
          * The local electrostatic potential matrix is an unordered map with cells as key and the corresponding local
          * electrostatic potential as value.
          */
-        using local_potential = std::unordered_map<cell<Lyt>, double>;
+        using local_potential = std::vector<double>;
 
       public:
         explicit charge_distribution_storage(const simulation_params& sim_param_default = simulation_params{}) :
                 sim_params{sim_param_default} {};
 
-        simulation_params                                sim_params{};
-        std::unordered_map<cell<Lyt>, sidb_charge_state> charge_coordinates{};
-        std::vector<cell<Lyt>>                           coord_vec;
-        distance_matrix                                  dist_mat{};
-        potential_matrix                                 pot_mat{};
-        local_potential                                  loc_pot{};
-        double                                           system_energy{};
-        bool                                             validity = false;
-        std::pair<uint64_t, uint8_t>                     charge_index{};
-        uint64_t                                         max_charge_index{};
+        simulation_params              sim_params{};
+        std::vector<sidb_charge_state> charge_coordinates{};
+        std::vector<cell<Lyt>>         coord_vec;
+        distance_matrix                dist_mat{};
+        potential_matrix               pot_mat{};
+        local_potential                loc_pot{};
+        double                         system_energy{};
+        bool                           validity = false;
+        std::pair<uint64_t, uint8_t>   charge_index{};
+        uint64_t                       max_charge_index{};
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -89,7 +89,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             Lyt(),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
-        initialize(cs);
+        initialize_new(cs);
         static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -103,7 +103,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
-        initialize(cs);
+        initialize_new(cs);
         static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -121,7 +121,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void initialize(const sidb_charge_state& cs)
     {
-        //this->foreach_cell([this](const auto& c) { c = to_siqad_coord<fiction::siqad::coord_t>(c); });
         strg->coord_vec.reserve(this->num_cells());
         this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
         this->foreach_cell([this, &cs](const auto& c1) { strg->charge_coordinates.insert(std::make_pair(c1, cs)); });
@@ -135,6 +134,25 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         this->system_energy();
         this->validity_check();
     };
+
+
+    void initialize_new(const sidb_charge_state& cs)
+    {
+        strg->coord_vec.reserve(this->num_cells());
+        strg->charge_coordinates.reserve(this->num_cells());
+        this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
+        this->foreach_cell([this, &cs](const auto& c1) { strg->charge_coordinates.push_back(cs); });
+        assert((std::pow(strg->sim_params.base, this->num_cells()) - 1) < std::numeric_limits<uint64_t>::max() &&
+               "number of SiDBs is too large");
+        strg->max_charge_index = std::pow(strg->sim_params.base, this->num_cells()) - 1;
+        this->chargeconf_to_index();
+        this->initialize_sidb_distance_matrix_new();
+        this->initialize_sidb_potential_matrix_new();
+        this->local_potential();
+        this->system_energy_new();
+        this->validity_check_new();
+    };
+
     /**
      * Assigns a given charge state to the given coordinate.
      *
@@ -156,20 +174,50 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
+    void assign_charge_state_new(const coordinate<Lyt>& c, const sidb_charge_state& cs) const
+    {
+        if (!Lyt::is_empty_cell(c))
+        {
+            if (cs != sidb_charge_state::NONE)
+            {
+                if (auto it = std::find(strg->coord_vec.begin(), strg->coord_vec.end(), c); it != strg->coord_vec.end())
+                {
+                    int index = std::distance(strg->coord_vec.begin(), it);
+                    strg->charge_coordinates[index] = cs;
+                }
+                else
+                {
+                    std::cout << "Element not found" << std::endl;
+                }
+
+            }
+        }
+    }
+
     /**
      * Returns the given coordinate's assigned charge state.
      *
      * @param c Coordinate to check.
      * @return Charge state previously assigned to c or NONE if cell owns emtpy cell_type.
      */
-    [[nodiscard]] sidb_charge_state get_charge_state(const coordinate<Lyt>& c) const noexcept
-    {
-        if (const auto it = strg->charge_coordinates.find(c); it != strg->charge_coordinates.cend())
-        {
-            return it->second;
-        }
-        return sidb_charge_state::NONE;
-    }
+
+//    [[nodiscard]] sidb_charge_state get_charge_state(const coordinate<Lyt>& c) const noexcept
+//    {
+//        if (const auto it = strg->charge_coordinates.find(c); it != strg->charge_coordinates.cend())
+//        {
+//            return it->second;
+//        }
+//        return sidb_charge_state::NONE;
+//    }
+//
+//    [[nodiscard]] sidb_charge_state get_charge_state_new(const coordinate<Lyt>& c) const noexcept
+//    {
+//        if (const auto it = strg->charge_coordinates.find(c); it != strg->charge_coordinates.cend())
+//        {
+//            return it->second;
+//        }
+//        return sidb_charge_state::NONE;
+//    }
     /**
      * Applies a function to all SiDBs' charge states on the surface. Since the charge states are fetched directly from
      * the storage map, the given function has to receive a pair of a coordinate and a charge state as its parameter.
@@ -193,19 +241,40 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param lyt Layout.
      * @return Distance matrix
      */
-    void initialize_sidb_distance_matrix() const
-    {
-        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
-        this->foreach_cell(
-            [this](const auto& c1)
-            {
-                this->foreach_cell(
-                    [c1, this](const auto& c2)
-                    { strg->dist_mat.insert(std::make_pair(std::make_pair(c1, c2), distance_sidb_pair(c1, c2))); });
-            });
-    };
+//    void initialize_sidb_distance_matrix() const
+//    {
+//        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+//        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+//        this->foreach_cell(
+//            [this](const auto& c1)
+//            {
+//                this->foreach_cell(
+//                    [c1, this](const auto& c2)
+//                    { strg->dist_mat.insert(std::make_pair(std::make_pair(c1, c2), distance_sidb_pair(c1, c2))); });
+//            });
+//    };
 
+    void initialize_sidb_distance_matrix_new() const
+    {
+
+        for (unsigned int i = 0; i < strg->coord_vec.size(); i++)
+        {
+
+            std::vector<double> vec{};
+            for (unsigned int j = 0; j < strg->coord_vec.size(); j++)
+            {
+                if (i==j)
+                {
+                    vec.push_back(0);
+                }
+                else
+                {
+                    vec.push_back(distance_sidb_pair(strg->coord_vec[i], strg->coord_vec[j]));
+                }
+            }
+            strg->dist_mat.push_back(vec);
+        }
+    };
     /**
      * SiQAD coordinates are converted to a nm location on the Si-substrate by taking Silicon's lattice constants into
      * account (see simulation_parameters.hpp).
@@ -239,6 +308,28 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             strg->pot_mat.insert(std::make_pair(it.first, potential_sidb_pair(it.first.first, it.first.second)));
         }
     };
+
+    void initialize_sidb_potential_matrix_new() const
+    {
+
+        for (unsigned int i = 0; i < strg->coord_vec.size(); i++)
+        {
+            std::vector<double> vec{};
+            for (unsigned int j = 0; j < strg->coord_vec.size(); j++)
+            {
+                if (i==j)
+                {
+                    vec.push_back(0);
+                }
+                else
+                {
+                    vec.push_back(potential_sidb_pair_new(i, j));
+                }
+            }
+            strg->pot_mat.push_back(vec);
+        }
+    };
+
 
     /**
      * The Euclidean distance in nm between two SiDBs on the H-Si surface is calculated (SiQAD coordinates are
@@ -330,6 +421,21 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
+    [[nodiscard]] double potential_sidb_pair_new(const int& c1, const int& c2) const
+    {
+        if (strg->dist_mat[c1][c2] == 0)
+        {
+            return 0.0;
+        }
+    else
+    {
+        return (strg->sim_params.k / strg->dist_mat[c1][c2] * std::exp(-strg->dist_mat[c1][c2] / strg->sim_params.lambda_tf) *
+                physical_sim_constants::ELECTRIC_CHARGE);
+    }
+}
+
+
+
     /**
      * The local electrostatic potential is calculated for each SiDB position.
      * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
@@ -354,20 +460,18 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
     void local_potential()
     {
-        for (auto &cell : strg->coord_vec)
+        strg->loc_pot.resize(this->num_cells());
+        std::fill(strg->loc_pot.begin(), strg->loc_pot.end(), 0);
+        for (int i = 0; i <strg->coord_vec.size(); i++)
         {
                 double collect = 0;
-                for (auto& it : strg->pot_mat)
+                for (int j= 0; j <  strg->pot_mat[i].size(); j++)
                 {
-                    if (it.first.second == cell)
-                    {
-                        collect += it.second * transform_to_sign(get_charge_state(it.first.first));
-                    }
+                    collect += strg->pot_mat[i][j] * transform_to_sign(strg->charge_coordinates[j]);
                 }
-                strg->loc_pot[cell] = collect;
-            };
+                strg->loc_pot[i] = collect;
+            }
     }
-    /**
     /**
      * The local electrostatic potential is calculated for each SiDB position.
      * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
@@ -390,12 +494,23 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param lyt charge distribution layout
      * @param loc_pot local electrostatic potential
      */
-    void system_energy()
+//    void system_energy()
+//    {
+//        double total_energy = 0;
+//        for (auto& it : strg->loc_pot)
+//        {
+//            total_energy += 0.5 * it.second * transform_to_sign(get_charge_state(it.first));
+//        }
+//        strg->system_energy = total_energy;
+//    }
+
+    void system_energy_new()
     {
         double total_energy = 0;
-        for (auto& it : strg->loc_pot)
+        for (int i = 0; i < strg->loc_pot.size(); i++)
         {
-            total_energy += 0.5 * it.second * transform_to_sign(get_charge_state(it.first));
+            //total_energy += 0.5 * strg->loc_pot[i] * transform_to_sign(strg->charge_coordinates[i]);
+            total_energy += 0.5 * strg->loc_pot[i];
         }
         strg->system_energy = total_energy;
     }
@@ -484,6 +599,78 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
+    void validity_check_new()
+    {
+        int  flag_fd = 0;
+        int counter_loop = 0;
+        for (auto& it : strg->loc_pot)
+        {
+            bool valid = (((strg->charge_coordinates[counter_loop] == sidb_charge_state::NEGATIVE) &&
+                           ((-it+ strg->sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
+                          ((strg->charge_coordinates[counter_loop] == sidb_charge_state::POSITIVE) &&
+                           ((-it + strg->sim_params.mu_p) > -physical_sim_constants::POP_STABILITY_ERR)) ||
+                          ((strg->charge_coordinates[counter_loop] == sidb_charge_state::NEUTRAL) &&
+                           ((-it + strg->sim_params.mu) > -physical_sim_constants::POP_STABILITY_ERR) &&
+                           (-it + strg->sim_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
+            counter_loop +=1;
+            if (!valid)
+            {
+                strg->validity = false;
+                flag_fd += 1;
+                break;
+            }
+        }
+
+        if (flag_fd == 0)
+        {
+
+            auto hopDel = [this](const int& c1, const int& c2)
+            {
+                int dn_i = (strg->charge_coordinates[c1] == sidb_charge_state::NEGATIVE) ? 1 : -1;
+                int dn_j = -dn_i;
+
+                return strg->loc_pot[c1] * dn_i + strg->loc_pot[c2] * dn_j -
+                       strg->pot_mat[c1][c2] * 1;
+            };
+
+            int flag_value = 0;
+            int counter_new = 0;
+            for (int i =0; i < strg->loc_pot.size(); i++)
+            {
+                if (strg->charge_coordinates[counter_new] == sidb_charge_state::POSITIVE)
+                {
+                    continue;
+                }
+
+                for (int j =0; j < strg->loc_pot.size(); j++)
+                {
+                    if (flag_value == 1)
+                    {
+                        break;
+                    }
+
+                    auto E_del = hopDel(i, j);
+                    if ((transform_to_sign(strg->charge_coordinates[j]) >
+                         transform_to_sign(strg->charge_coordinates[i])) &&
+                        (E_del < -physical_sim_constants::POP_STABILITY_ERR))
+                    {
+                        flag_value = 1;
+                        break;
+                    }
+                }
+            }
+
+            if (flag_value == 0)
+            {
+                strg->validity = true;
+            }
+            else
+            {
+                strg->validity = false;
+            }
+        }
+    }
+
     [[nodiscard]] bool get_validity()
     {
         return strg->validity;
@@ -505,9 +692,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         assert(base == 2 || base == 3 && "base must be 2 or 3");
         uint64_t chargeindex = 0;
         int      counter     = 0;
-        for (auto& c : strg->coord_vec)
+        for (const auto& c : strg->charge_coordinates)
         {
-            chargeindex += static_cast<unsigned int>((transform_to_sign(this->get_charge_state(c)) + 1) *
+            chargeindex += static_cast<unsigned int>((transform_to_sign(c) + 1) *
                                                      std::pow(base, this->num_charges() - counter - 1));
             counter += 1;
         }
@@ -554,7 +741,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
                 if (counter == num_charges)
                 {
-                    this->assign_charge_state(it, sign_to_label(d.rem - 1));
+                    this->assign_charge_state_new(it, sign_to_label(d.rem - 1));
                 }
                 counter++;
             }
