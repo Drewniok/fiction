@@ -32,6 +32,10 @@ std::pair<uint32_t , std::unordered_map<double, charge_distribution_surface<Lyt>
         lyt.system_energy();
         lyt.validity_check();
 
+        if (lyt.get_charge_index().first % 100000==0)
+        {
+            std::cout << lyt.get_charge_index().first << std::endl;
+        }
         if (lyt.get_validity())
         {
             charge_distribution_surface<Lyt> lyt_new{lyt};

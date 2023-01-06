@@ -335,22 +335,39 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
      * charge distribution is updated.
      */
+//    void local_potential()
+//    {
+//        this->foreach_charge_state(
+//            [this](const auto& cs)
+//            {
+//                double collect = 0;
+//                for (auto& it : strg->pot_mat)
+//                {
+//                    if (it.first.second == cs.first)
+//                    {
+//                        collect += it.second * transform_to_sign(get_charge_state(it.first.first));
+//                    }
+//                }
+//                strg->loc_pot[cs.first] = collect;
+//            });
+//    }
+
     void local_potential()
     {
-        this->foreach_charge_state(
-            [this](const auto& cs)
-            {
+        for (auto &cell : strg->coord_vec)
+        {
                 double collect = 0;
                 for (auto& it : strg->pot_mat)
                 {
-                    if (it.first.second == cs.first)
+                    if (it.first.second == cell)
                     {
                         collect += it.second * transform_to_sign(get_charge_state(it.first.first));
                     }
                 }
-                strg->loc_pot[cs.first] = collect;
-            });
+                strg->loc_pot[cell] = collect;
+            };
     }
+    /**
     /**
      * The local electrostatic potential is calculated for each SiDB position.
      * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
