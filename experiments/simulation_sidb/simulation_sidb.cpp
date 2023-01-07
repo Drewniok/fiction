@@ -45,11 +45,14 @@ int main()
         const fiction::simulation_params params{2};
         fiction::charge_distribution_surface charge_layout{lyt, params};
 
-
+//
         auto [runtime, exactlyt] =
             fiction::detail::metastable_layouts(charge_layout);
 
-//        auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
+//
+//            fiction::detail::metastable_layouts(charge_layout);
+
+        auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
 
             defect_exp(benchmark, runtime, 0, 0, lyt.num_cells());
 

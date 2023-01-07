@@ -16,9 +16,11 @@ template <typename Lyt>
 std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 3, const double alpha = 0.7)
 {
     std::unordered_map<double, charge_distribution_surface<Lyt>> collect{};
-    lyt.initialize_sidb_distance_matrix();
-    lyt.initialize_sidb_potential_matrix();
-    lyt.foreach_charge_state([&lyt](const auto& cd) { lyt.assign_charge_state(cd.first, sidb_charge_state::NEUTRAL); });
+    lyt.initialize_sidb_distance_matrix_new();
+    lyt.initialize_sidb_potential_matrix_new();
+
+    lyt.foreach_charge_state([&lyt](const sidb_charge_state &cs,  int d = 0u) mutable
+                             { lyt.assign_charge_state(d, sidb_charge_state::NEUTRAL), d+=1; });
     lyt.local_potential();
     lyt.system_energy();
     lyt.validity_check();
@@ -31,15 +33,15 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
 
     for (int z = 0; z < iteration_steps; z++)
     {
-        for (auto& it : lyt.get_charge_coordinates())
+        for (int i = 0u; i < lyt.num_cells(); i++)
         {
-            lyt.foreach_charge_state([&lyt](const auto& cd)
-                                     { lyt.assign_charge_state(cd.first, sidb_charge_state::NEUTRAL); });
-            lyt.assign_charge_state(it.first, sidb_charge_state::NEGATIVE);
+            lyt.foreach_charge_state([&lyt](const sidb_charge_state &cs,  int d = 0u) mutable
+                                    { lyt.assign_charge_state(d, sidb_charge_state::NEUTRAL), d+=1; });
+            lyt.assign_charge_state(i, sidb_charge_state::NEGATIVE);
             lyt.local_potential();
             lyt.system_energy();
 
-            for (int num = 0; num < lyt.num_cells()-1; num++)
+            for (int num = 0; num < lyt.num_cells()-3; num++)
             {
                 lyt.next_N(alpha);
                 lyt.chargeconf_to_index();

@@ -19,6 +19,7 @@ namespace fiction::detail
  */
 template <typename Lyt>
 std::pair<uint32_t, std::unordered_map<double, charge_distribution_surface<Lyt>>> metastable_layouts(charge_distribution_surface<Lyt>& lyt)
+    //void metastable_layouts(charge_distribution_surface<Lyt>& lyt)
 
 {
 
@@ -29,13 +30,13 @@ std::pair<uint32_t, std::unordered_map<double, charge_distribution_surface<Lyt>>
     while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
     {
         lyt.local_potential();
-        lyt.system_energy_new();
-        lyt.validity_check_new();
+        lyt.system_energy();
+        lyt.validity_check();
         //std::cout << lyt.get_system_energy() << std::endl;
 
-        if (lyt.get_charge_index().first % 1000== 1)
+        if (lyt.get_charge_index().first % 1000000== 1)
         {
-            //std::cout << lyt.get_charge_index().first << std::endl;
+            std::cout << lyt.get_charge_index().first << std::endl;
         }
         if (lyt.get_validity())
         {
@@ -47,9 +48,9 @@ std::pair<uint32_t, std::unordered_map<double, charge_distribution_surface<Lyt>>
     }
 
     lyt.local_potential();
-    lyt.system_energy_new();
+    lyt.system_energy();
 
-    lyt.validity_check_new();
+    lyt.validity_check();
 
     if (lyt.get_validity())
     {

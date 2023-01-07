@@ -11,6 +11,7 @@
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
+#include "fiction/utils/hash.hpp"
 
 #include <cassert>
 #include <limits>
@@ -51,11 +52,13 @@ class charge_distribution_surface<Lyt, false> : public Lyt
          * The distance matrix is an unordered map with pairs of cells as key and the corresponding euclidean distance
          * as value.
          */
+        //using distance_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
         using distance_matrix = std::vector<std::vector<double>>;
         /**
          * The potential matrix is an unordered map with pairs of cells as key and the corresponding electrostatic
          * potential as value.
          */
+        //using potential_matrix = std::unordered_map<std::pair<const cell<Lyt>, const cell<Lyt>>, double>;
         using potential_matrix = std::vector<std::vector<double>>;
         /**
          * The local electrostatic potential matrix is an unordered map with cells as key and the corresponding local
@@ -68,8 +71,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 sim_params{sim_param_default} {};
 
         simulation_params              sim_params{};
-        std::vector<sidb_charge_state> charge_coordinates{};
-        std::vector<cell<Lyt>>         coord_vec;
+        std::vector<cell<Lyt>> cells{};
+        std::vector<sidb_charge_state>        cell_charge{};
         distance_matrix                dist_mat{};
         potential_matrix               pot_mat{};
         local_potential                loc_pot{};
@@ -119,29 +122,28 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @param cs charge state assigned to all SiDBs.
      */
-    void initialize(const sidb_charge_state& cs)
-    {
-        strg->coord_vec.reserve(this->num_cells());
-        this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
-        this->foreach_cell([this, &cs](const auto& c1) { strg->charge_coordinates.insert(std::make_pair(c1, cs)); });
-        assert((std::pow(strg->sim_params.base, this->num_cells()) - 1) < std::numeric_limits<uint64_t>::max() &&
-               "number of SiDBs is too large");
-        strg->max_charge_index = std::pow(strg->sim_params.base, this->num_cells()) - 1;
-        this->chargeconf_to_index();
-        this->initialize_sidb_distance_matrix();
-        this->initialize_sidb_potential_matrix();
-        this->local_potential();
-        this->system_energy();
-        this->validity_check();
-    };
+//    void initialize(const sidb_charge_state& cs)
+//    {
+//        strg->coord_vec.reserve(this->num_cells());
+//        strg->charge_coordinates.reserve(this->num_cells());
+//        this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
+//        this->foreach_cell([this, &cs](const auto& c1) { strg->cell_charge.insert(std::make_pair(c1, cs)); });
+//        assert((std::pow(strg->sim_params.base, this->num_cells()) - 1) < std::numeric_limits<uint64_t>::max() &&
+//               "number of SiDBs is too large");
+//        strg->max_charge_index = std::pow(strg->sim_params.base, this->num_cells()) - 1;
+//        this->chargeconf_to_index();
+////        this->initialize_sidb_distance_matrix();
+////        this->initialize_sidb_potential_matrix();
+////        this->local_potential();
+////        this->system_energy();
+//        //      this->validity_check();
+//    };
 
 
     void initialize_new(const sidb_charge_state& cs)
     {
-        strg->coord_vec.reserve(this->num_cells());
-        strg->charge_coordinates.reserve(this->num_cells());
-        this->foreach_cell([this](const auto& c) { strg->coord_vec.push_back(c); });
-        this->foreach_cell([this, &cs](const auto& c1) { strg->charge_coordinates.push_back(cs); });
+        this->foreach_cell([this, &cs](const auto& c1) { strg->cell_charge.push_back(cs); });
+        this->foreach_cell([this](const auto& c1) { strg->cells.push_back(c1); });
         assert((std::pow(strg->sim_params.base, this->num_cells()) - 1) < std::numeric_limits<uint64_t>::max() &&
                "number of SiDBs is too large");
         strg->max_charge_index = std::pow(strg->sim_params.base, this->num_cells()) - 1;
@@ -149,49 +151,63 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         this->initialize_sidb_distance_matrix_new();
         this->initialize_sidb_potential_matrix_new();
         this->local_potential();
-        this->system_energy_new();
-        this->validity_check_new();
+        this->system_energy();
+        this->validity_check();
     };
 
+    void fill_id_cell()
+    {
+        int counter = 0;
+        for (auto &cell: strg->cell_charge)
+        {
+            strg->id_cell[counter] = cell.first;
+            counter +=1;
+        }
+    }
+
+    void fill_cell_id()
+    {
+        for (auto &cell: strg->id_cell)
+        {
+            strg->cell_id[cell.second] = cell.first;
+        }
+    }
     /**
      * Assigns a given charge state to the given coordinate.
      *
      * @param c Coordinate to assign charge state cs.
      * @param cs Charge state to assign to coordinate c.
      */
-    void assign_charge_state(const coordinate<Lyt>& c, const sidb_charge_state& cs) const
+//    void assign_charge_state(const coordinate<Lyt>& c, const sidb_charge_state& cs) const
+//    {
+//        if (!Lyt::is_empty_cell(c))
+//        {
+//            if (cs != sidb_charge_state::NONE)
+//            {
+//                strg->charge_coordinates.insert_or_assign(c, cs);
+//            }
+//            else
+//            {
+//                strg->charge_coordinates.erase(c);
+//            }
+//        }
+//    }
+
+
+    void assign_charge_state(const int &i , const sidb_charge_state& cs) const
     {
-        if (!Lyt::is_empty_cell(c))
-        {
-            if (cs != sidb_charge_state::NONE)
-            {
-                strg->charge_coordinates.insert_or_assign(c, cs);
-            }
-            else
-            {
-                strg->charge_coordinates.erase(c);
-            }
-        }
+                strg->cell_charge[i]= cs;
     }
 
     void assign_charge_state_new(const coordinate<Lyt>& c, const sidb_charge_state& cs) const
     {
-        if (!Lyt::is_empty_cell(c))
-        {
-            if (cs != sidb_charge_state::NONE)
-            {
-                if (auto it = std::find(strg->coord_vec.begin(), strg->coord_vec.end(), c); it != strg->coord_vec.end())
-                {
-                    int index = std::distance(strg->coord_vec.begin(), it);
-                    strg->charge_coordinates[index] = cs;
-                }
-                else
-                {
-                    std::cout << "Element not found" << std::endl;
-                }
-
-            }
-        }
+       // if (!Lyt::is_empty_cell(c))
+      //  {
+          //  if (cs != sidb_charge_state::NONE)
+          //  {
+                    strg->cell_charge[c] = cs;
+           // }
+       // }
     }
 
     /**
@@ -228,7 +244,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     template <typename Fn>
     void foreach_charge_state(Fn&& fn) const
     {
-        mockturtle::detail::foreach_element(strg->charge_coordinates.cbegin(), strg->charge_coordinates.cend(),
+        mockturtle::detail::foreach_element(strg->cell_charge.cbegin(), strg->cell_charge.cend(),
                                             std::forward<Fn>(fn));
     }
 
@@ -241,38 +257,30 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param lyt Layout.
      * @return Distance matrix
      */
-//    void initialize_sidb_distance_matrix() const
-//    {
-//        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-//        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
-//        this->foreach_cell(
-//            [this](const auto& c1)
-//            {
-//                this->foreach_cell(
-//                    [c1, this](const auto& c2)
-//                    { strg->dist_mat.insert(std::make_pair(std::make_pair(c1, c2), distance_sidb_pair(c1, c2))); });
-//            });
-//    };
+    void initialize_sidb_distance_matrix() const
+    {
+        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+        this->foreach_cell(
+            [this](const auto& c1)
+            {
+                this->foreach_cell(
+                    [c1, this](const auto& c2)
+                    { strg->dist_mat.insert(std::make_pair(std::make_pair(c1, c2), distance_sidb_pair(c1, c2))); });
+            });
+    };
 
     void initialize_sidb_distance_matrix_new() const
     {
+        strg->dist_mat = std::vector<std::vector<double>>(this->num_cells(),std::vector<double>(this->num_cells(),0));
 
-        for (unsigned int i = 0; i < strg->coord_vec.size(); i++)
+        for (int i = 0u; i < strg->cells.size(); i++)
         {
-
-            std::vector<double> vec{};
-            for (unsigned int j = 0; j < strg->coord_vec.size(); j++)
+            for (int j = 0u; j < strg->cells.size(); j++)
             {
-                if (i==j)
-                {
-                    vec.push_back(0);
-                }
-                else
-                {
-                    vec.push_back(distance_sidb_pair(strg->coord_vec[i], strg->coord_vec[j]));
-                }
+                strg->dist_mat[i][j] = distance_sidb_pair(strg->cells[i],strg->cells[j]);
             }
-            strg->dist_mat.push_back(vec);
+
         }
     };
     /**
@@ -311,22 +319,13 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
     void initialize_sidb_potential_matrix_new() const
     {
-
-        for (unsigned int i = 0; i < strg->coord_vec.size(); i++)
+        strg->pot_mat = std::vector<std::vector<double>>(this->num_cells(),std::vector<double>(this->num_cells(),0));
+        for (int i = 0u; i < strg->cells.size(); i++)
         {
-            std::vector<double> vec{};
-            for (unsigned int j = 0; j < strg->coord_vec.size(); j++)
+            for (int j = 0u; j < strg->cells.size(); j++)
             {
-                if (i==j)
-                {
-                    vec.push_back(0);
-                }
-                else
-                {
-                    vec.push_back(potential_sidb_pair_new(i, j));
-                }
+                    strg->pot_mat[i][j] = potential_sidb_pair_new(i, j);
             }
-            strg->pot_mat.push_back(vec);
         }
     };
 
@@ -378,13 +377,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return number (uint64_t)
      */
-    [[nodiscard]] constexpr std::optional<double> pot(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    [[nodiscard]] constexpr std::optional<double> pot(const int &c1, const int& c2)
     {
-        if (auto it = strg->pot_mat.find(std::make_pair(c1, c2)); it != strg->pot_mat.end())
-        {
-            return it->second;
-        }
-        return std::nullopt;
+
+            return strg->pot_mat[c1][c2];
+
     }
 
     /**
@@ -392,10 +389,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return number (uint64_t)
      */
-    [[nodiscard]] uint64_t num_charges() const noexcept
-    {
-        return strg->charge_coordinates.size();
-    }
+//    [[nodiscard]] uint64_t num_charges() const noexcept
+//    {
+//        return strg->cell_id.size();
+//    }
 
     /**
      * The electrostatic potential for a given Euclidean distance is calculated.
@@ -409,16 +406,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     [[nodiscard]] double potential_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2) const
     {
-        if (auto it = strg->dist_mat.find(std::make_pair(c1, c2)); it != strg->dist_mat.end())
-        {
-            auto dis = it->second;
+            auto dis = strg->dist_mat[strg->cell_id.at(c1)][strg->cell_id.at(c2)];
             if (dis == 0.0)
             {
                 return 0.0;
             }
             return (strg->sim_params.k / dis * std::exp(-dis / strg->sim_params.lambda_tf) *
                     physical_sim_constants::ELECTRIC_CHARGE);
-        }
+
     }
 
     [[nodiscard]] double potential_sidb_pair_new(const int& c1, const int& c2) const
@@ -447,27 +442,38 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 //            [this](const auto& cs)
 //            {
 //                double collect = 0;
-//                for (auto& it : strg->pot_mat)
+//                for (auto &cell: strg->cell_charge)
 //                {
-//                    if (it.first.second == cs.first)
-//                    {
-//                        collect += it.second * transform_to_sign(get_charge_state(it.first.first));
-//                    }
+//                    const auto val = strg->pot_mat.at({cell.first, cs.first});
+//                    collect += val * transform_to_sign(cell.second);
 //                }
-//                strg->loc_pot[cs.first] = collect;
+//                strg->loc_pot.insert(std::make_pair(cs.first,collect));
 //            });
+//    }
+
+//    void local_potential()
+//    {
+//       for (auto &cell :strg->cell_id)
+//            {
+//                double collect = 0;
+//                for (auto &cellmates :strg->cell_id)
+//                {
+//                    const auto val = strg->pot_mat[cell.second][cellmates.second];
+//                    collect += val * transform_to_sign(strg->cell_charge.at(cellmates.first));
+//                }
+//                strg->loc_pot[cell.first] = collect;
+//            };
 //    }
 
     void local_potential()
     {
-        strg->loc_pot.resize(this->num_cells());
-        std::fill(strg->loc_pot.begin(), strg->loc_pot.end(), 0);
-        for (int i = 0; i <strg->coord_vec.size(); i++)
+        strg->loc_pot.resize(this->num_cells(),0);
+        for (int i = 0u; i <  strg->cells.size(); i++)
         {
                 double collect = 0;
-                for (int j= 0; j <  strg->pot_mat[i].size(); j++)
+                for (int j = 0u; j <  strg->cells.size(); j++)
                 {
-                    collect += strg->pot_mat[i][j] * transform_to_sign(strg->charge_coordinates[j]);
+                    collect += strg->pot_mat[i][j] * transform_to_sign(strg->cell_charge[j]);
                 }
                 strg->loc_pot[i] = collect;
             }
@@ -479,9 +485,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param c1 cell for which the value of the local electrostatic potential is wanted.
      * @return local potential is returned if an SiDB is at position c1. Otherwise, std::nullopt is returned.
      */
-    std::optional<double> get_loc_pot(const cell<Lyt>& c1)
+    std::optional<double> get_loc_pot(const int& c1)
     {
-        if (auto it = strg->loc_pot.find(c1); it != strg->loc_pot.end())
+        if (c1 < strg->cells.size())
         {
             return strg->loc_pot[c1];
         }
@@ -499,18 +505,18 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 //        double total_energy = 0;
 //        for (auto& it : strg->loc_pot)
 //        {
-//            total_energy += 0.5 * it.second * transform_to_sign(get_charge_state(it.first));
+//            total_energy += 0.5 * it.second * transform_to_sign(strg->cell_charge.at(it.first));
 //        }
 //        strg->system_energy = total_energy;
 //    }
 
-    void system_energy_new()
+    void system_energy()
     {
         double total_energy = 0;
         for (int i = 0; i < strg->loc_pot.size(); i++)
         {
             //total_energy += 0.5 * strg->loc_pot[i] * transform_to_sign(strg->charge_coordinates[i]);
-            total_energy += 0.5 * strg->loc_pot[i];
+            total_energy += 0.5 * strg->loc_pot[i] * transform_to_sign(strg->cell_charge[i]);
         }
         strg->system_energy = total_energy;
     }
@@ -529,87 +535,87 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return bool indicating the validity.
      */
+//    void validity_check()
+//    {
+//        int  flag_fd = 0;
+//        for (auto& it : strg->loc_pot)
+//        {
+//            bool valid = (((strg->cell_charge.at(it.first) == sidb_charge_state::NEGATIVE) &&
+//                      ((-it.second + strg->sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
+//                     ((strg->cell_charge.at(it.first) == sidb_charge_state::POSITIVE) &&
+//                      ((-it.second + strg->sim_params.mu_p) > -physical_sim_constants::POP_STABILITY_ERR)) ||
+//                     ((strg->cell_charge.at(it.first) == sidb_charge_state::NEUTRAL) &&
+//                      ((-it.second + strg->sim_params.mu) > -physical_sim_constants::POP_STABILITY_ERR) &&
+//                      (-it.second + strg->sim_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
+//
+//            if (!valid)
+//            {
+//                strg->validity = false;
+//                flag_fd += 1;
+//                break;
+//            }
+//        }
+//
+//        if (flag_fd == 0)
+//        {
+//
+//            auto hopDel = [this](const cell<Lyt>& c1, const cell<Lyt>& c2)
+//            {
+//                int dn_i = (strg->cell_charge.at(c1) == sidb_charge_state::NEGATIVE) ? 1 : -1;
+//                int dn_j = -dn_i;
+//
+//                return strg->loc_pot.at(c1) * dn_i + strg->loc_pot.at(c2) * dn_j -
+//                       strg->pot_mat[strg->cell_id.at(c1)][strg->cell_id.at(c2)]* 1;
+//            };
+//
+//            int flag_value = 0;
+//            for (auto& it : strg->loc_pot)
+//            {
+//                if (strg->cell_charge.at(it.first) == sidb_charge_state::POSITIVE)
+//                {
+//                    continue;
+//                }
+//
+//                for (auto& it_second : strg->loc_pot)
+//                {
+//                    if (flag_value == 1)
+//                    {
+//                        break;
+//                    }
+//
+//                    auto E_del = hopDel(it.first, it_second.first);
+//                    if ((transform_to_sign(strg->cell_charge.at(it_second.first))) >
+//                         transform_to_sign(strg->cell_charge.at(it.first)) &&
+//                        (E_del < -physical_sim_constants::POP_STABILITY_ERR))
+//                    {
+//                        flag_value = 1;
+//                        break;
+//                    }
+//                }
+//            }
+//
+//            if (flag_value == 0)
+//            {
+//                strg->validity = true;
+//            }
+//            else
+//            {
+//                strg->validity = false;
+//            }
+//        }
+//    }
+
     void validity_check()
-    {
-        int  flag_fd = 0;
-        for (auto& it : strg->loc_pot)
-        {
-            bool valid = (((this->get_charge_state(it.first) == sidb_charge_state::NEGATIVE) &&
-                      ((-it.second + strg->sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
-                     ((this->get_charge_state(it.first) == sidb_charge_state::POSITIVE) &&
-                      ((-it.second + strg->sim_params.mu_p) > -physical_sim_constants::POP_STABILITY_ERR)) ||
-                     ((this->get_charge_state(it.first) == sidb_charge_state::NEUTRAL) &&
-                      ((-it.second + strg->sim_params.mu) > -physical_sim_constants::POP_STABILITY_ERR) &&
-                      (-it.second + strg->sim_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
-
-            if (!valid)
-            {
-                strg->validity = false;
-                flag_fd += 1;
-                break;
-            }
-        }
-
-        if (flag_fd == 0)
-        {
-
-            auto hopDel = [this](const cell<Lyt>& c1, const cell<Lyt>& c2)
-            {
-                int dn_i = (this->get_charge_state(c1) == sidb_charge_state::NEGATIVE) ? 1 : -1;
-                int dn_j = -dn_i;
-
-                return strg->loc_pot.at(c1) * dn_i + strg->loc_pot.at(c2) * dn_j -
-                       strg->pot_mat.at(std::make_pair(c1, c2)) * 1;
-            };
-
-            int flag_value = 0;
-            for (auto& it : strg->loc_pot)
-            {
-                if (this->get_charge_state(it.first) == sidb_charge_state::POSITIVE)
-                {
-                    continue;
-                }
-
-                for (auto& it_second : strg->loc_pot)
-                {
-                    if (flag_value == 1)
-                    {
-                        break;
-                    }
-
-                    auto E_del = hopDel(it.first, it_second.first);
-                    if ((transform_to_sign(get_charge_state(it_second.first)) >
-                         transform_to_sign(get_charge_state(it.first))) &&
-                        (E_del < -physical_sim_constants::POP_STABILITY_ERR))
-                    {
-                        flag_value = 1;
-                        break;
-                    }
-                }
-            }
-
-            if (flag_value == 0)
-            {
-                strg->validity = true;
-            }
-            else
-            {
-                strg->validity = false;
-            }
-        }
-    }
-
-    void validity_check_new()
     {
         int  flag_fd = 0;
         int counter_loop = 0;
         for (auto& it : strg->loc_pot)
         {
-            bool valid = (((strg->charge_coordinates[counter_loop] == sidb_charge_state::NEGATIVE) &&
+            bool valid = (((strg->cell_charge[counter_loop] == sidb_charge_state::NEGATIVE) &&
                            ((-it+ strg->sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
-                          ((strg->charge_coordinates[counter_loop] == sidb_charge_state::POSITIVE) &&
+                          ((strg->cell_charge[counter_loop] == sidb_charge_state::POSITIVE) &&
                            ((-it + strg->sim_params.mu_p) > -physical_sim_constants::POP_STABILITY_ERR)) ||
-                          ((strg->charge_coordinates[counter_loop] == sidb_charge_state::NEUTRAL) &&
+                          ((strg->cell_charge[counter_loop] == sidb_charge_state::NEUTRAL) &&
                            ((-it + strg->sim_params.mu) > -physical_sim_constants::POP_STABILITY_ERR) &&
                            (-it + strg->sim_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
             counter_loop +=1;
@@ -626,7 +632,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
             auto hopDel = [this](const int& c1, const int& c2)
             {
-                int dn_i = (strg->charge_coordinates[c1] == sidb_charge_state::NEGATIVE) ? 1 : -1;
+                int dn_i = (strg->cell_charge[c1] == sidb_charge_state::NEGATIVE) ? 1 : -1;
                 int dn_j = -dn_i;
 
                 return strg->loc_pot[c1] * dn_i + strg->loc_pot[c2] * dn_j -
@@ -637,7 +643,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             int counter_new = 0;
             for (int i =0; i < strg->loc_pot.size(); i++)
             {
-                if (strg->charge_coordinates[counter_new] == sidb_charge_state::POSITIVE)
+                if (strg->cell_charge[counter_new] == sidb_charge_state::POSITIVE)
                 {
                     continue;
                 }
@@ -650,8 +656,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                     }
 
                     auto E_del = hopDel(i, j);
-                    if ((transform_to_sign(strg->charge_coordinates[j]) >
-                         transform_to_sign(strg->charge_coordinates[i])) &&
+                    if ((transform_to_sign(strg->cell_charge[j]) >
+                         transform_to_sign(strg->cell_charge[i])) &&
                         (E_del < -physical_sim_constants::POP_STABILITY_ERR))
                     {
                         flag_value = 1;
@@ -692,14 +698,29 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         assert(base == 2 || base == 3 && "base must be 2 or 3");
         uint64_t chargeindex = 0;
         int      counter     = 0;
-        for (const auto& c : strg->charge_coordinates)
+        for (const auto& c : strg->cell_charge)
         {
             chargeindex += static_cast<unsigned int>((transform_to_sign(c) + 1) *
-                                                     std::pow(base, this->num_charges() - counter - 1));
+                                                     std::pow(base, this->num_cells() - counter - 1));
             counter += 1;
         }
         strg->charge_index = {chargeindex, base};
     }
+
+//    void chargeconf_to_index() const
+//    {
+//        uint8_t base = strg->sim_params.base;
+//        assert(base == 2 || base == 3 && "base must be 2 or 3");
+//        uint64_t chargeindex = 0;
+//        int      counter     = 0;
+//        for (const auto& c : strg->id_cell)
+//        {
+//            chargeindex += static_cast<unsigned int>((transform_to_sign(strg->cell_charge[c.second]) + 1) *
+//                                                     std::pow(base, this->num_charges() - counter - 1));
+//            counter += 1;
+//        }
+//        strg->charge_index = {chargeindex, base};
+//    }
 
     /**
      * The charge index of the current charge distribution is returned.
@@ -723,29 +744,51 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @return a pair with the calculated charge distribution's corresponding charge index and the chosen base as the
      * first and second element, respectively.
      */
+//    void index_to_chargeconf() const
+//    {
+//
+//        int charge_quot = strg->charge_index.first;
+//        int base        = strg->charge_index.second;
+//        int num_charges = this->num_charges() - 1;
+//
+//        while (charge_quot > 0)
+//        {
+//            div_t d;
+//            d           = div(charge_quot, base);
+//            charge_quot = d.quot;
+//            int counter = 0;
+//            for (auto& it : strg->coord_vec)
+//            {
+//
+//                if (counter == num_charges)
+//                {
+//                    this->assign_charge_state_new(it, sign_to_label(d.rem - 1));
+//                }
+//                counter++;
+//            }
+//            num_charges -= 1;
+//        }
+//    }
+
+
     void index_to_chargeconf() const
     {
 
         int charge_quot = strg->charge_index.first;
         int base        = strg->charge_index.second;
-        int num_charges = this->num_charges() - 1;
+        int num_charges = this->num_cells() - 1;
+        int counter = num_charges;
 
         while (charge_quot > 0)
         {
             div_t d;
             d           = div(charge_quot, base);
             charge_quot = d.quot;
-            int counter = 0;
-            for (auto& it : strg->coord_vec)
-            {
 
-                if (counter == num_charges)
-                {
-                    this->assign_charge_state_new(it, sign_to_label(d.rem - 1));
-                }
-                counter++;
-            }
-            num_charges -= 1;
+                    this->assign_charge_state(counter, sign_to_label(d.rem - 1));
+                    counter-= 1;
+
+
         }
     }
 
@@ -782,25 +825,25 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         auto                                 count    = 0;
         float                                dist_max = 0;
-        cell<Lyt>                            coord{};
-        std::unordered_map<cell<Lyt>, float> max_dist_unocc_occ{};
+        int                           coord;
+        std::unordered_map<int, float> max_dist_unocc_occ{};
 
-        for (auto& unocc : strg->charge_coordinates)
+        for (int unocc = 0; unocc < strg->cell_charge.size(); unocc++)
         {
-            if (unocc.second != sidb_charge_state::NEUTRAL)
+            if (strg->cell_charge[unocc] != sidb_charge_state::NEUTRAL)
             {
                 continue;
             }
             count += 1;
 
             auto                                 dist_min = MAXFLOAT;
-            for (auto& occ : strg->charge_coordinates)
+            for (int occ =0; occ < strg->cell_charge.size(); occ++)
             {
-                if (((occ.second == sidb_charge_state::NEGATIVE) || (occ.second == sidb_charge_state::POSITIVE)) &&
-                    (distance_sidb_pair(unocc.first, occ.first) < dist_min))
+                if (((strg->cell_charge[occ] == sidb_charge_state::NEGATIVE) || (strg->cell_charge[occ] == sidb_charge_state::POSITIVE)) &&
+                    (distance_sidb_pair(strg->cells[unocc], strg->cells[occ]) < dist_min))
                 {
-                    dist_min = distance_sidb_pair(unocc.first, occ.first);
-                    coord    = unocc.first;
+                    dist_min = distance_sidb_pair(strg->cells[unocc], strg->cells[occ]);
+                    coord    = unocc;
                 }
             }
 
@@ -818,7 +861,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                     dist_max = dist_min;
                 }
 
-                else if ((dist_min == dist_max) && (sum_distance(coord, unocc.first)))
+                else if ((dist_min == dist_max) && (sum_distance(strg->cells[coord], strg->cells[unocc])))
                 {
                     dist_max = dist_min;
                 }
@@ -855,14 +898,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
         strg->system_energy += -this->get_loc_pot(candidate->first).value();
 
-        for (auto& loop : strg->pot_mat)
+        for (int i = 0u; i < strg->pot_mat.size(); i++)
         {
-            if (loop.first.second== candidate->first)
-            {
-//                strg->loc_pot.insert_or_assign(
-//                    std::pair(loop.first.second, -this->pot(loop.first.first, candidate->first).value()));
-            strg->loc_pot[loop.first.first] += -this->pot(loop.first.first, candidate->first).value();
-            }
+//
+            strg->loc_pot[i] += -this->pot(i, candidate->first).value();
+
         }
 
 
@@ -874,14 +914,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         float sum_old = 0;
         float sum_now = 0;
-        for (auto& it : strg->charge_coordinates)
+        for (int i = 0u; i < strg->cell_charge.size(); i++)
         {
-            if (it.second == sidb_charge_state::NEUTRAL)
+            if (strg->cell_charge[i] == sidb_charge_state::NEUTRAL)
             {
                 continue;
             }
-            sum_old += distance_sidb_pair(it.first, c1);
-            sum_now += distance_sidb_pair(it.first, c2);
+            sum_old += distance_sidb_pair(strg->cells[i], c1);
+            sum_now += distance_sidb_pair(strg->cells[i], c2);
         }
         return sum_now > sum_old;
     }
