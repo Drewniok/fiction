@@ -34,14 +34,15 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
     {
         for (int i = 0u; i < lyt.num_cells(); i++)
         {
+            std::vector<int> index_start = {i};
             lyt.set_all_neutral();
             lyt.assign_charge_state(i, sidb_charge_state::NEGATIVE);
             lyt.local_potential();
             lyt.system_energy();
 
-            for (int num = 0; num < lyt.num_cells()-3; num++)
+            for (int num = 0; num < lyt.num_cells()/2+3; num++)
             {
-                lyt.next_N(alpha);
+                lyt.next_N(alpha, index_start);
                 lyt.chargeconf_to_index();
                 lyt.local_potential();
                 lyt.system_energy();

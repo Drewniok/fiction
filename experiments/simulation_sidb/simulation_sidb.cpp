@@ -26,15 +26,19 @@ int main()
         defect_exp{"benchmark", "gates", "single runtime exact (in millisec.)", "simulation accuracy (in %)", "TTS (in millisec.)", "SiDB dots"};
 
 
-    static constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::fontes18 &
-                                                   ~fiction_experiments::trindade16 & ~fiction_experiments::xor_00
-                                                   & ~fiction_experiments::xor_01
-                                                   & ~fiction_experiments::xor_11 & ~fiction_experiments::xor_wo;
-
 //    static constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::fontes18 &
-//                                                   ~fiction_experiments::trindade16;
+//                                                   ~fiction_experiments::trindade16 & ~fiction_experiments::xor_00
+//                                                   & ~fiction_experiments::xor_01
+//                                                   & ~fiction_experiments::xor_11 & ~fiction_experiments::xor_wo;
 
-    std::cout << fiction_experiments::all_benchmarks(bench_select).size() << std::endl;
+    static constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::fontes18 &
+                                                   ~fiction_experiments::trindade16;
+
+    //std::cout << fiction_experiments::all_benchmarks(bench_select).size() << std::endl;
+
+    int sum_sr= 0u;
+    int sum_tts = 0u;
+    float sum_acc = 0u;
 
     for (const auto& benchmark : fiction_experiments::all_benchmarks(bench_select))
     {
@@ -56,7 +60,12 @@ int main()
 
             defect_exp(benchmark, runtime, acc, tts, lyt.num_cells());
 
+            sum_sr += runtime;
+            sum_acc += acc;
+            sum_tts +=tts;
+
     }
+    defect_exp("sum", sum_sr, sum_acc, sum_tts, 0);
     defect_exp.save();
     defect_exp.table();
     return EXIT_SUCCESS;

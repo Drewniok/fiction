@@ -829,12 +829,99 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         this->index_to_chargeconf();
     }
 
-    void next_N(const double &alpha)
+//    void next_N(const double &alpha, std::vector<int>& index_db)
+//    {
+//        auto                                 count    = 0;
+//        float                                dist_max = 0;
+//        int                           coord;
+//        std::unordered_map<int, float> max_dist_unocc_occ{};
+//
+//        for (int unocc = 0; unocc < strg->cell_charge.size(); unocc++)
+//        {
+//            if (strg->cell_charge[unocc] != sidb_charge_state::NEUTRAL)
+//            {
+//                continue;
+//            }
+//            count += 1;
+//
+//            auto                                 dist_min = MAXFLOAT;
+//            for (int occ =0; occ < strg->cell_charge.size(); occ++)
+//            {
+//                if (((strg->cell_charge[occ] == sidb_charge_state::NEGATIVE) || (strg->cell_charge[occ] == sidb_charge_state::POSITIVE)) &&
+//                    (distance_sidb_pair(strg->cells[unocc], strg->cells[occ]) < dist_min))
+//                {
+//                    dist_min = distance_sidb_pair(strg->cells[unocc], strg->cells[occ]);
+//                    coord    = unocc;
+//                }
+//            }
+//
+//            if (count == 1)
+//            {
+//                max_dist_unocc_occ.insert(std::pair(coord, dist_min));
+//                dist_max = dist_min;
+//            }
+//            else if (count > 1)
+//            {
+//                max_dist_unocc_occ.insert(std::pair(coord, dist_min));
+//
+//                if (dist_min > dist_max)
+//                {
+//                    dist_max = dist_min;
+//                }
+//
+//                else if ((dist_min == dist_max) && (sum_distance(strg->cells[coord], strg->cells[unocc])))
+//                {
+//                    dist_max = dist_min;
+//                }
+//            }
+//        }
+//
+//        auto it = max_dist_unocc_occ.begin();
+//        while (it != max_dist_unocc_occ.end())
+//        {
+//            if (it->second < alpha * dist_max)
+//            {
+//                it = max_dist_unocc_occ.erase(it);
+//            }
+//            else
+//            {
+//                it++;
+//            }
+//        }
+//
+//
+//        // Generate a random number of steps to advance from the beginning iterator
+////        std::random_device              rd;
+////        std::mt19937                    gen(rd());
+////        std::uniform_int_distribution<> dis(0, max_dist_unocc_occ.size() - 1);
+////        int                             steps = dis(gen);
+//
+////        // Advance the iterator by the random number of steps
+////        std::advance(candidate, steps);
+////        // candidate += steps;
+////
+////        this->assign_charge_state(candidate->first, sidb_charge_state::NEGATIVE);
+////
+////        strg->system_energy += -this->get_loc_pot(candidate->first).value();
+////
+////        for (int i = 0u; i < strg->pot_mat.size(); i++)
+////        {
+//////
+////            strg->loc_pot[i] += -this->pot(i, candidate->first).value();
+////
+////        }
+//
+//
+//
+//
+//    }
+
+
+    void next_N(const double &alpha, std::vector<int>& index_db)
     {
         auto                                 count    = 0;
         float                                dist_max = 0;
-        int                           coord;
-        std::unordered_map<int, float> max_dist_unocc_occ{};
+        int                           coord = -1;
 
         for (int unocc = 0; unocc < strg->cell_charge.size(); unocc++)
         {
@@ -857,13 +944,13 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
             if (count == 1)
             {
-                max_dist_unocc_occ.insert(std::pair(coord, dist_min));
                 dist_max = dist_min;
+                coord = unocc;
             }
             else if (count > 1)
             {
-                max_dist_unocc_occ.insert(std::pair(coord, dist_min));
-
+               // max_dist_unocc_occ.insert(std::pair(coord, dist_min));
+                coord = unocc;
                 if (dist_min > dist_max)
                 {
                     dist_max = dist_min;
@@ -876,40 +963,71 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             }
         }
 
-        auto it = max_dist_unocc_occ.begin();
-        while (it != max_dist_unocc_occ.end())
+        std::vector<int> random;
+        int              count1 = 0;
+
+        for (auto it = strg->cell_charge.begin(); it!=strg->cell_charge.end();it++)
         {
-            if (it->second < alpha * dist_max)
+            if ((*it) != sidb_charge_state::NEUTRAL)
+                continue;
+
+            count1 += 1;
+            auto  l            = static_cast<int>(std::distance(strg->cell_charge.begin(), it));
+            float distance_min = distance_sidb_pair(strg->cells[l], strg->cells[index_db[0]]);
+            // float distance_min = db_r(l, index_db[0]);
+            for (int n : index_db)
             {
-                it = max_dist_unocc_occ.erase(it);
+                if (distance_sidb_pair(strg->cells[l], strg->cells[n]) < distance_min)
+                {
+                    distance_min = distance_sidb_pair(strg->cells[l], strg->cells[n]);
+                    // std::cout << distance_min << std::endl;
+                }
+            };
+
+            if (count1 > 0)
+            {
+                const float& zero_equiv = physical_sim_constants::POP_STABILITY_ERR;
+                if (distance_min >= 0.7 * dist_max)
+                {
+                    random.push_back(l);
+                }
             }
-            else
+        }
+
+        int random_index = rand() % random.size();
+        if ((random_index > -1) && (!random.empty()))
+        {
+            int random_element         = random[random_index];
+            strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;
+            index_db.push_back(random_element);
+            strg->system_energy += -this->get_loc_pot(random_element).value();
+            for (int i = 0u; i < strg->pot_mat.size(); i++)
             {
-                it++;
+                strg->loc_pot[i] += -this->pot(i, random_element).value();
             }
         }
 
 
         // Generate a random number of steps to advance from the beginning iterator
-        std::random_device              rd;
-        std::mt19937                    gen(rd());
-        std::uniform_int_distribution<> dis(0, max_dist_unocc_occ.size() - 1);
-        int                             steps = dis(gen);
+        //        std::random_device              rd;
+        //        std::mt19937                    gen(rd());
+        //        std::uniform_int_distribution<> dis(0, max_dist_unocc_occ.size() - 1);
+        //        int                             steps = dis(gen);
 
-        // Advance the iterator by the random number of steps
-        std::advance(candidate, steps);
-        // candidate += steps;
-
-        this->assign_charge_state(candidate->first, sidb_charge_state::NEGATIVE);
-
-        strg->system_energy += -this->get_loc_pot(candidate->first).value();
-
-        for (int i = 0u; i < strg->pot_mat.size(); i++)
-        {
-//
-            strg->loc_pot[i] += -this->pot(i, candidate->first).value();
-
-        }
+        //        // Advance the iterator by the random number of steps
+        //        std::advance(candidate, steps);
+        //        // candidate += steps;
+        //
+        //        this->assign_charge_state(candidate->first, sidb_charge_state::NEGATIVE);
+        //
+        //        strg->system_energy += -this->get_loc_pot(candidate->first).value();
+        //
+        //        for (int i = 0u; i < strg->pot_mat.size(); i++)
+        //        {
+        ////
+        //            strg->loc_pot[i] += -this->pot(i, candidate->first).value();
+        //
+        //        }
 
 
 
