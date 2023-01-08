@@ -30,9 +30,10 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
         collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
     }
 
+    float best_energy = MAXFLOAT;
     for (int z = 0; z < iteration_steps; z++)
     {
-        for (int i = 0u; i < lyt.num_cells(); i++)
+        for (int i = 0u; i < lyt.num_cells()-17; i++)
         {
             std::vector<int> index_start = {i};
             lyt.set_all_neutral();
@@ -49,10 +50,11 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
                 lyt.validity_check();
 
 
-                if (lyt.get_validity())
+                if (lyt.get_validity() && (lyt.get_system_energy() < best_energy))
                 {
                     charge_distribution_surface<Lyt> lyt_new{lyt};
                     collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
+                    break;
                 }
             }
         }

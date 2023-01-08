@@ -71,8 +71,9 @@ template <typename Lyt>
     auto t_end          = std::chrono::high_resolution_clock::now();
     auto elapsed        = t_end - t_start;
     auto diff_first     = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+    //std::cout << diff_first << std::endl;
     auto single_runtime = static_cast<double>(diff_first) / static_cast<double>(pp);
-    auto acc            = static_cast<float>(count / pp);
+    auto acc            = static_cast<float>(count) / pp;
 
     auto tts = std::numeric_limits<uint64_t>::max();
 
