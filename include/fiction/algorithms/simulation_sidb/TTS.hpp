@@ -54,11 +54,11 @@ bool found_groundstate(const std::unordered_map<double, charge_distribution_surf
 template <typename Lyt>
 [[nodiscard]] std::pair<float,uint64_t> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
                                const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_exact,
-                               const int& pp = 1000, const int iteration_steps = 100, const double alpha = 0.7, const double& convlevel = 0.997)
+                               const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7, const double& convlevel = 0.997)
 {
     int                                                          count = 0;
     std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap{};
-    auto                                                         t_start = std::chrono::high_resolution_clock::now();
+    const auto                                                         t_start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < pp; i++)
     {
         std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap = detail::Sim<Lyt>(lyt, iteration_steps, alpha);
@@ -68,11 +68,12 @@ template <typename Lyt>
             count += 1;
         }
     }
-    auto t_end          = std::chrono::high_resolution_clock::now();
-    auto elapsed        = t_end - t_start;
-    auto diff_first     = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-    //std::cout << diff_first << std::endl;
+    const auto t_end          = std::chrono::high_resolution_clock::now();
+    const auto elapsed        = t_end - t_start;
+    auto diff_first     = std::chrono::duration<double>(elapsed).count() * 1000;
+    std::cout << diff_first << std::endl;
     auto single_runtime = static_cast<double>(diff_first) / static_cast<double>(pp);
+    std::cout << single_runtime << std::endl;
     auto acc            = static_cast<float>(count) / pp;
 
     auto tts = std::numeric_limits<uint64_t>::max();

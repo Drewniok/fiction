@@ -56,7 +56,7 @@ int main()
 //
 //            fiction::detail::metastable_layouts(charge_layout);
 
-        auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
+        auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 50);
 
             defect_exp(benchmark, runtime, acc, tts, lyt.num_cells());
 
