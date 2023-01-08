@@ -26,13 +26,13 @@ int main()
         defect_exp{"benchmark", "gates", "single runtime exact (in millisec.)", "simulation accuracy (in %)", "TTS (in millisec.)", "SiDB dots"};
 
 
-//    static constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::fontes18 &
-//                                                   ~fiction_experiments::trindade16 & ~fiction_experiments::xor_00
-//                                                   & ~fiction_experiments::xor_01
-//                                                   & ~fiction_experiments::xor_11 & ~fiction_experiments::xor_wo;
-
     static constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::fontes18 &
-                                                   ~fiction_experiments::trindade16;
+                                                   ~fiction_experiments::trindade16 & ~fiction_experiments::xor_00
+                                                   & ~fiction_experiments::xor_01
+                                                   & ~fiction_experiments::xor_11 & ~fiction_experiments::xor_wo;
+
+//    static constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::fontes18 &
+//                                                   ~fiction_experiments::trindade16;
 
     std::cout << fiction_experiments::all_benchmarks(bench_select).size() << std::endl;
 
@@ -54,7 +54,7 @@ int main()
 
         auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
 
-            defect_exp(benchmark, runtime, 0, 0, lyt.num_cells());
+            defect_exp(benchmark, runtime, acc, tts, lyt.num_cells());
 
     }
     defect_exp.save();

@@ -199,6 +199,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 strg->cell_charge[i]= cs;
     }
 
+    void set_all_neutral() const
+    {
+        for (int i = 0u; i < strg->cell_charge.size(); i++)
+        {
+            strg->cell_charge[i]= sidb_charge_state::NEUTRAL;
+        }
+    }
+
     void assign_charge_state_new(const coordinate<Lyt>& c, const sidb_charge_state& cs) const
     {
        // if (!Lyt::is_empty_cell(c))
@@ -881,13 +889,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             }
         }
 
-        auto candidate = max_dist_unocc_occ.begin();
-        auto end       = max_dist_unocc_occ.end();
 
         // Generate a random number of steps to advance from the beginning iterator
         std::random_device              rd;
         std::mt19937                    gen(rd());
-        std::uniform_int_distribution<> dis(0, std::distance(candidate, end) - 1);
+        std::uniform_int_distribution<> dis(0, max_dist_unocc_occ.size() - 1);
         int                             steps = dis(gen);
 
         // Advance the iterator by the random number of steps

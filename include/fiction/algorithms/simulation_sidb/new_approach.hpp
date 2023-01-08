@@ -19,8 +19,7 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
     lyt.initialize_sidb_distance_matrix_new();
     lyt.initialize_sidb_potential_matrix_new();
 
-    lyt.foreach_charge_state([&lyt](const sidb_charge_state &cs,  int d = 0u) mutable
-                             { lyt.assign_charge_state(d, sidb_charge_state::NEUTRAL), d+=1; });
+    lyt.set_all_neutral();
     lyt.local_potential();
     lyt.system_energy();
     lyt.validity_check();
@@ -35,8 +34,7 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
     {
         for (int i = 0u; i < lyt.num_cells(); i++)
         {
-            lyt.foreach_charge_state([&lyt](const sidb_charge_state &cs,  int d = 0u) mutable
-                                    { lyt.assign_charge_state(d, sidb_charge_state::NEUTRAL), d+=1; });
+            lyt.set_all_neutral();
             lyt.assign_charge_state(i, sidb_charge_state::NEGATIVE);
             lyt.local_potential();
             lyt.system_energy();
