@@ -12,8 +12,8 @@ namespace fiction::detail
 {
 
 template <typename Lyt>
-
 std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 50, const double alpha = 0.7)
+//void Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 80, const double alpha = 0.7)
 {
     std::unordered_map<double, charge_distribution_surface<Lyt>> collect{};
 
@@ -27,12 +27,14 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
         charge_distribution_surface<Lyt> lyt_new{lyt};
         collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
     }
-
+    const auto                                                         t_start = std::chrono::high_resolution_clock::now();
     float best_energy = MAXFLOAT;
     for (int z = 0; z < iteration_steps; z++)
     {
-        for (int i = 0u; i < lyt.num_cells(); i++)
-        {
+//        for (int i = 0u; i < lyt.num_cells()-19; i++)
+//        {
+            for (int i = 0u; i < 2; i++)
+            {
             std::vector<int> index_start = {i};
             lyt.set_charge_states(sidb_charge_state::NEUTRAL);
             lyt.assign_charge_state_index(i, sidb_charge_state::NEGATIVE);
@@ -48,13 +50,17 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
 
                 if (lyt.get_validity() && (lyt.get_system_energy() < best_energy))
                 {
-                    charge_distribution_surface<Lyt> lyt_new{lyt};
-                    collect.insert(std::pair(z, lyt_new));
-                    break;
+//                    charge_distribution_surface<Lyt> lyt_new{lyt};
+//                    collect.insert(std::pair(z, lyt_new));
+//                    break;
                 }
             }
         }
     }
+    const auto                                                         t_end = std::chrono::high_resolution_clock::now();
+    const auto elapsed        = t_end - t_start;
+    auto diff_first     = std::chrono::duration<double>(elapsed).count() * 1000;
+    std::cout << diff_first << std::endl;
     return collect;
 }
 

@@ -64,6 +64,7 @@ template <typename Lyt>
     {
         const auto                                                         t_start = std::chrono::high_resolution_clock::now();
         output_ap = detail::Sim<Lyt>(lyt, iteration_steps, alpha);
+        //detail::Sim<Lyt>(lyt, iteration_steps, alpha);
         const auto t_end          = std::chrono::high_resolution_clock::now();
         const auto elapsed        = t_end - t_start;
         auto diff_first     = std::chrono::duration<double>(elapsed).count() * 1000;
@@ -76,6 +77,7 @@ template <typename Lyt>
     }
 
     auto single_runtime     = std::accumulate(time.begin(), time.end(), 0.0) / pp;
+    std::cout << single_runtime << std::endl;
     auto acc            = static_cast<float>(count) / static_cast<float>(pp);
 
     auto tts = std::numeric_limits<uint64_t>::max();

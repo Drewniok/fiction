@@ -5,6 +5,7 @@
 #include "../fiction_experiments.hpp"
 
 #include <fiction/algorithms/simulation_sidb/ExGS.hpp>
+#include <fiction/algorithms/simulation_sidb/new_approach.hpp>
 #include <fiction/algorithms/simulation_sidb/TTS.hpp>
 #include <fiction/io/read_sqd_layout.hpp>  // reader for SiDB layouts including surface scan data
 #include <fiction/technology/charge_distribution_surface.hpp>
@@ -24,7 +25,7 @@ int main()
         "TTS (in ms.)", "SiDB dots"};
 
     static constexpr const uint64_t bench_select =
-        fiction_experiments::all & ~fiction_experiments::fontes18 & ~fiction_experiments::trindade16 & ~fiction_experiments::hour_10;
+        fiction_experiments::all & ~fiction_experiments::fontes18 & ~fiction_experiments::trindade16 & ~fiction_experiments::xorgate;
 
     auto number_bench = fiction_experiments::all_benchmarks(bench_select).size();
 
@@ -42,15 +43,18 @@ int main()
         const fiction::simulation_params     params{2};
         fiction::charge_distribution_surface charge_layout{lyt, params};
 
-        auto [runtime, exactlyt] = fiction::detail::metastable_layouts(charge_layout);
+        //auto [runtime, exactlyt] = fiction::detail::metastable_layouts(charge_layout);
 
-        auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
+        auto test = fiction::detail::Sim(charge_layout);
 
-        defect_exp(benchmark, runtime, acc, tts, std::to_string(lyt.num_cells()));
-        db_num.push_back(lyt.num_cells());
-        sum_sr += runtime;
-        sum_acc += acc;
-        sum_tts += tts;
+        //auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 1, 80);
+        //auto [acc, tts] = fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 1, 80);
+
+//        defect_exp(benchmark, runtime, acc, tts, std::to_string(lyt.num_cells()));
+//        db_num.push_back(lyt.num_cells());
+//        sum_sr += runtime;
+//        sum_acc += acc;
+//        sum_tts += tts;
     }
 
     auto min_db_num = std::min_element(db_num.begin(), db_num.end());
