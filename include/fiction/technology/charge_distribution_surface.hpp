@@ -311,10 +311,19 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return double
      */
+    [[nodiscard]] constexpr double get_distance_cell(const cell<Lyt>& cell1, const cell<Lyt>& cell2)
+    {
+        return strg->dist_mat[cell_to_index(cell1)][cell_to_index(cell2)];
+    }
+
+    [[nodiscard]] constexpr double get_distance_index(const uint64_t& input1, const uint64_t& input2)
+    {
+        return strg->dist_mat[input1][input2];
+    }
 
     [[nodiscard]] constexpr double get_potential_cell(const cell<Lyt>& input1, const cell<Lyt>& input2)
     {
-        return strg->dist_mat[cell_to_index(input1)][cell_to_index(input2)];
+        return strg->pot_mat[cell_to_index(input1)][cell_to_index(input2)];
     }
 
     [[nodiscard]] constexpr double get_potential_index(const uint64_t& input1, const uint64_t& input2)
@@ -618,6 +627,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         int                coord    = -1;
         std::vector<int>   index_vector{};
         std::vector<float> distance{};
+        index_vector.reserve(this->num_cells());
+        distance.reserve(this->num_cells());
 
         for (int unocc = 0u; unocc < strg->cell_charge.size(); unocc++)
         {
@@ -628,36 +639,36 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             count += 1;
 
             auto dist_min = MAXFLOAT;
-            for (int occ = 0u; occ < strg->cell_charge.size(); occ++)
+            for (int occ : index_db)
             {
-                if ((strg->cell_charge[occ] == sidb_charge_state::NEGATIVE) &&
-                    (distance_sidb_pair(strg->cells[unocc], strg->cells[occ]) < dist_min))
+                if (this->get_distance_index(unocc, occ) < dist_min)
                 {
-                    dist_min = distance_sidb_pair(strg->cells[unocc], strg->cells[occ]);
+                    dist_min = this->get_distance_index(unocc, occ);
                 }
             }
 
-            if (count == 1)
+            //            if (count == 1)
+            //            {
+            //                dist_max = dist_min;
+            //                coord    = unocc;
+            //                index_vector.push_back(unocc);
+            //                distance.push_back(dist_min);
+            //            }
+
+            //            else if (count > 0)
+            //            {
+            coord = unocc;
+            index_vector.push_back(unocc);
+            distance.push_back(dist_min);
+            if (dist_min > dist_max)
             {
                 dist_max = dist_min;
-                coord    = unocc;
-                index_vector.push_back(unocc);
-                distance.push_back(dist_min);
             }
-
-            else if (count > 1)
-            {
-                coord = unocc;
-                index_vector.push_back(unocc);
-                distance.push_back(dist_min);
-                if (dist_min > dist_max)
-                {
-                    dist_max = dist_min;
-                }
-            }
+            //     }
         };
 
         std::vector<int> candidates{};
+        candidates.reserve(this->num_cells());
 
         for (int i = 0u; i < distance.size(); i++)
         {
