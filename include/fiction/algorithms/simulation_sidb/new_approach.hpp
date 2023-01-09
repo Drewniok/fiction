@@ -32,7 +32,7 @@ std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribu
     float best_energy = MAXFLOAT;
     for (int z = 0; z < iteration_steps; z++)
     {
-        for (int i = 0u; i < lyt.num_cells(); i++)
+        for (int i = 0u; i < lyt.num_cells()-17; i++)
         {
 
 //            for (int i = 0u; i < 20; i++)

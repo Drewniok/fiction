@@ -58,16 +58,22 @@ inline constexpr uint64_t xor_11           = 0b000000000000000000000000000000000
 inline constexpr uint64_t xor_wo           = 0b0000000000000000000000000000000000001000000000000000000000000000;
 inline constexpr uint64_t xorgate          = 0b0000000000000000000000000000000000001111100000000000000000000000;
 
-inline constexpr uint64_t hour_10          = 0b0000000000000000000000000000000000010000000000000000000000000000;
 
-inline constexpr uint64_t and_00           = 0b0000000000000000000000000000000000100000000000000000000000000000;
-inline constexpr uint64_t and_01           = 0b0000000000000000000000000000000001000000000000000000000000000000;
-inline constexpr uint64_t and_10           = 0b0000000000000000000000000000000010000000000000000000000000000000;
-inline constexpr uint64_t and_11           = 0b0000000000000000000000000000000100000000000000000000000000000000;
-inline constexpr uint64_t and_wo           = 0b0000000000000000000000000000001000000000000000000000000000000000;
-inline constexpr uint64_t andgate          = 0b0000000000000000000000000000001111100000000000000000000000000000;
+inline constexpr uint64_t and_00           = 0b0000000000000000000000000000000000010000000000000000000000000000;
+inline constexpr uint64_t and_01           = 0b0000000000000000000000000000000000100000000000000000000000000000;
+inline constexpr uint64_t and_10           = 0b0000000000000000000000000000000001000000000000000000000000000000;
+inline constexpr uint64_t and_11           = 0b0000000000000000000000000000000010000000000000000000000000000000;
+inline constexpr uint64_t and_wo           = 0b0000000000000000000000000000000100000000000000000000000000000000;
+inline constexpr uint64_t andgate          = 0b0000000000000000000000000000000111110000000000000000000000000000;
 
-inline constexpr uint64_t all              = 0b0000000000000000000000000000001111111111111111111111111111111111;
+inline constexpr uint64_t hour_00          = 0b0000000000000000000000000000001000000000000000000000000000000000;
+inline constexpr uint64_t hour_01          = 0b0000000000000000000000000000010000000000000000000000000000000000;
+inline constexpr uint64_t hour_10          = 0b0000000000000000000000000000100000000000000000000000000000000000;
+inline constexpr uint64_t hour_11          = 0b0000000000000000000000000001000000000000000000000000000000000000;
+inline constexpr uint64_t hour_wo          = 0b0000000000000000000000000010000000000000000000000000000000000000;
+inline constexpr uint64_t hourgate         = 0b0000000000000000000000000011111000000000000000000000000000000000;
+
+inline constexpr uint64_t all              = 0b0000000000000000000000000011111111111111111111111111111111111111;
 
 static constexpr const std::array benchmarks {
     "trindade16/mux21", "trindade16/xor2", "trindade16/xnor2", "trindade16/par_gen",
@@ -82,13 +88,20 @@ static constexpr const std::array benchmarks {
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_10.sqd",
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_11.sqd",
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1.sqd",
-        "../../experiments/bestagon/layouts/gates/hourglass/22_hex_inputsdbp_hourglass_v0_10.sqd",
+
 
 "../../experiments/bestagon/layouts/gates/and/21_hex_inputsdbp_and_v19_00.sqd",
 "../../experiments/bestagon/layouts/gates/and/21_hex_inputsdbp_and_v19_01.sqd",
 "../../experiments/bestagon/layouts/gates/and/21_hex_inputsdbp_and_v19_10.sqd",
 "../../experiments/bestagon/layouts/gates/and/21_hex_inputsdbp_and_v19_11.sqd",
 "../../experiments/bestagon/layouts/gates/and/21_hex_inputsdbp_and_v19.sqd",
+
+"../../experiments/bestagon/layouts/gates/hourglass/22_hex_inputsdbp_hourglass_v0_00.sqd",
+"../../experiments/bestagon/layouts/gates/hourglass/22_hex_inputsdbp_hourglass_v0_01.sqd",
+"../../experiments/bestagon/layouts/gates/hourglass/22_hex_inputsdbp_hourglass_v0_10.sqd",
+"../../experiments/bestagon/layouts/gates/hourglass/22_hex_inputsdbp_hourglass_v0_11.sqd",
+"../../experiments/bestagon/layouts/gates/hourglass/22_hex_inputsdbp_hourglass_v0.sqd",
+
 
 };
 
@@ -140,7 +153,7 @@ std::vector<std::string> gate_benchmarks(uint64_t selection = fontes18)
 std::vector<std::string> all_benchmarks(uint64_t selection = all)
 {
     std::vector<std::string> result{};
-    for (uint64_t i = 0u; i < 35u; ++i)
+    for (uint64_t i = 0u; i < 50u; ++i)
     {
         if (((selection >> i) & 1u) != 0u)
         {

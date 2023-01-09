@@ -25,7 +25,8 @@ int main()
         "TTS (in ms.)", "SiDB dots"};
 
     static constexpr const uint64_t bench_select =
-        fiction_experiments::all & ~fiction_experiments::fontes18 & ~fiction_experiments::trindade16 & ~fiction_experiments::hour_10;
+        fiction_experiments::all & ~fiction_experiments::fontes18 & ~fiction_experiments::trindade16 & ~fiction_experiments::andgate & ~fiction_experiments::xorgate
+        & ~fiction_experiments::hour_10 & ~fiction_experiments::hour_00 & ~fiction_experiments::hour_01 & ~fiction_experiments::hour_11;
 
     auto number_bench = fiction_experiments::all_benchmarks(bench_select).size();
 
