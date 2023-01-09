@@ -32,7 +32,6 @@ std::pair<uint32_t, std::unordered_map<double, charge_distribution_surface<Lyt>>
         lyt.local_potential();
         lyt.system_energy();
         lyt.validity_check();
-        //std::cout << lyt.get_system_energy() << std::endl;
 
         if (lyt.get_validity())
         {

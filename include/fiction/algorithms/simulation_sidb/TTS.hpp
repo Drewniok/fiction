@@ -58,23 +58,25 @@ template <typename Lyt>
 {
     int                                                          count = 0;
     std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap{};
-    const auto                                                         t_start = std::chrono::high_resolution_clock::now();
+   std::vector<double> time{};
+
     for (int i = 0; i < pp; i++)
     {
-        std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap = detail::Sim<Lyt>(lyt, iteration_steps, alpha);
+        const auto                                                         t_start = std::chrono::high_resolution_clock::now();
+        output_ap = detail::Sim<Lyt>(lyt, iteration_steps, alpha);
+        const auto t_end          = std::chrono::high_resolution_clock::now();
+        const auto elapsed        = t_end - t_start;
+        auto diff_first     = std::chrono::duration<double>(elapsed).count() * 1000;
+        time.push_back(diff_first);
 
         if (found_groundstate(output_ap, result_exact))
         {
             count += 1;
         }
     }
-    const auto t_end          = std::chrono::high_resolution_clock::now();
-    const auto elapsed        = t_end - t_start;
-    auto diff_first     = std::chrono::duration<double>(elapsed).count() * 1000;
-    std::cout << diff_first << std::endl;
-    auto single_runtime = static_cast<double>(diff_first) / static_cast<double>(pp);
-    std::cout << single_runtime << std::endl;
-    auto acc            = static_cast<float>(count) / pp;
+
+    auto single_runtime     = std::accumulate(time.begin(), time.end(), 0.0) / pp;
+    auto acc            = static_cast<float>(count) / static_cast<float>(pp);
 
     auto tts = std::numeric_limits<uint64_t>::max();
 

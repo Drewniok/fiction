@@ -100,9 +100,9 @@ TEMPLATE_TEST_CASE(
         charge_layout.assign_cell_type({5, 4}, TestType::cell_type::NORMAL);
         charge_layout.assign_cell_type({5, 5}, TestType::cell_type::NORMAL);
         charge_layout.assign_cell_type({5, 6}, TestType::cell_type::NORMAL);
-        charge_layout.assign_charge_state({5, 4}, sidb_charge_state::POSITIVE);
-        charge_layout.assign_charge_state({5, 5}, sidb_charge_state::NEUTRAL);
-        charge_layout.assign_charge_state({5, 6}, sidb_charge_state::NEGATIVE);
+        charge_layout.assign_charge_state_cell({5, 4}, sidb_charge_state::POSITIVE);
+        charge_layout.assign_charge_state_cell({5, 5}, sidb_charge_state::NEUTRAL);
+        charge_layout.assign_charge_state_cell({5, 6}, sidb_charge_state::NEGATIVE);
         CHECK(charge_layout.get_charge_state({5, 4}) == sidb_charge_state::POSITIVE);
         CHECK(charge_layout.get_charge_state({5, 5}) == sidb_charge_state::NEUTRAL);
         CHECK(charge_layout.get_charge_state({5, 6}) == sidb_charge_state::NEGATIVE);
@@ -115,10 +115,10 @@ TEMPLATE_TEST_CASE(
     {
         // check if the charge state can be overwritten
         charge_layout.assign_cell_type({5, 1}, TestType::cell_type::NORMAL);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::NEUTRAL);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::NONE);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::POSITIVE);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::NEGATIVE);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::NEUTRAL);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::NONE);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::POSITIVE);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::NEGATIVE);
         CHECK(charge_layout.get_charge_state({5, 1}) == sidb_charge_state::NEGATIVE);
     }
 
@@ -127,11 +127,11 @@ TEMPLATE_TEST_CASE(
 
         // check if charge state stays 'NONE' for empty cell after several charge state assignments
         charge_layout.assign_cell_type({5, 1}, TestType::cell_type::EMPTY);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::NEUTRAL);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::NONE);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::POSITIVE);
-        charge_layout.assign_charge_state({5, 1}, sidb_charge_state::NEGATIVE);
-        CHECK(charge_layout.get_charge_state({5, 1}) == sidb_charge_state::NONE);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::NEUTRAL);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::NONE);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::POSITIVE);
+        charge_layout.assign_charge_state_cell({5, 1}, sidb_charge_state::NEGATIVE);
+        CHECK(charge_layout.get_charge_state_cell({5, 1}) == sidb_charge_state::NONE);
     }
 
     SECTION("overwrite an assigned charge state")
@@ -140,20 +140,18 @@ TEMPLATE_TEST_CASE(
         charge_layout.assign_cell_type({5, 4}, TestType::cell_type::NORMAL);
         charge_layout.assign_cell_type({5, 5}, TestType::cell_type::NORMAL);
         charge_layout.assign_cell_type({5, 6}, TestType::cell_type::NORMAL);
-        charge_layout.assign_charge_state({5, 4}, sidb_charge_state::POSITIVE);
-        charge_layout.assign_charge_state({5, 5}, sidb_charge_state::NEUTRAL);
-        charge_layout.assign_charge_state({5, 6}, sidb_charge_state::NEGATIVE);
+        charge_layout.assign_charge_state_cell({5, 4}, sidb_charge_state::POSITIVE);
+        charge_layout.assign_charge_state_cell({5, 5}, sidb_charge_state::NEUTRAL);
+        charge_layout.assign_charge_state_cell({5, 6}, sidb_charge_state::NEGATIVE);
 
         // all SiDBs' charge states are set to positive
-        charge_layout.foreach_charge_state(
-            [&charge_layout](const auto& cd)
-            { charge_layout.assign_charge_state(cd.first, sidb_charge_state::POSITIVE); });
+        charge_layout.set_charge_states(sidb_charge_state::POSITIVE);
 
         // read SiDBs' charge states
-        CHECK(charge_layout.get_charge_state({5, 4}) == sidb_charge_state::POSITIVE);
-        CHECK(charge_layout.get_charge_state({5, 5}) == sidb_charge_state::POSITIVE);
-        CHECK(charge_layout.get_charge_state({5, 6}) == sidb_charge_state::POSITIVE);
-        CHECK(charge_layout.get_charge_state({5, 1}) == sidb_charge_state::NONE);
+        CHECK(charge_layout.get_charge_state_cell({5, 4}) == sidb_charge_state::POSITIVE);
+        CHECK(charge_layout.get_charge_state_cell({5, 5}) == sidb_charge_state::POSITIVE);
+        CHECK(charge_layout.get_charge_state_cell({5, 6}) == sidb_charge_state::POSITIVE);
+        CHECK(charge_layout.get_charge_state_cell({5, 1}) == sidb_charge_state::NONE);
 
         charge_layout.foreach_charge_state(
             [&charge_layout](const auto& c)

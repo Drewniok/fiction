@@ -56,8 +56,11 @@ inline constexpr uint64_t xor_01           = 0b000000000000000000000000000000000
 inline constexpr uint64_t xor_10           = 0b0000000000000000000000000000000000000010000000000000000000000000;
 inline constexpr uint64_t xor_11           = 0b0000000000000000000000000000000000000100000000000000000000000000;
 inline constexpr uint64_t xor_wo           = 0b0000000000000000000000000000000000001000000000000000000000000000;
+inline constexpr uint64_t xorgate          = 0b0000000000000000000000000000000000001111100000000000000000000000;
 
-inline constexpr uint64_t all              = 0b0000000000000000000000000000000000001111111111111111111111111111;
+inline constexpr uint64_t hour_10          = 0b0000000000000000000000000000000000010000000000000000000000000000;
+
+inline constexpr uint64_t all              = 0b0000000000000000000000000000000000011111111111111111111111111111;
 
 static constexpr const std::array benchmarks {
     "trindade16/mux21", "trindade16/xor2", "trindade16/xnor2", "trindade16/par_gen",
@@ -72,6 +75,7 @@ static constexpr const std::array benchmarks {
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_10.sqd",
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1_11.sqd",
         "../../experiments/bestagon/layouts/gates/xor/hex_21_inputsdbp_xor_v1.sqd",
+        "../../experiments/bestagon/layouts/gates/hourglass/22_hex_inputsdbp_hourglass_v0_10.sqd",
 
 
 };
