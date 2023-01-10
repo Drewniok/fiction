@@ -624,11 +624,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         auto               count    = 0;
         float              dist_max = 0;
-        int                coord    = -1;
+        auto                coord    = -1;
         std::vector<int>   index_vector{};
         std::vector<float> distance{};
-        index_vector.reserve(this->num_cells());
-        distance.reserve(this->num_cells());
+        index_vector.reserve(this->num_cells()-index_db.size());
+        distance.reserve(this->num_cells()-index_db.size());
 
         for (int unocc = 0u; unocc < strg->cell_charge.size(); unocc++)
         {
@@ -647,16 +647,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 }
             }
 
-            //            if (count == 1)
-            //            {
-            //                dist_max = dist_min;
-            //                coord    = unocc;
-            //                index_vector.push_back(unocc);
-            //                distance.push_back(dist_min);
-            //            }
-
-            //            else if (count > 0)
-            //            {
             coord = unocc;
             index_vector.push_back(unocc);
             distance.push_back(dist_min);
@@ -664,8 +654,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             {
                 dist_max = dist_min;
             }
-            //     }
-        };
+        }
 
         std::vector<int> candidates{};
         candidates.reserve(this->num_cells());
