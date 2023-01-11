@@ -23,7 +23,7 @@ std::pair<double, std::vector<charge_distribution_surface<Lyt>>> exgs(charge_dis
 
 {
 
-    auto                                                         t_start = std::chrono::high_resolution_clock::now();
+    auto t_start = std::chrono::high_resolution_clock::now();
 
     std::vector<charge_distribution_surface<Lyt>> collect{};
 

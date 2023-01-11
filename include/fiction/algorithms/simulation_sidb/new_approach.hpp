@@ -45,6 +45,7 @@ std::vector<charge_distribution_surface<Lyt>> faccusim(charge_distribution_surfa
             {
                 lyt.next_N(alpha, index_start);
                 lyt.validity_check();
+                lyt.chargeconf_to_index();
 
                 if (lyt.get_validity() && (lyt.get_system_energy() <= best_energy))
                 {

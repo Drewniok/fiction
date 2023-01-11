@@ -39,7 +39,7 @@ bool found_groundstate(const std::vector<charge_distribution_surface<Lyt>>& resu
 template <typename Lyt>
 [[nodiscard]] std::pair<double, double> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
                                   const std::vector<charge_distribution_surface<Lyt>>& result_exact,
-                               const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7, const double& convlevel = 0.997)
+                               const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7, const double convlevel = 0.997)
 {
     int                 count = 0;
     std::vector<double> time;

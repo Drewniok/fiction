@@ -65,10 +65,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         using local_potential = std::vector<double>;
 
       public:
-        explicit charge_distribution_storage(const simulation_params& sim_param_default = simulation_params{}) :
-                sim_params{sim_param_default} {};
+        explicit charge_distribution_storage(const physical_params& sim_param_default = physical_params{}) :
+                phys_params{sim_param_default} {};
 
-        simulation_params              sim_params{};
+        physical_params              phys_params{};
         std::vector<cell<Lyt>>         cells{};
         std::vector<sidb_charge_state> cell_charge{};
         distance_matrix                dist_mat{};
@@ -86,7 +86,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * Standard constructor for empty layouts.
      */
     explicit charge_distribution_surface(const sidb_charge_state& cs                = sidb_charge_state::NEGATIVE,
-                                         const simulation_params& sim_param_default = simulation_params{}) :
+                                         const physical_params& sim_param_default = physical_params{}) :
             Lyt(),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
@@ -99,7 +99,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * Standard constructor for existing layouts and simulation parameter as input.
      */
     explicit charge_distribution_surface(const Lyt&               lyt,
-                                         const simulation_params& sim_param_default = simulation_params{},
+                                         const physical_params& sim_param_default = physical_params{},
                                          const sidb_charge_state& cs                = sidb_charge_state::NEGATIVE) :
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
@@ -127,9 +127,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         strg->cell_charge.reserve(this->num_cells());
         this->foreach_cell([this](const auto& c1) { strg->cells.push_back(c1); });
         this->foreach_cell([this, &cs](const auto& c1) { strg->cell_charge.push_back(cs); });
-        assert((std::pow(strg->sim_params.base, this->num_cells()) - 1) < std::numeric_limits<uint64_t>::max() &&
+        assert((std::pow(strg->phys_params.base, this->num_cells()) - 1) < std::numeric_limits<uint64_t>::max() &&
                "number of SiDBs is too large");
-        strg->max_charge_index = std::pow(strg->sim_params.base, this->num_cells()) - 1;
+        strg->max_charge_index = std::pow(strg->phys_params.base, this->num_cells()) - 1;
         this->chargeconf_to_index();
         this->initialize_distance_matrix();
         this->initialize_potential_matrix();
@@ -138,7 +138,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         this->validity_check();
     };
 
+    bool operator==(const charge_distribution_surface<Lyt>& other) const {
+        return this->get_charge_index().first == other->get_charge_index().first;
+    }
+
     /**
+     *
      * @brief Assigns a certain charge state to a particular cell (assigned via an index) of the layout.
      *
      * @param i The index of the cell.
@@ -300,8 +305,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     std::pair<double, double> nm_position(const cell<Lyt>& c) const
     {
-        const auto x = static_cast<double>(c.x * strg->sim_params.lat_a);
-        const auto y = static_cast<double>(c.y * strg->sim_params.lat_b + c.z * strg->sim_params.lat_c);
+        const auto x = static_cast<double>(c.x * strg->phys_params.lat_a);
+        const auto y = static_cast<double>(c.y * strg->phys_params.lat_b + c.z * strg->phys_params.lat_c);
         return std::make_pair(x, y);
     }
 
@@ -427,8 +432,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             return 0.0;
         }
 
-        return (strg->sim_params.k / strg->dist_mat[c1][c2] *
-                std::exp(-strg->dist_mat[c1][c2] / strg->sim_params.lambda_tf) *
+        return (strg->phys_params.k / strg->dist_mat[c1][c2] *
+                std::exp(-strg->dist_mat[c1][c2] / strg->phys_params.lambda_tf) *
                 physical_sim_constants::ELECTRIC_CHARGE);
     }
 
@@ -521,12 +526,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         for (auto& it : strg->loc_pot)
         {
             bool valid = (((strg->cell_charge[counter_loop] == sidb_charge_state::NEGATIVE) &&
-                           ((-it+ strg->sim_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
+                           ((-it+ strg->phys_params.mu) < physical_sim_constants::POP_STABILITY_ERR)) ||
                           ((strg->cell_charge[counter_loop] == sidb_charge_state::POSITIVE) &&
-                           ((-it + strg->sim_params.mu_p) > -physical_sim_constants::POP_STABILITY_ERR)) ||
+                           ((-it + strg->phys_params.mu_p) > -physical_sim_constants::POP_STABILITY_ERR)) ||
                           ((strg->cell_charge[counter_loop] == sidb_charge_state::NEUTRAL) &&
-                           ((-it + strg->sim_params.mu) > -physical_sim_constants::POP_STABILITY_ERR) &&
-                           (-it + strg->sim_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
+                           ((-it + strg->phys_params.mu) > -physical_sim_constants::POP_STABILITY_ERR) &&
+                           (-it + strg->phys_params.mu_p) < physical_sim_constants::POP_STABILITY_ERR));
             counter_loop +=1;
             if (!valid)
             {
@@ -603,7 +608,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void chargeconf_to_index() const
     {
-        uint8_t base = strg->sim_params.base;
+        uint8_t base = strg->phys_params.base;
         assert(base == 2 || base == 3 && "base must be 2 or 3");
         uint64_t chargeindex = 0;
         int      counter     = 0;
@@ -622,7 +627,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return a pair with the charge index and the used base is returned.
      */
-    [[nodiscard]] std::pair<uint64_t, uint8_t> get_charge_index()
+    [[nodiscard]] std::pair<uint64_t, uint8_t> get_charge_index() const
     {
         return strg->charge_index;
     }
@@ -774,7 +779,7 @@ template <class T>
 charge_distribution_surface(const T&) -> charge_distribution_surface<T>;
 
 template <class T>
-charge_distribution_surface(const T&, const simulation_params&) -> charge_distribution_surface<T>;
+charge_distribution_surface(const T&, const physical_params&) -> charge_distribution_surface<T>;
 
 }  // namespace fiction
 
