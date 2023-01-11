@@ -12,62 +12,52 @@ namespace fiction::detail
 {
 
 template <typename Lyt>
-std::unordered_map<double, charge_distribution_surface<Lyt>> Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 70, const double alpha = 0.7)
-//void Sim(charge_distribution_surface<Lyt>& lyt, const int iteration_steps = 70, const double alpha = 0.7)
+std::vector<charge_distribution_surface<Lyt>> faccusim(charge_distribution_surface<Lyt>& lyt,
+                                                       const int iteration_steps = 70, const double alpha = 0.7)
+
 {
-    std::unordered_map<double, charge_distribution_surface<Lyt>> collect{};
+    std::vector<charge_distribution_surface<Lyt>> collect{};
 
     lyt.set_charge_states(sidb_charge_state::NEUTRAL);
     lyt.local_potential();
-   lyt.system_energy();
+    lyt.system_energy();
     lyt.validity_check();
 
     if (lyt.get_validity())
     {
         charge_distribution_surface<Lyt> lyt_new{lyt};
-        collect.insert(std::pair(lyt_new.get_charge_index().first, lyt_new));
+        collect.push_back(lyt_new);
     }
 
-    const auto                                                         t_start = std::chrono::high_resolution_clock::now();
     float best_energy = MAXFLOAT;
+    auto  bound       = static_cast<int>(0.6 * lyt.num_cells());
     for (int z = 0; z < iteration_steps; z++)
     {
-        for (int i = 0u; i < lyt.num_cells(); i++)
+        for (int i = 0u; i < bound; i++)
         {
-
-//            for (int i = 0u; i < 20; i++)
-//            {
             std::vector<int> index_start = {i};
             lyt.set_charge_states(sidb_charge_state::NEUTRAL);
             lyt.assign_charge_state_index(i, sidb_charge_state::NEGATIVE);
             lyt.local_potential();
             lyt.system_energy();
 
-
-            for (int num = 0; num < lyt.num_cells()/2+4; num++)
+            for (int num = 0; num < lyt.num_cells() / 2 + 4; num++)
             {
                 lyt.next_N(alpha, index_start);
                 lyt.validity_check();
 
-
-                if (lyt.get_validity() && (lyt.get_system_energy() < best_energy))
+                if (lyt.get_validity() && (lyt.get_system_energy() <= best_energy))
                 {
                     charge_distribution_surface<Lyt> lyt_new{lyt};
-                    collect.insert(std::pair(z, lyt_new));
-                    //break;
+                    collect.push_back(lyt_new);
                 }
             }
         }
     }
-    const auto                                                         t_end = std::chrono::high_resolution_clock::now();
-    const auto elapsed        = t_end - t_start;
-    auto diff_first     = std::chrono::duration<double>(elapsed).count() * 1000;
-    //std::cout << diff_first << std::endl;
+
     return collect;
 }
 
-} //namespace fiction::detail
-
-
+}  // namespace fiction::detail
 
 #endif  // FICTION_NEW_APPROACH_HPP

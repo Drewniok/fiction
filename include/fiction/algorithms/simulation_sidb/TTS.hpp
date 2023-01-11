@@ -14,60 +14,44 @@
 namespace fiction
 {
 template <typename Lyt>
-double minimum_energy(const std::unordered_map<double, charge_distribution_surface<Lyt>>& result)
+double minimum_energy(const std::vector<charge_distribution_surface<Lyt>>& result)
 {
     auto min_energy = std::numeric_limits<double>::max();
-    for (auto &it : result)
+    for (const auto &lyt : result)
     {
-        if (it.second.get_system_energy() < min_energy)
+        if (lyt.get_system_energy() < min_energy)
         {
-            min_energy = it.second.get_system_energy();
+            min_energy = lyt.get_system_energy();
         }
     }
     return min_energy;
 }
 
 template <typename Lyt>
-bool found_groundstate(const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_new_ap, const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_exact)
+bool found_groundstate(const std::vector<charge_distribution_surface<Lyt>>& result_new_ap, const std::vector<charge_distribution_surface<Lyt>>& result_exact)
 {
-    auto min_energy_exact = std::numeric_limits<double>::max();
-    for (auto &it : result_exact)
-    {
-        if (it.second.get_system_energy() < min_energy_exact)
-        {
-            min_energy_exact = it.second.get_system_energy();
-        }
-    }
-
-    auto min_energy_new_ap = std::numeric_limits<double>::max();
-    for (auto &it : result_new_ap)
-    {
-        if (it.second.get_system_energy() < min_energy_new_ap)
-        {
-            min_energy_new_ap = it.second.get_system_energy();
-        }
-    }
+    auto min_energy_exact  = minimum_energy(result_exact);
+    auto min_energy_new_ap = minimum_energy(result_new_ap);
 
     return std::abs(min_energy_exact - min_energy_new_ap) / min_energy_exact < 0.00001;
 }
 
 template <typename Lyt>
-[[nodiscard]] std::pair<float,uint64_t> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
-                               const std::unordered_map<double, charge_distribution_surface<Lyt>>& result_exact,
+[[nodiscard]] std::pair<double, double> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
+                                  const std::vector<charge_distribution_surface<Lyt>>& result_exact,
                                const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7, const double& convlevel = 0.997)
 {
-    int                                                          count = 0;
-    std::unordered_map<double, charge_distribution_surface<Lyt>> output_ap{};
-   std::vector<double> time{};
+    int                 count = 0;
+    std::vector<double> time;
+    time.reserve(pp);
 
     for (int i = 0; i < pp; i++)
     {
-        const auto                                                         t_start = std::chrono::high_resolution_clock::now();
-        output_ap = detail::Sim<Lyt>(lyt, iteration_steps, alpha);
-        //detail::Sim<Lyt>(lyt, iteration_steps, alpha);
-        const auto t_end          = std::chrono::high_resolution_clock::now();
-        const auto elapsed        = t_end - t_start;
-        auto diff_first     = std::chrono::duration<double>(elapsed).count() * 1000;
+        const auto t_start    = std::chrono::high_resolution_clock::now();
+        auto       output_ap  = detail::faccusim<Lyt>(lyt, iteration_steps, alpha);
+        const auto t_end      = std::chrono::high_resolution_clock::now();
+        const auto elapsed    = t_end - t_start;
+        auto       diff_first = std::chrono::duration<double>(elapsed).count() * 1000;
         time.push_back(diff_first);
 
         if (found_groundstate(output_ap, result_exact))
@@ -78,21 +62,21 @@ template <typename Lyt>
 
     auto single_runtime     = std::accumulate(time.begin(), time.end(), 0.0) / pp;
     std::cout << single_runtime << std::endl;
-    auto acc            = static_cast<float>(count) / static_cast<float>(pp);
+    auto acc            = static_cast<double>(count) / static_cast<double>(pp);
 
-    auto tts = std::numeric_limits<uint64_t>::max();
+    double tts = single_runtime;
 
     if (acc == 1)
     {
-        tts = static_cast<uint64_t>(single_runtime);
+        tts = single_runtime;
     }
 
     else
     {
-        tts = static_cast<uint64_t>(single_runtime * log(1.0 - convlevel) / log(1.0 - static_cast<double>(acc)));
+        tts = (single_runtime * log(1.0 - convlevel) / log(1.0 - acc));
     }
 
-    return std::make_pair(acc*100,tts);
+    return std::make_pair(acc*100.0,tts);
 }
 
 } // namespace fiction

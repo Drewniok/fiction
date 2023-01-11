@@ -49,17 +49,17 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
       private:
         /**
-         * The distance matrix is an unordered map with pairs of cells as key and the corresponding euclidean distance
-         * as value.
+         * The distance matrix is a vector of vectors storing the euclidean distance.
          */
         using distance_matrix = std::vector<std::vector<double>>;
+
         /**
-         * The potential matrix is an unordered map with pairs of cells as key and the corresponding electrostatic
-         * potential as value.
+         * The distance matrix is a vector of vectors storing the euclidean distance.
          */
         using potential_matrix = std::vector<std::vector<double>>;
+
         /**
-         * The local electrostatic potential matrix is an unordered map with cells as key and the corresponding local
+         * It is a vector that stores the electrostatic potential
          * electrostatic potential as value.
          */
         using local_potential = std::vector<double>;
@@ -139,60 +139,122 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     };
 
     /**
-     * Assigns a given charge state to the given coordinate.
+     * @brief Assigns a certain charge state to a particular cell (assigned via an index) of the layout.
      *
-     * @param c Coordinate to assign charge state cs.
-     * @param cs Charge state to assign to coordinate c.
+     * @param i The index of the cell.
+     * @param cs The charge state to be assigned to the cell.
+     *
+     * This function assigns the given charge state to the cell of the layout at the specified index.
+     * It updates the `cell_charge` member of `strg` object with the new charge state of the specified cell.
      */
 
-    void assign_charge_state_index(const uint64_t &i , const sidb_charge_state& cs) const
+    void assign_charge_state_index(const uint64_t& i, const sidb_charge_state& cs) const
     {
-                strg->cell_charge[i]= cs;
+        strg->cell_charge[i] = cs;
     }
 
-    void assign_charge_state_cell(const cell<Lyt> &cell , const sidb_charge_state& cs) const
+    /**
+     * @brief Assigns the charge state of a particular cell of the layout.
+     *
+     * @param cell The cell whose charge state is to be assigned.
+     * @param cs The charge state to be assigned to the cell.
+     *
+     * This function assigns the given charge state to the cell of the layout.
+     * It first uses the `cell_to_index` function to convert the cell to its corresponding index
+     * and then updates the `cell_charge` member of `strg` object with the new charge state of the specified cell.
+     */
+
+    void assign_charge_state_cell(const cell<Lyt>& cell, const sidb_charge_state& cs) const
     {
-        strg->cell_charge[cell_to_index(cell)]= cs;
+        strg->cell_charge[cell_to_index(cell)] = cs;
     }
 
-    void set_charge_states(const sidb_charge_state &cs) const
+    /**
+     * @brief Sets the charge state of all NOT "EMPTY" cells in the layout to a given state.
+     *
+     * @param cs The charge state to be assigned to all the cells.
+     *
+     * This function sets the charge state of all the cells in the layout to the given state.
+     * It iterates over the `cell_charge` member of `strg` object, which is a vector
+     * of charge states for each cell, and assigns the given charge state to each element.
+     */
+
+    void set_charge_states(const sidb_charge_state& cs) const
     {
         for (int i = 0u; i < strg->cell_charge.size(); i++)
         {
-            strg->cell_charge[i]= cs;
+            strg->cell_charge[i] = cs;
         }
     }
 
     /**
-     * Returns the given coordinate's assigned charge state.
+     * @brief Returns the charge state of a cell of the layout at a given index.
      *
-     * @param c Coordinate to check.
-     * @return Charge state previously assigned to c or NONE if cell owns emtpy cell_type.
+     * @param index The index of the cell.
+     * @return The charge state of the cell at the given index.
+     *
+     * This function returns the charge state of a cell of the layout at a given index.
+     * It checks if the index is valid by comparing it with the size of the `cell_charge` vector.
+     * If the index is valid, it accesses the `cell_charge` member of `strg` object and
+     * returns the charge state at the given index.
+     * If the index is invalid, it returns NONE.
+     * This function is marked with [[nodiscard]] and noexcept, indicating that it is safe to use and
+     * does not throw exceptions.
      */
-
-    //
 
     [[nodiscard]] sidb_charge_state get_charge_state_index(const uint64_t &index) const noexcept
     {
-            return strg->cell_charge[index];
-    }
-
-    [[nodiscard]] sidb_charge_state get_charge_state_cell(const coordinate<Lyt>& c) const noexcept
-    {
-        auto it    = std::find(strg->cells.begin(), strg->cells.end(), c);
-        auto index = std::distance(it, strg->cells.begin());
-        if (it != strg->cells.end())
+        if (index > (strg->cell_charge.size() - 1))
         {
             return strg->cell_charge[index];
         }
-        std::cout << "cell is not part of the layout" << std::endl;
+        else
+        {
+            return sidb_charge_state::NONE;
+        }
     }
+
     /**
-     * Applies a function to all SiDBs' charge states on the surface. Since the charge states are fetched directly from
-     * the storage map, the given function has to receive a pair of a coordinate and a charge state as its parameter.
+     * @brief Returns the charge state of a cell of the layout at a given coordinate.
      *
-     * @tparam Fn Functor type that has to comply with the restrictions imposed by mockturtle::foreach_element.
-     * @param fn Functor to apply to each charge coordinate.
+     * @param c The coordinate of the cell.
+     * @return The charge state of the cell at the given coordinate.
+     *
+     * This function returns the charge state of a cell of the layout at a given coordinate.
+     * It uses the `cell_to_index` function to convert the coordinate of the cell to its corresponding index.
+     * Then it checks if the index is valid and if it is, it accesses the `cell_charge` member of `strg` object and
+     * returns the charge state at the given index.
+     * If the index is invalid, it returns NONE.
+     * This function is marked with [[nodiscard]] and noexcept, indicating that it is safe to use and
+     * does not throw exceptions.
+     */
+
+    [[nodiscard]] sidb_charge_state get_charge_state_cell(const coordinate<Lyt>& c) const noexcept
+    {
+        auto index = cell_to_index(c);
+        if (index != -1)
+        {
+            return strg->cell_charge[index];
+        }
+        else
+        {
+            return sidb_charge_state::NONE;
+        }
+    }
+
+    /**
+     * @brief Applies a given function to each charge state in the layout.
+     *
+     * @param fn A function to be applied to each charge state.
+     *
+     * This function applies a given function to each charge state in the layout.
+     * It uses mockturtle::detail::foreach_element function to iterate over the elements of the
+     * `cell_charge` member of the `strg` object and applies the given function `fn` to each element.
+     * This allows to perform an operation on all the elements, it can be useful if you want to apply
+     * a certain operation to all charge states.
+     *
+     * @tparam Fn Type of the function object, should be callable with the signature
+     * void(const sidb_charge_state&)
      */
     template <typename Fn>
     void foreach_charge_state(Fn&& fn) const
@@ -202,13 +264,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * The Euclidean distance for every cell (needs to exhibit an assigned cell type) pair in the layout is calculated
-     * and returned as a matrix (unordered map).
+     * @brief Initializes the distance matrix between all the cells of the layout.
      *
-     * @tparam Lyt Cell-level layout type (SiQAD coordinates are required).
-     * @tparam Dist Floating-point type for the distance.
-     * @param lyt Layout.
-     * @return Distance matrix
+     * This function initializes the distance matrix between all the cells of the layout.
+     * First, it creates an empty 2D vector (strg->dist_mat) of the size of the number of cells with all elements set to
+     * 0. Then, it iterates over the `cells` member of `strg` object, which is a vector of cell coordinates, for each
+     * pair of cells, it computes the distance between them using the `distance_sidb_pair` function and stores the
+     * distance in the corresponding position of the distance matrix.
+     *
      */
 
     void initialize_distance_matrix() const
@@ -223,14 +286,17 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             }
         }
     };
+
     /**
-     * SiQAD coordinates are converted to a nm location on the Si-substrate by taking Silicon's lattice constants into
-     * account (see simulation_parameters.hpp).
+     * @brief Computes the position of a cell in nanometers.
      *
-     * @tparam Lyt cell layout type (SiQAD coordinates are required).
-     * @tparam Dist Data type for the distance.
-     * @param c cell of the layout Lyt.
-     * @return nm position
+     * @param c The cell to compute the position for.
+     * @return A pair of double values representing the x,y position of the cell in nanometers.
+     *
+     * This function computes the position of a cell in nanometers.
+     * It uses the x,y,z coordinates of the input cell `c` and the lattice constants stored in
+     * the `sim_params` member of `strg` object to compute the position of the cell in nanometers.
+     * It returns a pair of double values representing the x,y position of the cell in nanometers.
      */
     std::pair<double, double> nm_position(const cell<Lyt>& c) const
     {
@@ -240,14 +306,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * All electrostatic inter-potentials between two cells are calculated. The Euclidean distance is provided by the
-     * distance matrix. Electrostatic potential between identical cells is set to 0.
+     * @brief Initializes the potential matrix between all the cells of the layout.
      *
-     * @tparam Lyt Cell-level layout type (SiQAD coordinates are required).
-     * @tparam Dist Floating-point type for the distance.
-     * @tparam Potential Floating-point type for the electrostatic potential.
-     * @param lyt Layout.
-     * @return Potential matrix
+     * This function initializes the potential matrix between all the cells of the layout.
+     * First, it creates an empty 2D vector (strg->pot_mat) of the size of the number of cells with all elements set to
+     * 0. Then, it iterates over the `cells` member of `strg` object, which is a vector of cell coordinates, for each
+     * pair of cells, it computes the potential between them using the `potential_sidb_pair_index` function and stores
+     * the potential in the corresponding position of the potential matrix.
+     *
      */
 
     void initialize_potential_matrix() const
@@ -262,20 +328,19 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     };
 
-
     /**
-     * The Euclidean distance in nm between two SiDBs on the H-Si surface is calculated (SiQAD coordinates are
-     * required). In the first step, SiQAD coordinates are converted to a nm position on the Si-substrate by taking
-     * Silicon's lattice constants into account (see simulation_parameters.hpp). Afterward, the Euclidean distance is
-     * calculated.
+     * @brief Computes the distance between two cells in nanometers.
      *
-     * @tparam Lyt cell-level layout type.
-     * @tparam Dist Floating-point type for the distance.
-     * @param lyt Layout.
-     * @param c1 cell coordinate.
-     * @param c2 cell coordinate.
-     * @return Euclidean distance between c1 and c2.
+     * @param c1 The first cell.
+     * @param c2 The second cell.
+     * @return The distance between the two cells in nanometers.
+     *
+     * This function computes the distance between two cells in nanometers.
+     * It uses the `nm_position` function to compute the positions of the cells in nanometers
+     * and then it computes the Euclidean distance between the two positions using the hypot function.
+     * The distance is returned as a double.
      */
+
     [[nodiscard]] constexpr double distance_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2) const
     {
         const auto pos_c1 = nm_position(c1);
@@ -286,12 +351,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * The euclidean distance of two cells (in this case two SiDBs) is returned.
+     * @brief Finds the index of a cell in the layout.
      *
-     * @tparam Lyt cell-level layout type.
-     * @param c1 cell coordinate.
-     * @param c2 cell coordinate.
-     * @return Euclidean distance between c1 and c2.
+     * @param cell The cell to find the index of.
+     * @return The index of the cell in the layout. Returns -1 if the cell is not in the layout.
+     *
+     * This function finds the index of a cell in the layout.
+     * It uses the std::find function to search for the input cell in the 'cells' member of the 'strg' object
+     * which is a vector of cell coordinates. If the cell is found in the vector, the function returns the index
+     * of the cell in the vector using the std::distance function. Otherwise, it returns -1 indicating that the
+     * cell is not part of the layout.
      */
 
     [[nodiscard]] constexpr int64_t cell_to_index(const cell<Lyt>& cell) const
@@ -307,10 +376,18 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * Returns the electrostatic potential between two cells in the layout.
-     *
-     * @return double
+ *  @brief calculates the distance between two cells
+ *  @param cell1 the first cell to compare
+ *  @param cell2 the second cell to compare
+ *  @return a constexpr double representing the distance between the two cells
+ *
+ *  This function uses the pre-calculated distance matrix stored in the strg pointer
+ *  to look up the distance between the two cells passed in as arguments. The cell_to_index
+ *  function is used to convert the cell objects into indices that can be used to look up
+ *  the distance in the matrix.
+ *  The [[nodiscard]] attribute indicate that the returned value should not be discarded by the caller.
      */
+
     [[nodiscard]] constexpr double get_distance_cell(const cell<Lyt>& cell1, const cell<Lyt>& cell2)
     {
         return strg->dist_mat[cell_to_index(cell1)][cell_to_index(cell2)];
@@ -331,15 +408,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         return strg->pot_mat[input1][input2];
     }
 
-    /**
-     * Returns the number of SiDBs to which a charge state is assigned.
-     *
-     * @return number (uint64_t)
-     */
-    //    [[nodiscard]] uint64_t num_charges() const noexcept
-    //    {
-    //        return strg->cell_id.size();
-    //    }
 
     /**
      * The electrostatic potential for a given Euclidean distance is calculated.
@@ -373,12 +441,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         {
             return 0.0;
         }
-        else
-        {
-            return (strg->sim_params.k / strg->dist_mat[index1][index2] *
-                    std::exp(-strg->dist_mat[index1][index2] / strg->sim_params.lambda_tf) *
-                    physical_sim_constants::ELECTRIC_CHARGE);
-        }
+
+        return (strg->sim_params.k / strg->dist_mat[index1][index2] *
+                std::exp(-strg->dist_mat[index1][index2] / strg->sim_params.lambda_tf) *
+                physical_sim_constants::ELECTRIC_CHARGE);
     }
 
     /**
@@ -572,7 +638,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
     void index_to_chargeconf() const
     {
-
         int charge_quot = strg->charge_index.first;
         int base        = strg->charge_index.second;
         int num_charges = this->num_cells() - 1;
@@ -586,8 +651,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
                     this->assign_charge_state_index(counter, sign_to_label(d.rem - 1));
                     counter-= 1;
-
-
         }
     }
 
@@ -624,11 +687,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         auto               count    = 0;
         float              dist_max = 0;
-        auto                coord    = -1;
+        auto               coord    = -1;
         std::vector<int>   index_vector{};
         std::vector<float> distance{};
-        index_vector.reserve(this->num_cells()-index_db.size());
-        distance.reserve(this->num_cells()-index_db.size());
+        auto               reservesize = this->num_cells() - index_db.size();
+        index_vector.reserve(reservesize);
+        distance.reserve(reservesize);
 
         for (int unocc = 0u; unocc < strg->cell_charge.size(); unocc++)
         {
@@ -647,17 +711,27 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 }
             }
 
-            coord = unocc;
             index_vector.push_back(unocc);
             distance.push_back(dist_min);
+
             if (dist_min > dist_max)
             {
                 dist_max = dist_min;
+                coord    = unocc;
+            }
+
+            else if (dist_min == dist_max)
+            {
+                if (sum_distance(index_db, coord, unocc))
+                {
+                    dist_max = dist_min;
+                    coord    = unocc;
+                }
             }
         }
 
         std::vector<int> candidates{};
-        candidates.reserve(this->num_cells());
+        candidates.reserve(reservesize);
 
         for (int i = 0u; i < distance.size(); i++)
         {
@@ -680,21 +754,17 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
-    bool sum_distance(const cell<Lyt>& c1, const cell<Lyt>& c2)
+    bool sum_distance(std::vector<int>& input, int& old, int& now)
     {
         float sum_old = 0;
         float sum_now = 0;
-        for (int i = 0u; i < strg->cell_charge.size(); i++)
+        for (int j = 0; j < input.size(); j++)
         {
-            if (strg->cell_charge[i] == sidb_charge_state::NEUTRAL)
-            {
-                continue;
-            }
-            sum_old += distance_sidb_pair(strg->cells[i], c1);
-            sum_now += distance_sidb_pair(strg->cells[i], c2);
+            sum_old += strg->dist_mat[j][old];
+            sum_now += strg->dist_mat[j][now];
         }
         return sum_now > sum_old;
-    }
+    };
 
   private:
     storage strg;
