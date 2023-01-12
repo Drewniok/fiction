@@ -121,7 +121,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param cs charge state assigned to all SiDBs.
      */
 
-    void initialize(const sidb_charge_state& cs)
+    void initialize(const sidb_charge_state& cs = sidb_charge_state::NEGATIVE)
     {
         strg->cells.reserve(this->num_cells());
         strg->cell_charge.reserve(this->num_cells());
@@ -153,7 +153,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * It updates the `cell_charge` member of `strg` object with the new charge state of the specified cell.
      */
 
-    void assign_charge_state_index(const uint64_t& i, const sidb_charge_state& cs) const
+    void
+    state_index(const uint64_t& i, const sidb_charge_state& cs) const
     {
         strg->cell_charge[i] = cs;
     }
@@ -171,9 +172,21 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
     void assign_charge_state_cell(const cell<Lyt>& cell, const sidb_charge_state& cs) const
     {
-        strg->cell_charge[cell_to_index(cell)] = cs;
+        auto index = cell_to_index(cell);
+        if (index != -1)
+        {
+            strg->cell_charge[index] = cs;
+        }
+        else
+        {
+            std::cout << "not part of the charge distribution surface" << std::endl;
+        }
     }
 
+    void assign_charge_state_index(const uint64_t& index, const sidb_charge_state& cs) const
+    {
+        strg->cell_charge[index] = cs;
+    }
     /**
      * @brief Sets the charge state of all NOT "EMPTY" cells in the layout to a given state.
      *
@@ -209,7 +222,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
     [[nodiscard]] sidb_charge_state get_charge_state_index(const uint64_t &index) const noexcept
     {
-        if (index > (strg->cell_charge.size() - 1))
+        if (index < (strg->cell_charge.size()))
         {
             return strg->cell_charge[index];
         }
@@ -370,9 +383,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
     [[nodiscard]] constexpr int64_t cell_to_index(const cell<Lyt>& cell) const
     {
-        if (auto it = std::find(strg->cells.begin(), strg->cells.begin(), cell); it != strg->cells.end())
+        auto it = std::find(strg->cells.begin(), strg->cells.end(), cell);
+        if (it != strg->cells.end())
         {
-            return static_cast<int>(std::distance(it, strg->cells.begin()));
+            std::cout << std::distance(strg->cells.begin(), it) << std::endl;
+            return static_cast<int64_t>(std::distance(strg->cells.begin(), it));
         }
         else
         {
@@ -381,16 +396,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
- *  @brief calculates the distance between two cells
- *  @param cell1 the first cell to compare
- *  @param cell2 the second cell to compare
- *  @return a constexpr double representing the distance between the two cells
- *
- *  This function uses the pre-calculated distance matrix stored in the strg pointer
- *  to look up the distance between the two cells passed in as arguments. The cell_to_index
- *  function is used to convert the cell objects into indices that can be used to look up
- *  the distance in the matrix.
- *  The [[nodiscard]] attribute indicate that the returned value should not be discarded by the caller.
+     *  @brief calculates the distance between two cells
+     *  @param cell1 the first cell to compare
+     *  @param cell2 the second cell to compare
+     *  @return a constexpr double representing the distance between the two cells
+     *
+     *  This function uses the pre-calculated distance matrix stored in the strg pointer
+     *  to look up the distance between the two cells passed in as arguments. The cell_to_index
+     *  function is used to convert the cell objects into indices that can be used to look up
+     *  the distance in the matrix.
+     *  The [[nodiscard]] attribute indicate that the returned value should not be discarded by the caller.
      */
 
     [[nodiscard]] constexpr double get_distance_cell(const cell<Lyt>& cell1, const cell<Lyt>& cell2)
@@ -398,21 +413,59 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         return strg->dist_mat[cell_to_index(cell1)][cell_to_index(cell2)];
     }
 
+    /**
+     * @brief Calculates and returns the distance index between two input values.
+     *
+     * This function calculates and returns the distance index between two input values, represented by input1 and
+     * input2. The distance index is retrieved from a 2D distance matrix stored in a struct pointed to by the strg
+     * pointer.
+     *
+     * @param input1 The first input value
+     * @param input2 The second input value
+     *
+     * @return The distance index between input1 and input2
+     */
     [[nodiscard]] constexpr double get_distance_index(const uint64_t& input1, const uint64_t& input2)
     {
         return strg->dist_mat[input1][input2];
     }
+
+    /**
+     * @brief Calculates and returns the potential of two cells.
+     *
+     * This function calculates and returns the potential of two cells, represented by input1 and input2.
+     * The potential is retrieved from a 2D potential matrix stored in a struct pointed to by the strg pointer.
+     * The cell_to_index function is used to convert the cells to corresponding indices in the potential matrix.
+     *
+     * @param input1 The first cell
+     * @param input2 The second cell
+     *
+     * @return The potential between input1 and input2
+     */
 
     [[nodiscard]] constexpr double get_potential_cell(const cell<Lyt>& input1, const cell<Lyt>& input2)
     {
         return strg->pot_mat[cell_to_index(input1)][cell_to_index(input2)];
     }
 
+    /**
+     * @brief Calculates and returns the potential of two indices.
+     *
+     * This function calculates and returns the potential of two indices, represented by input1 and input2.
+     * The potential is retrieved from a 2D potential matrix stored in a struct pointed to by the strg pointer.
+     *
+     * @attribution The constexpr keyword indicates that the function's return value is a constant expression and can be
+     * evaluated at compile-time if its inputs are known at compile-time.
+     *
+     * @param input1 The first index
+     * @param input2 The second index
+     *
+     * @return The potential between input1 and input2
+     */
     [[nodiscard]] constexpr double get_potential_index(const uint64_t& input1, const uint64_t& input2)
     {
         return strg->pot_mat[input1][input2];
     }
-
 
     /**
      * The electrostatic potential for a given Euclidean distance is calculated.
@@ -424,7 +477,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param lambda_tf Thomas-Fermi screening distance (default value).
      * @return Electrostatic potential value.
      */
-
     [[nodiscard]] double potential_sidb_pair_index(const int& c1, const int& c2) const
     {
         if (strg->dist_mat[c1][c2] == 0)
@@ -437,6 +489,19 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 physical_sim_constants::ELECTRIC_CHARGE);
     }
 
+    /**
+     * @brief Calculates and returns the potential of a pair of cells based on their distance and simulation parameters.
+     *
+     * This function calculates and returns the potential of a pair of cells, represented by c1 and c2.
+     * The potential is calculated based on the distance between the cells and simulation parameters stored in a struct
+     * pointed to by the strg pointer. The cell_to_index function is used to convert the cells to corresponding indices
+     * in the distance matrix. If the distance between the cells is zero, the function returns 0.0.
+     *
+     * @param c1 The first cell
+     * @param c2 The second cell
+     *
+     * @return The potential between c1 and c2
+     */
     [[nodiscard]] double potential_sidb_pair_cell(const cell<Lyt>& c1, const cell<Lyt>& c2) const
     {
         auto index1 = cell_to_index(c1);
@@ -452,12 +517,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 physical_sim_constants::ELECTRIC_CHARGE);
     }
 
-    /**
-     * The local electrostatic potential is calculated for each SiDB position.
-     * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
-     * charge distribution is updated.
-     */
 
+    /**
+    * The function calculates the electrostatic potential for each SiDB position (therefore local).
+    */
     void local_potential()
     {
         strg->loc_pot.resize(this->num_cells(), 0);
@@ -471,14 +534,19 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 strg->loc_pot[i] = collect;
             }
     }
-    /**
-     * The local electrostatic potential is calculated for each SiDB position.
-     * It depends on the charge configuration, hence, the local electrostatic potential has to be updated when the
-     * charge distribution is updated.
-     * @param c1 cell for which the value of the local electrostatic potential is wanted.
-     * @return local potential is returned if an SiDB is at position c1. Otherwise, std::nullopt is returned.
-     */
-    std::optional<double> get_loc_pot(const int& c1)
+
+    std::optional<double> get_loc_pot_cell(const cell<Lyt>& c1)
+    {
+        auto index = cell_to_index(c1);
+        if (index != -1)
+        {
+            return strg->loc_pot[index];
+        }
+
+        return std::nullopt;
+    };
+
+    std::optional<double> get_loc_pot_index(const int& c1)
     {
         if (c1 < strg->cells.size())
         {
@@ -512,11 +580,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         return strg->system_energy;
     }
+
     /**
      * The physically validity of the current charge distribution is evaluated and stored in the storage struct.
      * A charge distribution is valid if the *Population Stability* and the *Configuration Stability* is given.
      *
-     * @return bool indicating the validity.
      */
 
     void validity_check()
@@ -591,6 +659,15 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
+    /**
+    * @brief Returns the validity of the present charge distribution layout.
+    * The function accesses the 'validity' member variable of the 'strg' pointer, which is a boolean value
+    indicating whether the storage object is valid or not. The function returns the value of 'validity' without
+    modifying it.
+    * @param strg A pointer to a storage object.
+    * @returns bool The validity of
+    the storage object.
+    */
     [[nodiscard]] bool get_validity()
     {
         return strg->validity;
@@ -598,7 +675,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
     /**
      * The charge distribution of the charge distribution surface is converted to a unique index. It is used to map
-     * every possible charge distribution in a SiDB layout.
+     * every possible charge distribution of a SiDB layout to an index.
      *
      * @tparam Lyt cell-level layout.
      * @tparam base number of charge states per SiDB. Base = 2 when only neutrally and negatively charged SiDBs are
@@ -677,16 +754,34 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         }
     }
 
+    /**
+    * @brief Returns the maximum index of the cell-level layout.
+    * The function accesses the 'max_charge_index' member variable of the 'strg' pointer, which is an unsigned 64-bit
+    integer. The function returns the value of 'max_charge_index' without modifying it.
+    * @returns uint64_t The maximal index.
+     */
     uint64_t get_max_charge_index()
     {
         return strg->max_charge_index;
     }
 
+    /**
+* The funcion assigns a certain charge state to the layout and charge distribution is updated correspondingly.
+* @returns uint64_t The maximal index.
+ */
     void assign_charge_index(const uint64_t& index)
     {
         strg->charge_index.first = index;
         this->index_to_chargeconf();
     }
+
+    /**
+     * This method is used for the faccusim algorithm (see new_approach.hpp).
+     * It gets a vector with indices representing negatively charged SiDBs as input. Afterward, a distant and neutrlly charged SiDB is localized using a new method.
+     * This selected SiDB is set to negativ and the index is added to the input vector such that the next iteration works correctly.
+     * @param alpha
+     * @param index_db
+     */
 
     void next_N(const double alpha, std::vector<int>& index_db)
     {
@@ -751,13 +846,21 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         int random_element                = index_vector[candidates[random_index]];
         strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;
         index_db.push_back(random_element);
-        strg->system_energy += -this->get_loc_pot(random_element).value();
+        strg->system_energy += -this->get_loc_pot_index(random_element).value();
 
         for (int i = 0u; i < strg->pot_mat.size(); i++)
         {
             strg->loc_pot[i] += -this->get_potential_index(i, random_element);
         }
     }
+
+    /**
+    * Compares the sum of distances between elements of a given input vector and two indices (old and now) in a distance matrix.
+    * @param input A vector of integers representing the elements to compare the distances with.
+    * @param old An integer representing the old index to compare the distances with.
+    * @param now An integer representing the now index to compare the distances with.
+    * @returns bool A boolean value indicating if the sum of distances with now index is greater than the sum of distances with old index.
+    */
 
     bool sum_distance(std::vector<int>& input, int& old, int& now)
     {

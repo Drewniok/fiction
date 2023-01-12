@@ -17,18 +17,21 @@
 namespace fiction
 {
 
-double occu_prop(std::map<double, uint64_t>& energy_deg, const uint64_t &temp)
+double occu_prop(std::map<double, uint64_t>& energy_deg, const double &temp)
 {
     double part_func = 0;
 
-    for (auto& it : energy_deg)
+    for (const auto& it : energy_deg)
     {
-        part_func += static_cast<double>(it.second) * std::exp(-it.first * 12000 / static_cast<double>(temp));
+        std::cout << static_cast<double>(it.second) << " | " << it.first << std::endl;
+        part_func += static_cast<double>(it.second) * std::exp(-it.first * 12000 / temp);
     }
 
     auto it = energy_deg.begin();
 
-    return static_cast<double>(it->second) * std::exp(-it->first * 12000 / static_cast<double>(temp)) / part_func;
+    std::cout << "T: " << temp << " | " << part_func << " | " << static_cast<double>(it->second) * std::exp(-it->first * 12000 / temp) / part_func << std::endl;
+
+    return static_cast<double>(it->second) * std::exp(-it->first * 12000 / temp) / part_func;
 
 };
 
@@ -71,9 +74,8 @@ double critical_temp(const std::vector<charge_distribution_surface<Lyt>>& valid_
     std::vector<double> temp_values{};
     double start = 0.1;
     double end = temp_limit;
-    double increment = (end - start) / 999;
-    for (double i = start; i <= end; i += increment) {
-        temp_values.push_back(i);
+    for (int i = start; i <= end*5; i ++) {
+        temp_values.push_back(static_cast<double>(i)/5.0);
     }
 
     auto valid_lyts_unique = valid_lyts;
@@ -84,20 +86,20 @@ double critical_temp(const std::vector<charge_distribution_surface<Lyt>>& valid_
 
     for (auto& it : valid_lyts_unique)
     {
-        std::cout << it.get_system_energy() << std::endl;
-        energies.push_back(std::round(it.get_system_energy()*1000)/1000);
+       energies.push_back(std::round(it.get_system_energy()*10000)/10000);
     }
 
     auto min_energy = minimum_energy(valid_lyts_unique);
 
     for (int i = 0u; i < energies.size(); i++)
     {
-        //std::cout << energies[i] << std::endl;
+
         energies[i]      = energies[i] - min_energy;
+
         uint64_t counter = 0;
         for (auto& it : valid_lyts_unique)
         {
-            if (std::abs(energies[i] - (it.get_system_energy() - min_energy))  < 0.001)
+            if (std::abs(energies[i] - (it.get_system_energy() - min_energy))  < 0.0001)
             {
                 counter += 1;
             }
@@ -106,7 +108,6 @@ double critical_temp(const std::vector<charge_distribution_surface<Lyt>>& valid_
                 continue;
             }
         }
-        //std::cout << counter << std::endl;
         energy_deg.insert(std::make_pair(energies[i], counter));
     }
 
@@ -118,7 +119,7 @@ double critical_temp(const std::vector<charge_distribution_surface<Lyt>>& valid_
         {
             return temp;
         }
-        else if (temp == (temp_limit - 1))
+        else if (std::abs(temp - temp_limit) < 0.001)
         {
             return temp_limit;
         }

@@ -13,6 +13,7 @@
 
 namespace fiction
 {
+
 template <typename Lyt>
 double minimum_energy(const std::vector<charge_distribution_surface<Lyt>>& result)
 {

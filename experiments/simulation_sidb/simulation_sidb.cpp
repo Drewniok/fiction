@@ -29,10 +29,22 @@ int main()
     double                sum_acc = 0u;
     std::vector<uint64_t> db_num{};
     uint64_t              benchmark_counter = 0u;
-    uint64_t              sum_ct = 0u;
+    double              sum_ct = 0u;
 
     std::vector<std::string> folders = {
-        "../../experiments/bestagon/layouts/defect_robust/",
+       // "../../experiments/bestagon/layouts/gates/and/",
+        //"../../experiments/bestagon/layouts/gates/cx/",
+        "../../experiments/bestagon/layouts/gates/fo2/",
+//        "../../experiments/bestagon/layouts/gates/ha/",
+        //"../../experiments/bestagon/layouts/gates/hourglass/",
+//        "../../experiments/bestagon/layouts/gates/inv/",
+//        "../../experiments/bestagon/layouts/gates/nand/",
+//        "../../experiments/bestagon/layouts/gates/nor/",
+//        "../../experiments/bestagon/layouts/gates/or/",
+//        "../../experiments/bestagon/layouts/gates/wire/",
+//        "../../experiments/bestagon/layouts/gates/xnor/",
+//        "../../experiments/bestagon/layouts/gates/xor/",
+
     };
 
     for (const auto& folder : folders)
@@ -56,7 +68,7 @@ int main()
                 //                auto tts = 1;
                 //                auto acc = 1;
 
-                auto ct = fiction::critical_temp<fiction::sidb_cell_clk_lyt_siq>(exactlyt, 0.99);
+                auto ct = fiction::critical_temp<fiction::sidb_cell_clk_lyt_siq>(exactlyt, 0.997);
 
                 // auto result = fiction::detail::faccusim(charge_layout);
 
@@ -67,7 +79,7 @@ int main()
                 auto [acc, tts] =
                     fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
 
-                simulation_exp(benchmark, runtime, acc, tts, std::to_string(lyt.num_cells()), static_cast<double>(ct));
+                simulation_exp(benchmark, runtime, acc, tts, std::to_string(lyt.num_cells()), ct);
                 db_num.push_back(lyt.num_cells());
                 sum_sr += runtime;
                 sum_acc += acc;
@@ -80,7 +92,7 @@ int main()
     auto min_db_num = std::min_element(db_num.begin(), db_num.end());
     auto max_db_num = std::max_element(db_num.begin(), db_num.end());
     auto mean_acc   = sum_acc / static_cast<double>(benchmark_counter);
-    auto mean_ct    = static_cast<double>(sum_ct) / static_cast<double>(benchmark_counter);
+    auto mean_ct    = sum_ct / static_cast<double>(benchmark_counter);
 
     simulation_exp("sum", sum_sr, mean_acc, sum_tts,
                    std::to_string(*min_db_num) + " -- " + std::to_string(*max_db_num), mean_ct);
