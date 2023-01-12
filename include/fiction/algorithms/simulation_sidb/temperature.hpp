@@ -66,8 +66,16 @@ std::vector<charge_distribution_surface<Lyt>> removeDuplicates(std::vector<charg
 }
 
 template <typename Lyt>
-uint64_t critical_temp(const std::vector<charge_distribution_surface<Lyt>>& valid_lyts, const uint64_t temp_limit = 400, const double convlevel = 0.997)
+double critical_temp(const std::vector<charge_distribution_surface<Lyt>>& valid_lyts, const double convlevel = 0.997, const double temp_limit = 400.0)
 {
+    std::vector<double> temp_values{};
+    double start = 0.1;
+    double end = temp_limit;
+    double increment = (end - start) / 999;
+    for (double i = start; i <= end; i += increment) {
+        temp_values.push_back(i);
+    }
+
     auto valid_lyts_unique = valid_lyts;
     std::vector<double>        energies{};
     std::map<double, uint64_t> energy_deg{};
@@ -76,6 +84,7 @@ uint64_t critical_temp(const std::vector<charge_distribution_surface<Lyt>>& vali
 
     for (auto& it : valid_lyts_unique)
     {
+        std::cout << it.get_system_energy() << std::endl;
         energies.push_back(std::round(it.get_system_energy()*1000)/1000);
     }
 
@@ -83,6 +92,7 @@ uint64_t critical_temp(const std::vector<charge_distribution_surface<Lyt>>& vali
 
     for (int i = 0u; i < energies.size(); i++)
     {
+        //std::cout << energies[i] << std::endl;
         energies[i]      = energies[i] - min_energy;
         uint64_t counter = 0;
         for (auto& it : valid_lyts_unique)
@@ -96,12 +106,13 @@ uint64_t critical_temp(const std::vector<charge_distribution_surface<Lyt>>& vali
                 continue;
             }
         }
+        //std::cout << counter << std::endl;
         energy_deg.insert(std::make_pair(energies[i], counter));
     }
 
-    for (uint64_t temp = 1.0; temp <  temp_limit; temp++)
-    {
 
+    for (const auto &temp: temp_values)
+    {
 
         if (occu_prop(energy_deg,temp) < convlevel)
         {

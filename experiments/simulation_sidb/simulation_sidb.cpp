@@ -20,8 +20,8 @@
 
 int main()
 {
-    experiments::experiment<std::string, double, double, double, std::string, uint64_t> simulation_exp{
-        "benchmark",    "gates",    "single runtime exact (in ms.)", "simulation accuracy (in %)",
+    experiments::experiment<std::string, double, double, double, std::string, double> simulation_exp{
+        "benchmark",    "gates",     "single runtime exact (in ms.)", "simulation accuracy (in %)",
         "TTS (in ms.)", "SiDB dots", "critical temperature [K]"};
 
     double                sum_sr  = 0u;
@@ -32,8 +32,7 @@ int main()
     uint64_t              sum_ct = 0u;
 
     std::vector<std::string> folders = {
-        "../../experiments/bestagon/layouts/gates/and/",  "../../experiments/bestagon/layouts/gates/fo2/",
-        "../../experiments/bestagon/layouts/gates/xnor/",
+        "../../experiments/bestagon/layouts/defect_robust/",
     };
 
     for (const auto& folder : folders)
@@ -52,22 +51,23 @@ int main()
 
                 fiction::charge_distribution_surface charge_layout{lyt, params};
 
-              // auto [runtime, exactlyt] = fiction::detail::exgs(charge_layout);
-                auto runtime = 1;
-                auto tts = 1;
-                auto acc = 1;
+                auto [runtime, exactlyt] = fiction::detail::exgs(charge_layout);
+                //                auto runtime = 1;
+                //                auto tts = 1;
+                //                auto acc = 1;
 
+                auto ct = fiction::critical_temp<fiction::sidb_cell_clk_lyt_siq>(exactlyt, 0.99);
 
-                //auto ct = fiction::critical_temp<fiction::sidb_cell_clk_lyt_siq>(exactlyt);
+                // auto result = fiction::detail::faccusim(charge_layout);
 
-                //auto result = fiction::detail::faccusim(charge_layout);
+                // auto ct =
+                // fiction::critical_temp<fiction::sidb_cell_clk_lyt_siq>(fiction::detail::faccusim(charge_layout, 1000,
+                // 0.5));
 
-                auto ct = fiction::critical_temp<fiction::sidb_cell_clk_lyt_siq>(fiction::detail::faccusim(charge_layout, 1000, 0.5));
+                auto [acc, tts] =
+                    fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
 
-//                auto [acc, tts] =
-//                    fiction::sim_acc_tts<fiction::sidb_cell_clk_lyt_siq>(charge_layout, exactlyt, 100, 80);
-
-                simulation_exp(benchmark, runtime, acc, tts, std::to_string(lyt.num_cells()), ct);
+                simulation_exp(benchmark, runtime, acc, tts, std::to_string(lyt.num_cells()), static_cast<double>(ct));
                 db_num.push_back(lyt.num_cells());
                 sum_sr += runtime;
                 sum_acc += acc;
@@ -80,7 +80,7 @@ int main()
     auto min_db_num = std::min_element(db_num.begin(), db_num.end());
     auto max_db_num = std::max_element(db_num.begin(), db_num.end());
     auto mean_acc   = sum_acc / static_cast<double>(benchmark_counter);
-    auto mean_ct   = sum_ct / static_cast<double>(benchmark_counter);
+    auto mean_ct    = static_cast<double>(sum_ct) / static_cast<double>(benchmark_counter);
 
     simulation_exp("sum", sum_sr, mean_acc, sum_tts,
                    std::to_string(*min_db_num) + " -- " + std::to_string(*max_db_num), mean_ct);
