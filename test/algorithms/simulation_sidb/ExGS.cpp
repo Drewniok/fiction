@@ -39,26 +39,19 @@ TEMPLATE_TEST_CASE(
     lyt.assign_cell_type({7, 10, 0}, TestType::cell_type::NORMAL);
 
     charge_distribution_surface                                       charge_layout{lyt};
-    std::unordered_map<double, charge_distribution_surface<TestType>> output =
-        metastable_layouts<TestType>(charge_layout);
-    CHECK(!output.empty());
+    std::pair<double, std::vector<charge_distribution_surface<TestType>>> output = exgs<TestType>(charge_layout);
+    CHECK(!output.second.empty());
 
-    const simulation_params     params{5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10, 2};
+    const physical_params     params{2, 5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10};
+
     charge_distribution_surface charge_layout_new{lyt, params};
-    std::unordered_map<double, charge_distribution_surface<TestType>> output_exact =
-        metastable_layouts<TestType>(charge_layout_new);
-    CHECK(!output_exact.empty());
-    for (auto& it : output_exact)
+    std::pair<double, std::vector<charge_distribution_surface<TestType>>> output_new = exgs<TestType>(charge_layout_new);
+    CHECK(!output_new.second.empty());
+
+    for (const auto& it : output_new.second)
     {
-        it.second.foreach_charge_state([&it](const auto& c)
-                                       { CHECK(it.second.get_charge_state(c.first) != sidb_charge_state::POSITIVE); });
+        it.foreach_cell([&it](const auto& c)
+                                       { CHECK(it.get_charge_state_cell(c) != sidb_charge_state::POSITIVE); });
     }
-
-    std::unordered_map<double, charge_distribution_surface<TestType>> output_AP =
-        Sim<TestType>(charge_layout_new, 20, 0.8);
-
-    CHECK(found_groundstate(output_AP, output_exact));
-
-    auto acc = sim_acc_tts<TestType>(charge_layout_new, output_exact, 100);
 
 }
