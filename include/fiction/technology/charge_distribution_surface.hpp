@@ -841,16 +841,22 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             }
         }
 
-        int random_index = rand() % candidates.size();
-
-        int random_element                = index_vector[candidates[random_index]];
-        strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;
-        index_db.push_back(random_element);
-        strg->system_energy += -this->get_loc_pot_index(random_element).value();
-
-        for (int i = 0u; i < strg->pot_mat.size(); i++)
+        if (candidates.size()!=0)
         {
-            strg->loc_pot[i] += -this->get_potential_index(i, random_element);
+            auto random_index = static_cast<int>(rand() % candidates.size());
+
+            if (random_index > -1)
+            {
+                int random_element                = index_vector[candidates[random_index]];
+                strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;
+                index_db.push_back(random_element);
+                strg->system_energy += -this->get_loc_pot_index(random_element).value();
+
+                for (int i = 0u; i < strg->pot_mat.size(); i++)
+                {
+                    strg->loc_pot[i] += -this->get_potential_index(i, random_element);
+                }
+            }
         }
     }
 

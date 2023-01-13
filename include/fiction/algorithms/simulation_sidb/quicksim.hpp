@@ -2,8 +2,8 @@
 // Created by Jan Drewniok on 22.12.22.
 //
 
-#ifndef FICTION_NEW_APPROACH_HPP
-#define FICTION_NEW_APPROACH_HPP
+#ifndef FICTION_QUICKSIM_HPP
+#define FICTION_QUICKSIM_HPP
 
 #include "fiction/technology/charge_distribution_surface.hpp"
 
@@ -12,7 +12,7 @@ namespace fiction::detail
 {
 
 template <typename Lyt>
-std::vector<charge_distribution_surface<Lyt>> faccusim(charge_distribution_surface<Lyt>& lyt,
+std::vector<charge_distribution_surface<Lyt>> quicksim(charge_distribution_surface<Lyt>& lyt,
                                                        const int iteration_steps = 70, const double alpha = 0.7)
 
 {
@@ -61,4 +61,4 @@ std::vector<charge_distribution_surface<Lyt>> faccusim(charge_distribution_surfa
 
 }  // namespace fiction::detail
 
-#endif  // FICTION_NEW_APPROACH_HPP
+#endif  // FICTION_QUICKSIM_HPP

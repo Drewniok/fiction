@@ -5,11 +5,11 @@
 #ifndef FICTION_TTS_HPP
 #define FICTION_TTS_HPP
 
+#include <fiction/algorithms/simulation_sidb/quicksim.hpp>
 #include <fiction/technology/charge_distribution_surface.hpp>
-#include <fiction/algorithms/simulation_sidb/new_approach.hpp>
-#include <limits>
-#include <chrono>
 
+#include <chrono>
+#include <limits>
 
 namespace fiction
 {
@@ -49,7 +49,7 @@ template <typename Lyt>
     for (int i = 0; i < pp; i++)
     {
         const auto t_start    = std::chrono::high_resolution_clock::now();
-        auto       output_ap  = detail::faccusim<Lyt>(lyt, iteration_steps, alpha);
+        auto       output_ap  = detail::quicksim<Lyt>(lyt, iteration_steps, alpha);
         const auto t_end      = std::chrono::high_resolution_clock::now();
         const auto elapsed    = t_end - t_start;
         auto       diff_first = std::chrono::duration<double>(elapsed).count() * 1000;
