@@ -11,7 +11,6 @@
 #include <fiction/technology/cell_technologies.hpp>
 
 using namespace fiction;
-using namespace detail;
 
 TEMPLATE_TEST_CASE(
     "quicksim test", "[quicksim]",
@@ -33,15 +32,14 @@ TEMPLATE_TEST_CASE(
     lyt.assign_cell_type({6, 10, 0}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({7, 10, 0}, TestType::cell_type::NORMAL);
 
-    charge_distribution_surface                                       charge_layout{lyt};
-    auto output = quicksim<TestType>(charge_layout);
+    charge_distribution_surface charge_layout{lyt};
+    quicksim_stats<TestType> quicksimstats{};
+    quicksim<TestType>(charge_layout, quicksimstats);
 
-    CHECK(!output.empty());
+    CHECK(!quicksimstats.valid_lyts.empty());
 
-    for (const auto& it : output)
+    for (const auto& it : quicksimstats.valid_lyts)
     {
-        it.foreach_cell([&it](const auto& c)
-                                       { CHECK(it.get_charge_state_cell(c) != sidb_charge_state::POSITIVE); });
+        CHECK(!it.charge_exists(sidb_charge_state::POSITIVE));
     }
-
 }

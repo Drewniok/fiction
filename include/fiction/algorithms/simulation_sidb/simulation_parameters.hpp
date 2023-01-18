@@ -7,12 +7,24 @@
 
 #include "fiction/technology/constants.hpp"
 
+#include <cstdint>
+
 namespace fiction
 {
+/**
+     * This struct collects all physical parameters. It may be useful to change these. Especially when experiments revealed new ones.
+     * @param base_number simulations can be conducted with 2 and 3 charge states. 2 ^= (Negative, Neutral), 3 ^^ (Negative, Neutral, Positive)
+     * @param mu_minus it is the energy transition level (0/-)
+     * @param relative_permittivity it describes the electric fiedl reduction due to polarization.
+     * @param screening_distance it is also called Thomas-Fermi screening and it describes the electric field screening due to free charges.
+     * @param a lattice constant
+     * @param b lattice constant
+     * @param c lattice constant
+ */
 struct physical_params
 {
-    explicit physical_params(const uint8_t base_number = 3, const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9,
-                               const double mu_minus = -0.32, const double a = 3.84 * 1E-10,
+    explicit physical_params(const uint8_t base_number = 3, const double mu_minus = -0.32, const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9,
+                               const double a = 3.84 * 1E-10,
                                const double b = 7.68 * 1E-10, const double c = 2.25 * 1E-10) noexcept :
             lat_a{a},
             lat_b{b},
@@ -29,40 +41,40 @@ struct physical_params
     /**
      * lat_a is the lattice vector in x-direction.
      */
-    const double lat_a;
+    double lat_a;
     /**
      * lat_b is the lattice vector in y-direction.
      */
-    const double lat_b;
+    double lat_b;
     /**
      * lat_c is the dimer pair separation.
      */
-    const double lat_c;
+    double lat_c;
     /**
      * epsilon_r is the electric permittivity. It is a material specific number.
      */
-    const double epsilon_r;
+    double epsilon_r;
     /**
      * k is the Coulomb constant and is inversely proportinal to the electric permittivity.
      */
-    const double k;
+    double k;
     /**
      * lambda_tf is the Thomas-Fermi screening distance.
      */
-    const double lambda_tf;
+    double lambda_tf;
     /**
      * µ- is the energy transition level (0/-)
      */
-    const double mu;
+    double mu;
     /**
      * µ+ is the energy transition level (+/0)
      */
-    const double mu_p;
+    double mu_p;
     /**
      * base can be either 2 or 3 and describes the assumed number of charge states of one SiDB.
      * It often makes sense to assume only negatively and neutrally charged SiDBs.
      */
-    const uint8_t base;
+    uint8_t base;
 };
 }  // namespace fiction
 

@@ -4,16 +4,13 @@
 
 #include "fiction/algorithms/simulation_sidb/ExGS.hpp"
 #include <catch2/catch_template_test_macros.hpp>
-#include "fiction/algorithms/simulation_sidb/quicksim.hpp"
-
-#include <fiction/layouts/cartesian_layout.hpp>
-#include <fiction/layouts/cell_level_layout.hpp>
-#include <fiction/layouts/clocked_layout.hpp>
-#include <fiction/layouts/hexagonal_layout.hpp>
-#include <fiction/technology/cell_technologies.hpp>
+#include "fiction/layouts/cartesian_layout.hpp"
+#include "fiction/layouts/cell_level_layout.hpp"
+#include "fiction/layouts/clocked_layout.hpp"
+#include "fiction/layouts/hexagonal_layout.hpp"
+#include "fiction/technology/cell_technologies.hpp"
 
 using namespace fiction;
-using namespace detail;
 
 TEMPLATE_TEST_CASE(
     "exhaustive ground state search", "[ExGS]",
@@ -35,20 +32,23 @@ TEMPLATE_TEST_CASE(
     lyt.assign_cell_type({6, 10, 0}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({7, 10, 0}, TestType::cell_type::NORMAL);
 
-    charge_distribution_surface                                       charge_layout{lyt};
-    std::pair<double, std::vector<charge_distribution_surface<TestType>>> output = exgs<TestType>(charge_layout);
-    CHECK(!output.second.empty());
+    charge_distribution_surface charge_layout{lyt};
+    exgs_stats<TestType>  exgs_stats{};
+    exgs<TestType>(charge_layout, exgs_stats);
+    auto size_before = exgs_stats.valid_lyts.size();
+    exgs<TestType>(charge_layout, exgs_stats);
+    auto size_after = exgs_stats.valid_lyts.size();
+    CHECK(size_before == size_after);
 
-    const physical_params     params{2, 5.6, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10};
+    CHECK(!exgs_stats.valid_lyts.empty());
 
-    charge_distribution_surface charge_layout_new{lyt, params};
-    std::pair<double, std::vector<charge_distribution_surface<TestType>>> output_new = exgs<TestType>(charge_layout_new);
-    CHECK(!output_new.second.empty());
+    const physical_params     params{2};
+    exgs<TestType>(charge_layout, exgs_stats, params);
 
-    for (const auto& it : output_new.second)
+
+    for (const auto& it : exgs_stats.valid_lyts)
     {
-        it.foreach_cell([&it](const auto& c)
-                                       { CHECK(it.get_charge_state_cell(c) != sidb_charge_state::POSITIVE); });
+        CHECK(!it.charge_exists(sidb_charge_state::POSITIVE));
     }
 
 }

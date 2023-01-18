@@ -5,8 +5,11 @@
 #ifndef FICTION_TTS_HPP
 #define FICTION_TTS_HPP
 
-#include <fiction/algorithms/simulation_sidb/quicksim.hpp>
-#include <fiction/technology/charge_distribution_surface.hpp>
+#include "fiction/algorithms//simulation_sidb/check_groundstate.hpp"
+#include "fiction/algorithms//simulation_sidb/minimum_energy.hpp"
+#include "fiction/algorithms/simulation_sidb/ExGS.hpp"
+#include "fiction/algorithms/simulation_sidb/quicksim.hpp"
+#include "fiction/technology/charge_distribution_surface.hpp"
 
 #include <chrono>
 #include <limits>
@@ -14,33 +17,23 @@
 namespace fiction
 {
 
-template <typename Lyt>
-double minimum_energy(const std::vector<charge_distribution_surface<Lyt>>& result)
+struct tts_stats
 {
-    auto min_energy = std::numeric_limits<double>::max();
-    for (const auto &lyt : result)
+    double tts{};
+    double acc{};
+    double mean_single_runtime{};
+
+    void report(std::ostream& out = std::cout)
     {
-        if (lyt.get_system_energy() < min_energy)
-        {
-            min_energy = lyt.get_system_energy();
-        }
+        out << fmt::format("tts: {} | acc: {} | t_(s): {} \n", tts, acc, mean_single_runtime);
     }
-    return min_energy;
-}
+};
 
+\
 template <typename Lyt>
-bool found_groundstate(const std::vector<charge_distribution_surface<Lyt>>& result_new_ap, const std::vector<charge_distribution_surface<Lyt>>& result_exact)
-{
-    auto min_energy_exact  = minimum_energy(result_exact);
-    auto min_energy_new_ap = minimum_energy(result_new_ap);
-
-    return std::abs(min_energy_exact - min_energy_new_ap) / min_energy_exact < 0.00001;
-}
-
-template <typename Lyt>
-[[nodiscard]] std::pair<double, double> sim_acc_tts(charge_distribution_surface<Lyt>&                                   lyt,
-                                  const std::vector<charge_distribution_surface<Lyt>>& result_exact,
-                               const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7, const double convlevel = 0.997)
+void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stats<Lyt>& result_exact,
+                 const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7,
+                 const double convlevel = 0.997)
 {
     int                 count = 0;
     std::vector<double> time;
@@ -48,22 +41,23 @@ template <typename Lyt>
 
     for (int i = 0; i < pp; i++)
     {
-        const auto t_start    = std::chrono::high_resolution_clock::now();
-        auto       output_ap  = detail::quicksim<Lyt>(lyt, iteration_steps, alpha);
+        quicksim_stats<Lyt> stats_quick{};
+        const auto          t_start = std::chrono::high_resolution_clock::now();
+        quicksim<Lyt>(lyt, stats_quick, lyt.get_phys_params(), iteration_steps, alpha);
         const auto t_end      = std::chrono::high_resolution_clock::now();
         const auto elapsed    = t_end - t_start;
-        auto       diff_first = std::chrono::duration<double>(elapsed).count() * 1000;
+        auto       diff_first = std::chrono::duration<double>(elapsed).count();
         time.push_back(diff_first);
 
-        if (found_groundstate(output_ap, result_exact))
+        if (check_groundstate(stats_quick, result_exact))
         {
             count += 1;
         }
     }
 
-    auto single_runtime     = std::accumulate(time.begin(), time.end(), 0.0) / pp;
+    auto single_runtime = std::accumulate(time.begin(), time.end(), 0.0) / pp;
     std::cout << single_runtime << std::endl;
-    auto acc            = static_cast<double>(count) / static_cast<double>(pp);
+    auto acc = static_cast<double>(count) / static_cast<double>(pp);
 
     double tts = single_runtime;
 
@@ -77,8 +71,10 @@ template <typename Lyt>
         tts = (single_runtime * log(1.0 - convlevel) / log(1.0 - acc));
     }
 
-    return std::make_pair(acc*100.0,tts);
+    ts.tts                 = tts;
+    ts.acc                 = acc * 100;
+    ts.mean_single_runtime = single_runtime;
 }
 
-} // namespace fiction
+}  // namespace fiction
 #endif  // FICTION_TTS_HPP

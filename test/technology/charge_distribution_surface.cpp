@@ -218,7 +218,7 @@ TEMPLATE_TEST_CASE(
         CHECK(charge_layout.get_potential_cell({0, 0, 0}, {0, 0, 0}) == 0.0);
         CHECK(charge_layout.get_potential_cell({1, 8, 0}, {1, 8, 0}) == 0.0);
         CHECK(charge_layout.get_potential_cell({1, 10, 1}, {1, 10, 1}) == 0.0);
-        CHECK((charge_layout.get_potential_cell({1, 8, 1}, {0, 0, 0}) - 0.0121934043) < 0.00000001);
+        CHECK((charge_layout.get_potential_cell({1, 8, 0}, {0, 0, 0}) - 0.0121934043) < 0.00000001);
         CHECK(charge_layout.get_potential_cell({0, 0, 0}, {1, 10, 1}) == charge_layout.get_potential_cell({1, 10, 1}, {0, 0, 0}));
         CHECK(charge_layout.get_potential_cell({0, 0, 0}, {1, 8, 0}) > charge_layout.get_potential_cell({1, 10, 1}, {0, 0, 0}));
     }
@@ -359,7 +359,7 @@ TEMPLATE_TEST_CASE(
     SECTION("increase charge index")
     {
         TestType                lyt_new{{11, 11}};
-        const physical_params params{3, 5.0 * 1E-9, -0.32, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10};
+        const physical_params params{3, -0.32, 5.0 * 1E-9, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10};
 
         lyt_new.assign_cell_type({0, 0, 1}, TestType::cell_type::NORMAL);
         lyt_new.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);

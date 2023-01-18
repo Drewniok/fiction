@@ -6,11 +6,40 @@
 #define FICTION_EXGS_HPP
 
 #include "fiction/technology/charge_distribution_surface.hpp"
-#include <fiction/utils/hash.hpp>
+#include "fiction/utils/hash.hpp"
+#include <mockturtle/utils/stopwatch.hpp>
 
-namespace fiction::detail
+namespace fiction
 
 {
+
+template <typename Lyt>
+struct exgs_stats
+{
+    mockturtle::stopwatch<>::duration time_total{0};
+    std::vector<charge_distribution_surface<Lyt>> valid_lyts{};
+
+    void report(std::ostream& out = std::cout)
+    {
+        out << fmt::format("total time  = {:.2f} millisecs\n", time_total / 1000);
+        if (!get_statistics<Lyt>(valid_lyts).empty())
+        {
+            for (auto [energy, count] : get_statistics<Lyt>(valid_lyts))
+            {
+                out << fmt::format("energy: {} | occurance: {} \n", energy, count);
+            }
+            out << fmt::format("the ground state energy is  = {:.4f} \n", minimum_energy(valid_lyts));
+        }
+        else
+        {
+            std::cout << "no state found | if two state simulation is used, continue with three state" << std::endl;
+        }
+
+        out << fmt::format("{} phyiscally valid charge states were found \n", valid_lyts.size());
+        std::cout << "_____________________________________________________ \n";
+    }
+};
+
 /**
  *  All metastable and physically valid charge distribution layouts are computed, stored in a vector and returned.
  *
@@ -19,13 +48,15 @@ namespace fiction::detail
  * @return a vector of different charge distribution layouts, all of which satisfy the validity test.
  */
 template <typename Lyt>
-std::pair<double, std::vector<charge_distribution_surface<Lyt>>> exgs(charge_distribution_surface<Lyt>& lyt)
+void exgs(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& ps,
+          const physical_params& phys_params = physical_params{})
 
 {
-
-    auto t_start = std::chrono::high_resolution_clock::now();
-
-    std::vector<charge_distribution_surface<Lyt>> collect{};
+    mockturtle::stopwatch stop{ps.time_total};
+    ps = exgs_stats<Lyt>{};
+    lyt.set_physical_parameters(phys_params);
+    lyt.set_charge_states(sidb_charge_state::NEGATIVE);
+    lyt.chargeconf_to_index();
 
     while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
     {
@@ -36,7 +67,7 @@ std::pair<double, std::vector<charge_distribution_surface<Lyt>>> exgs(charge_dis
         if (lyt.get_validity())
         {
             charge_distribution_surface<Lyt> lyt_new{lyt};
-            collect.push_back(lyt_new);
+            ps.valid_lyts.push_back(lyt_new);
         }
 
         lyt.increase_charge_index();
@@ -44,23 +75,16 @@ std::pair<double, std::vector<charge_distribution_surface<Lyt>>> exgs(charge_dis
 
     lyt.local_potential();
     lyt.system_energy();
-
     lyt.validity_check();
 
     if (lyt.get_validity())
     {
-       charge_distribution_surface<Lyt> lyt_new{lyt};
-       collect.push_back(lyt_new);
+        charge_distribution_surface<Lyt> lyt_new{lyt};
+        ps.valid_lyts.push_back(lyt_new);
+        std::cout << "found" << std::endl;
     }
 
-    auto t_end          = std::chrono::high_resolution_clock::now();
-    auto elapsed        = t_end - t_start;
-    auto diff_first     = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-
-    return std::make_pair(diff_first, collect);
-
 };
-
-};  // namespace fiction::detail
+};  // namespace fiction
 
 #endif  // FICTION_EXGS_HPP

@@ -1,0 +1,39 @@
+//
+// Created by Jan Drewniok on 17.01.23.
+//
+
+#ifndef FICTION_GET_ENERGY_DIST_HPP
+#define FICTION_GET_ENERGY_DIST_HPP
+
+#include "fiction/technology/charge_distribution_surface.hpp"
+#include "fiction/traits.hpp"
+
+#include <iostream>
+#include <map>
+#include <vector>
+
+namespace fiction
+{
+
+/**
+ * This function takes in a vector of charge_distribution_surface objects and returns a map containing the system energy
+ * and the number of occurrences of that energy in the input vector.
+ * @tparam Lyt The type of the charge_distribution_surface objects in the input vector.
+ * @param input_vec A vector of charge_distribution_surface objects for which statistics are to be computed.
+ * @return A map containing the system energy as the key and the number of occurrences of that energy in the input
+ * vector as the value.
+ */
+template <typename Lyt>
+std::map<double, int> get_statistics(const std::vector<charge_distribution_surface<Lyt>>& input_vec)
+{
+    std::map<double, int> statistics;
+    for (auto& lyt : input_vec)
+    {
+        auto energy = round(lyt.get_system_energy() * 10000) / 10000;
+        statistics[energy]++;
+    }
+    return statistics;
+}
+}  // namespace fiction
+
+#endif  // FICTION_GET_ENERGY_DIST_HPP
