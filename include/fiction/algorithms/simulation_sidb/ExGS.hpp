@@ -6,8 +6,9 @@
 #define FICTION_EXGS_HPP
 
 #include "fiction/technology/charge_distribution_surface.hpp"
-#include <mockturtle/utils/stopwatch.hpp>
 #include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
+#include <mockturtle/utils/stopwatch.hpp>
+
 
 namespace fiction
 

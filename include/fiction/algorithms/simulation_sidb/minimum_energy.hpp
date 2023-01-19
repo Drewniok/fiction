@@ -5,7 +5,7 @@
 #ifndef FICTION_MINIMUM_ENERGY_HPP
 #define FICTION_MINIMUM_ENERGY_HPP
 
-#include <fiction/technology/charge_distribution_surface.hpp>
+#include "fiction/technology/charge_distribution_surface.hpp"
 
 namespace fiction
 {
