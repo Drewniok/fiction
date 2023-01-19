@@ -32,6 +32,7 @@ bool check_groundstate(const quicksim_stats<Lyt>& result_new_ap, const exgs_stat
 
     return std::abs(min_energy_exact - min_energy_new_ap) / min_energy_exact < 0.00001;
 }
+
 }  // namespace fiction
 
 #endif  // FICTION_CHECK_GROUNDSTATE_HPP

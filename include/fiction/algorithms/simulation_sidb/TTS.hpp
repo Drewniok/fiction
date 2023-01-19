@@ -38,10 +38,10 @@ struct tts_stats
  * @paramt Lyt cell-level layout.
  * @param charge_distribution_surface<Lyt> charge layout that is used for the simulation.
  * @param tts_stats struct where the results (tts, acc, single runtime) are stored.
- * @param pp number of repetion to determine the simulation accuracy (pp = 100 ==> accuracy is precise to one 1 %).
+ * @param pp number of repetitions to determine the simulation accuracy (pp = 100 ==> accuracy is precise to 1 %).
  * @param iteration_steps simulation parameter (see quicksim.hpp).
  * @param alpha simulation parameter (see quicksim.hpp).
- * @param conlevel the time-to-solution depends also one the desired confidence level which can be set here.
+ * @param convlevel the time-to-solution also depends one the given confidence level which can be set here.
  */
 template <typename Lyt>
 void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stats<Lyt>& result_exact,
@@ -90,4 +90,5 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stat
 }
 
 }  // namespace fiction
+
 #endif  // FICTION_TTS_HPP

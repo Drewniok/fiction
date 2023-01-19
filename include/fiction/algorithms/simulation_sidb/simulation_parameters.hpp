@@ -11,15 +11,15 @@
 namespace fiction
 {
 /**
-     * This struct collects all physical parameters. It may be useful to change these. Especially when experiments revealed new ones.
+     * This struct collects all physical parameters. It can be useful to change them, especially when experiments bring new insights.
      *
-     * @param base_number simulations can be conducted with 2 and 3 charge states. 2 ^= (Negative, Neutral), 3 ^^ (Negative, Neutral, Positive)
-     * @param mu_minus it is the energy transition level (0/-)
-     * @param relative_permittivity it describes the electric fiedl reduction due to polarization.
-     * @param screening_distance it is also called Thomas-Fermi screening and it describes the electric field screening due to free charges.
-     * @param a lattice constant
-     * @param b lattice constant
-     * @param c lattice constant
+     * @param base_number simulation can be conducted with 2 and 3 charge states. 2 ^= (Negative, Neutral), 3 ^= (Negative, Neutral, Positive).
+     * @param mu_minus it is the energy transition level (0/-).
+     * @param relative_permittivity it describes the electric field reduction due to polarization.
+     * @param screening_distance also known as "Thomas-Fermi screening" and it describes the electric field screening due to free charges.
+     * @param a lattice constant.
+     * @param b lattice constant.
+     * @param c lattice constant.
  */
 struct physical_params
 {

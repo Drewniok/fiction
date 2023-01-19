@@ -2,7 +2,7 @@
 // Created by Jan Drewniok on 18.12.22.
 //
 
-#include "fiction/algorithms/simulation_sidb/quicksim.hpp"
+#include <fiction/algorithms/simulation_sidb/quicksim.hpp>
 #include <catch2/catch_template_test_macros.hpp>
 #include <fiction/layouts/cartesian_layout.hpp>
 #include <fiction/layouts/cell_level_layout.hpp>

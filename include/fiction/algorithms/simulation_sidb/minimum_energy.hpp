@@ -23,6 +23,7 @@ double minimum_energy(const std::vector<charge_distribution_surface<Lyt>>& resul
     return std::accumulate(result.begin(), result.end(), std::numeric_limits<double>::max(),
                            [](double a, const auto& lyt) { return std::min(a, lyt.get_system_energy()); });
 }
+
 }  // namespace fiction
 
 #endif  // FICTION_MINIMUM_ENERGY_HPP

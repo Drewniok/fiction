@@ -27,7 +27,7 @@
 namespace fiction
 {
 /**
- * This struct stores the simulation time and all physically valid charge layouts gained by the quicksim simulation (see quicksim.hpp).
+ * This struct stores the simulation runtime and all physically valid charge layouts gained by the quicksim simulation (see quicksim.hpp).
  *
  * @paramt Lyt cell-level layout.
  */
@@ -57,12 +57,12 @@ struct quicksim_stats
 };
 
 /**
- * quicksim determines physically valid charge configurations of a given (already initialized) charge distribution layout. Depending on the simulation paramaters, the ground state is found with a certain probability after one run.
+ * quicksim determines physically valid charge configurations (with minimal energy) of a given (already initialized) charge distribution layout. Depending on the simulation paramaters, the ground state is found with a certain probability after one run.
  *
  * @tparam Lyt cell-level layout.
  * @param lyt charge distribution layout.
- * @param ps struct that store the simulation results (simulation time, and all physically valid charge distribution layouts).
- * @param physical_params physical parameters that can change, mainly all are material specific.
+ * @param ps struct that stores the simulation results (simulation runtime, and all physically valid charge distribution layouts).
+ * @param physical_params physical parameters, they are material-specific and may vary from experiment to experiment.
  */
 template <typename Lyt>
 void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
@@ -101,7 +101,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
             lyt.local_potential();
             lyt.system_energy();
 
-            for (uint64_t num = 0; num < lyt.num_cells() / 1.8; num++)
+            for (uint64_t num = 0; num < lyt.num_cells() / 1.5; num++)
             {
                 lyt.adjacent_search(alpha, index_start);
                 lyt.validity_check();

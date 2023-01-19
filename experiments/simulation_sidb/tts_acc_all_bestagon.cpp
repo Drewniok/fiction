@@ -2,16 +2,19 @@
 // Created by Jan Drewniok 01.01.23
 //
 
-#include <../experiments/fiction_experiments.hpp>
 #include <fiction/algorithms/simulation_sidb/ExGS.hpp>
 #include <fiction/algorithms/simulation_sidb/TTS.hpp>
 #include <fiction/io/read_sqd_layout.hpp>  // reader for SiDB layouts including surface scan data
 #include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/technology/sidb_defects.hpp>  // SiDB defect classes
 #include <fiction/types.hpp>                    // pre-defined types suitable for the FCN domain
+
 #include <fmt/format.h>  // output formatting
+
 #include <cstdint>
 #include <string>
+
+#include <../experiments/fiction_experiments.hpp>
 
 using namespace fiction;
 
@@ -34,12 +37,12 @@ int main()
     uint64_t              benchmark_counter = 0u;
 
     std::vector<std::string> folders = {
-        "../../experiments/bestagon/layouts/gates/and/",      // "../../experiments/bestagon/layouts/gates/cx/",
-//        "../../experiments/bestagon/layouts/gates/fo2/",       "../../experiments/bestagon/layouts/gates/ha/",
-//        "../../experiments/bestagon/layouts/gates/hourglass/", "../../experiments/bestagon/layouts/gates/inv/",
-//        "../../experiments/bestagon/layouts/gates/nand/",      "../../experiments/bestagon/layouts/gates/nor/",
-//        "../../experiments/bestagon/layouts/gates/or/",        "../../experiments/bestagon/layouts/gates/wire/",
-//        "../../experiments/bestagon/layouts/gates/xnor/",      "../../experiments/bestagon/layouts/gates/xor/",
+        "../../experiments/bestagon/layouts/gates/and/",       "../../experiments/bestagon/layouts/gates/cx/",
+        "../../experiments/bestagon/layouts/gates/fo2/",       "../../experiments/bestagon/layouts/gates/ha/",
+        "../../experiments/bestagon/layouts/gates/hourglass/", "../../experiments/bestagon/layouts/gates/inv/",
+        "../../experiments/bestagon/layouts/gates/nand/",      "../../experiments/bestagon/layouts/gates/nor/",
+        "../../experiments/bestagon/layouts/gates/or/",        "../../experiments/bestagon/layouts/gates/wire/",
+        "../../experiments/bestagon/layouts/gates/xnor/",      "../../experiments/bestagon/layouts/gates/xor/",
     };
 
     for (const auto& folder : folders)
