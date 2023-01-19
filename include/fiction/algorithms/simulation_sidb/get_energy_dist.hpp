@@ -24,12 +24,12 @@ namespace fiction
  * vector as the value.
  */
 template <typename Lyt>
-std::map<double, int> get_statistics(const std::vector<charge_distribution_surface<Lyt>>& input_vec)
+std::map<double, uint64_t> get_statistics(const std::vector<charge_distribution_surface<Lyt>>& input_vec)
 {
-    std::map<double, int> statistics;
+    std::map<double, uint64_t> statistics;
     for (auto& lyt : input_vec)
     {
-        auto energy = round(lyt.get_system_energy() * 10000) / 10000;
+        auto energy = round(lyt.get_system_energy() * 100000) / 100000;
         statistics[energy]++;
     }
     return statistics;

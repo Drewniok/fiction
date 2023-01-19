@@ -2,20 +2,15 @@
 // Created by Jan Drewniok on 11.01.23.
 //
 
-#ifndef FICTION_EFFACCSIM_HPP
-#define FICTION_EFFACCSIM_HPP
+#ifndef FICTION_QUICKSIM_HPP
+#define FICTION_QUICKSIM_HPP
 
 #include "fiction/algorithms/network_transformation/fanout_substitution.hpp"
 #include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
 #include "fiction/algorithms/simulation_sidb/minimum_energy.hpp"
 #include "fiction/io/print_layout.hpp"
-#include "fiction/layouts/clocking_scheme.hpp"
-#include "fiction/networks/views/edge_color_view.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/traits.hpp"
-#include "fiction/utils/name_utils.hpp"
-#include "fiction/utils/network_utils.hpp"
-#include "fiction/utils/placement_utils.hpp"
 
 #include <fmt/format.h>
 #include <mockturtle/traits.hpp>
@@ -29,13 +24,13 @@
 #include <set>
 #include <vector>
 
-#if (PROGRESS_BARS)
-#include <mockturtle/utils/progress_bar.hpp>
-#endif
-
 namespace fiction
 {
-
+/**
+ * This struct stores the simulation time and all physically valid charge layouts gained by the quicksim simulation (see quicksim.hpp).
+ *
+ * @paramt Lyt cell-level layout.
+ */
 template <typename Lyt>
 struct quicksim_stats
 {
@@ -45,7 +40,7 @@ struct quicksim_stats
     void report(std::ostream& out = std::cout)
     {
         out << fmt::format("[i] total time  = {:.2f} millisecs\n", time_total / 1000);
-          if (!get_statistics<Lyt>(valid_lyts).empty())
+        if (!get_statistics<Lyt>(valid_lyts).empty())
         {
             for (auto [energy, count] : get_statistics<Lyt>(valid_lyts))
             {
@@ -57,18 +52,25 @@ struct quicksim_stats
         {
             std::cout << "no state found" << std::endl;
         }
-
         std::cout << "_____________________________________________________ \n";
     }
 };
 
+/**
+ * quicksim determines physically valid charge configurations of a given (already initialized) charge distribution layout. Depending on the simulation paramaters, the ground state is found with a certain probability after one run.
+ *
+ * @tparam Lyt cell-level layout.
+ * @param lyt charge distribution layout.
+ * @param ps struct that store the simulation results (simulation time, and all physically valid charge distribution layouts).
+ * @param physical_params physical parameters that can change, mainly all are material specific.
+ */
 template <typename Lyt>
 void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
               const physical_params& phys_params = physical_params{}, const uint64_t iteration_steps = 80,
               const double alpha = 0.7)
 {
 
-    // instantiate the layout
+    // set the given physical parameters
     lyt.set_physical_parameters(phys_params);
 
     // measure run time
@@ -88,18 +90,18 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
     }
 
     float best_energy = MAXFLOAT;
-    auto  bound       = static_cast<int>(0.6 * lyt.num_cells());
+    auto  bound       = static_cast<uint64_t>(0.6 * lyt.num_cells());
     for (uint64_t z = 0u; z < iteration_steps; z++)
     {
-        for (int i = 0u; i < bound; i++)
+        for (uint64_t i = 0u; i < bound; i++)
         {
-            std::vector<int> index_start = {i};
+            std::vector<uint64_t> index_start = {i};
             lyt.set_charge_states(sidb_charge_state::NEUTRAL);
             lyt.assign_charge_state_index(i, sidb_charge_state::NEGATIVE);
             lyt.local_potential();
             lyt.system_energy();
 
-            for (int num = 0; num < lyt.num_cells() / 1.8; num++)
+            for (uint64_t num = 0; num < lyt.num_cells() / 1.8; num++)
             {
                 lyt.adjacent_search(alpha, index_start);
                 lyt.validity_check();
@@ -118,4 +120,4 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
 
 }  // namespace fiction
 
-#endif  // FICTION_EFFACCSIM_HPP
+#endif  // FICTION_QUICKSIM_HPP

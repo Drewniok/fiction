@@ -16,7 +16,10 @@
 
 namespace fiction
 {
-
+/**
+ * This struct stores the time-to-solution, the simulation accuracy and the average single simulation runtime of quicksim (see quicksim.hpp).
+ *
+ */
 struct tts_stats
 {
     double tts{};
@@ -29,7 +32,17 @@ struct tts_stats
     }
 };
 
-\
+/**
+ * This function determines the time-to-solution (tts) and the accuracy (acc) of the quicksim-algorithm.
+ *
+ * @paramt Lyt cell-level layout.
+ * @param charge_distribution_surface<Lyt> charge layout that is used for the simulation.
+ * @param tts_stats struct where the results (tts, acc, single runtime) are stored.
+ * @param pp number of repetion to determine the simulation accuracy (pp = 100 ==> accuracy is precise to one 1 %).
+ * @param iteration_steps simulation parameter (see quicksim.hpp).
+ * @param alpha simulation parameter (see quicksim.hpp).
+ * @param conlevel the time-to-solution depends also one the desired confidence level which can be set here.
+ */
 template <typename Lyt>
 void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stats<Lyt>& result_exact,
                  const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7,
@@ -39,7 +52,7 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stat
     std::vector<double> time;
     time.reserve(pp);
 
-    for (int i = 0; i < pp; i++)
+    for (uint64_t i = 0; i < pp; i++)
     {
         quicksim_stats<Lyt> stats_quick{};
         const auto          t_start = std::chrono::high_resolution_clock::now();

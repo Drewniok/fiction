@@ -6,13 +6,13 @@
 #define FICTION_SIMULATION_PARAMETERS_HPP
 
 #include "fiction/technology/constants.hpp"
-
 #include <cstdint>
 
 namespace fiction
 {
 /**
      * This struct collects all physical parameters. It may be useful to change these. Especially when experiments revealed new ones.
+     *
      * @param base_number simulations can be conducted with 2 and 3 charge states. 2 ^= (Negative, Neutral), 3 ^^ (Negative, Neutral, Positive)
      * @param mu_minus it is the energy transition level (0/-)
      * @param relative_permittivity it describes the electric fiedl reduction due to polarization.

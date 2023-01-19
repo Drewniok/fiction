@@ -152,7 +152,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         this->chargeconf_to_index();
         this->initialize_distance_matrix();
         this->initialize_potential_matrix();
-        strg->max_charge_index = std::pow(strg->phys_params.base, this->num_cells()) - 1;
+        strg->max_charge_index = static_cast<uint64_t>(std::pow(static_cast<double>(strg->phys_params.base), this->num_cells()) - 1);
         this->local_potential();
         this->system_energy();
         this->validity_check();
@@ -167,20 +167,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         strg->phys_params         = sim_param;
         strg->charge_index.second = sim_param.base;
-        strg->max_charge_index    = std::pow(strg->phys_params.base, this->num_cells()) - 1;
+        strg->max_charge_index    = static_cast<uint64_t>(std::pow(strg->phys_params.base, this->num_cells())) - 1;
         this->local_potential();
         this->system_energy();
         this->validity_check();
     }
 
-    [[nodiscard]] bool charge_exists(const sidb_charge_state &cs) const
+    [[nodiscard]] bool charge_exists(const sidb_charge_state& cs) const
     {
-        bool output = true;
-        for (const auto &charge : strg->cell_charge)
-        {
-            output = charge == cs;
-        }
-        return output;
+        return std::accumulate(strg->cell_charge.begin(), strg->cell_charge.end(), true,
+                               [&cs](bool acc, const sidb_charge_state& c) { return acc && c == cs; });
     }
 
     /**
@@ -244,7 +240,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void set_charge_states(const sidb_charge_state& cs) const
     {
-        for (int i = 0u; i < strg->cell_charge.size(); i++)
+        for (uint64_t i = 0u; i < strg->cell_charge.size(); i++)
         {
             strg->cell_charge[i] = cs;
         }
@@ -287,9 +283,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         strg->dist_mat = std::vector<std::vector<double>>(this->num_cells(), std::vector<double>(this->num_cells(), 0));
 
-        for (int i = 0u; i < strg->sidb_order.size(); i++)
+        for (uint64_t i = 0u; i < strg->sidb_order.size(); i++)
         {
-            for (int j = 0u; j < strg->sidb_order.size(); j++)
+            for (uint64_t j = 0u; j < strg->sidb_order.size(); j++)
             {
                 strg->dist_mat[i][j] = distance_sidb_pair(strg->sidb_order[i], strg->sidb_order[j]);
             }
@@ -315,9 +311,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     void initialize_potential_matrix() const
     {
         strg->pot_mat = std::vector<std::vector<double>>(this->num_cells(), std::vector<double>(this->num_cells(), 0));
-        for (int i = 0u; i < strg->sidb_order.size(); i++)
+        for (uint64_t i = 0u; i < strg->sidb_order.size(); i++)
         {
-            for (int j = 0u; j < strg->sidb_order.size(); j++)
+            for (uint64_t j = 0u; j < strg->sidb_order.size(); j++)
             {
                 strg->pot_mat[i][j] = potential_sidb_pair_index(i, j);
             }
@@ -412,7 +408,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param lambda_tf Thomas-Fermi screening distance (default value).
      * @return Electrostatic potential value.
      */
-    [[nodiscard]] double potential_sidb_pair_index(const int& c1, const int& c2) const
+    [[nodiscard]] double potential_sidb_pair_index(const uint64_t& c1, const uint64_t& c2) const
     {
         if (strg->dist_mat[c1][c2] == 0)
         {
@@ -451,10 +447,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     void local_potential()
     {
         strg->loc_pot.resize(this->num_cells(), 0);
-        for (int i = 0u; i < strg->sidb_order.size(); i++)
+        for (uint64_t i = 0u; i < strg->sidb_order.size(); i++)
         {
             double collect = 0;
-            for (int j = 0u; j < strg->sidb_order.size(); j++)
+            for (uint64_t j = 0u; j < strg->sidb_order.size(); j++)
             {
                 collect += strg->pot_mat[i][j] * transform_to_sign(strg->cell_charge[j]);
             }
@@ -471,7 +467,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         return std::nullopt;
     };
 
-    std::optional<double> get_loc_pot_index(const int& c1)
+    std::optional<double> get_loc_pot_index(const uint64_t& c1)
     {
         if (c1 < strg->sidb_order.size())
         {
@@ -489,7 +485,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     void system_energy()
     {
         double total_energy = 0;
-        for (int i = 0; i < strg->loc_pot.size(); i++)
+        for (uint64_t i = 0; i < strg->loc_pot.size(); i++)
         {
             total_energy += 0.5 * strg->loc_pot[i] * transform_to_sign(strg->cell_charge[i]);
         }
@@ -511,8 +507,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void validity_check()
     {
-        int flag_fd      = 0;
-        int counter_loop = 0;
+        uint64_t flag_fd      = 0;
+        uint64_t counter_loop = 0;
         for (auto& it : strg->loc_pot)
         {
             bool valid = (((strg->cell_charge[counter_loop] == sidb_charge_state::NEGATIVE) &&
@@ -534,7 +530,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         if (flag_fd == 0)
         {
 
-            auto hopDel = [this](const int& c1, const int& c2)
+            auto hopDel = [this](const uint64_t& c1, const uint64_t& c2)
             {
                 int dn_i = (strg->cell_charge[c1] == sidb_charge_state::NEGATIVE) ? 1 : -1;
                 int dn_j = -dn_i;
@@ -542,16 +538,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 return strg->loc_pot[c1] * dn_i + strg->loc_pot[c2] * dn_j - strg->pot_mat[c1][c2] * 1;
             };
 
-            int flag_value  = 0;
-            int counter_new = 0;
-            for (int i = 0; i < strg->loc_pot.size(); i++)
+            uint64_t flag_value  = 0;
+            uint64_t counter_new = 0;
+            for (uint64_t i = 0u; i < strg->loc_pot.size(); i++)
             {
                 if (strg->cell_charge[counter_new] == sidb_charge_state::POSITIVE)
                 {
                     continue;
                 }
 
-                for (int j = 0; j < strg->loc_pot.size(); j++)
+                for (uint64_t j = 0u; j < strg->loc_pot.size(); j++)
                 {
                     if (flag_value == 1)
                     {
@@ -605,11 +601,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         uint8_t base = strg->phys_params.base;
         assert(base == 2 || base == 3 && "base must be 2 or 3");
         uint64_t chargeindex = 0;
-        int      counter     = 0;
+        uint64_t counter     = 0;
         for (const auto& c : strg->cell_charge)
         {
             chargeindex +=
-                static_cast<unsigned int>((transform_to_sign(c) + 1) * std::pow(base, this->num_cells() - counter - 1));
+                static_cast<uint64_t>((transform_to_sign(c) + 1) * std::pow(base, this->num_cells() - counter - 1));
             counter += 1;
         }
         strg->charge_index = {chargeindex, base};
@@ -635,16 +631,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void index_to_chargeconf() const
     {
-        int charge_quot = strg->charge_index.first;
-        int base        = strg->charge_index.second;
-        int num_charges = this->num_cells() - 1;
-        int counter     = num_charges;
+        auto charge_quot = strg->charge_index.first;
+        auto base        = strg->charge_index.second;
+        auto num_charges = this->num_cells() - 1;
+        auto counter     = num_charges;
 
         while (charge_quot > 0)
         {
             div_t d;
             d           = div(charge_quot, base);
-            charge_quot = d.quot;
+            charge_quot = static_cast<uint64_t>(d.quot);
 
             this->assign_charge_state_index(counter, sign_to_label(d.rem - 1));
             counter -= 1;
@@ -671,9 +667,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-    * Returns the maximum index of the cell-level layout.
+     * Returns the maximum index of the cell-level layout.
      *
-    * @returns uint64_t The maximal index.
+     * @returns uint64_t The maximal index.
      */
     uint64_t get_max_charge_index()
     {
@@ -694,24 +690,24 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * This method is used for the quicksim algorithm (see quicksim.hpp).
      * It gets a vector with indices representing negatively charged SiDBs as input. Afterward, a distant and neutrally
-     * charged SiDB is localized using a min-max diversity algorithm. This selected SiDB is set to negativ and the index is added to the
-     * input vector such that the next iteration works correctly.
+     * charged SiDB is localized using a min-max diversity algorithm. This selected SiDB is set to negativ and the index
+     * is added to the input vector such that the next iteration works correctly.
      *
      * @param alpha a parameter for the algorithm (default: 0.7).
      * @param index_db vector of cell indices that are already negatively charged.
      */
-    void adjacent_search(const double alpha, std::vector<int>& index_db)
+    void adjacent_search(const double alpha, std::vector<uint64_t>& index_db)
     {
-        auto               count    = 0;
-        float              dist_max = 0;
-        auto               coord    = -1;
-        std::vector<int>   index_vector{};
-        std::vector<float> distance{};
-        auto               reservesize = this->num_cells() - index_db.size();
+        uint64_t              count    = 0;
+        double                dist_max = 0;
+        int                   coord    = -1;
+        std::vector<uint64_t> index_vector{};
+        std::vector<double>   distance{};
+        auto                  reservesize = this->num_cells() - index_db.size();
         index_vector.reserve(reservesize);
         distance.reserve(reservesize);
 
-        for (int unocc = 0u; unocc < strg->cell_charge.size(); unocc++)
+        for (uint64_t unocc = 0u; unocc < strg->cell_charge.size(); unocc++)
         {
             if (strg->cell_charge[unocc] != sidb_charge_state::NEUTRAL)
             {
@@ -719,14 +715,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             }
             count += 1;
 
-            auto dist_min = MAXFLOAT;
-            for (int occ : index_db)
-            {
-                if (this->get_distance_index(unocc, occ) < dist_min)
-                {
-                    dist_min = this->get_distance_index(unocc, occ);
-                }
-            }
+            auto dist_min = std::accumulate(index_db.begin(), index_db.end(), std::numeric_limits<double>::max(),
+                                            [&](double acc, uint64_t occ)
+                                            { return std::min(acc, this->get_distance_index(unocc, occ)); });
 
             index_vector.push_back(unocc);
             distance.push_back(dist_min);
@@ -734,23 +725,20 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             if (dist_min > dist_max)
             {
                 dist_max = dist_min;
-                coord    = unocc;
+                coord    = static_cast<int>(unocc);
             }
 
-            else if (dist_min == dist_max)
+            else if ((dist_min == dist_max) && sum_distance(index_db, coord, unocc))
             {
-                if (sum_distance(index_db, coord, unocc))
-                {
-                    dist_max = dist_min;
-                    coord    = unocc;
-                }
+                dist_max = dist_min;
+                coord    = static_cast<int>(unocc);
             }
         }
 
-        std::vector<int> candidates{};
+        std::vector<uint64_t> candidates{};
         candidates.reserve(reservesize);
 
-        for (int i = 0u; i < distance.size(); i++)
+        for (uint64_t i = 0u; i < distance.size(); i++)
         {
             if (distance[i] >= (alpha * dist_max))
             {
@@ -760,19 +748,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
         if (!candidates.empty())
         {
-            auto random_index = static_cast<int>(rand() % candidates.size());
+            auto random_index = static_cast<uint64_t>(rand() % candidates.size());
 
-            if (random_index > -1)
+            auto random_element               = index_vector[candidates[random_index]];
+            strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;
+            index_db.push_back(random_element);
+            strg->system_energy += -this->get_loc_pot_index(random_element).value();
+
+            for (uint64_t i = 0u; i < strg->pot_mat.size(); i++)
             {
-                int random_element                = index_vector[candidates[random_index]];
-                strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;
-                index_db.push_back(random_element);
-                strg->system_energy += -this->get_loc_pot_index(random_element).value();
-
-                for (int i = 0u; i < strg->pot_mat.size(); i++)
-                {
-                    strg->loc_pot[i] += -this->get_potential_index(i, random_element);
-                }
+                strg->loc_pot[i] += -this->get_potential_index(i, random_element);
             }
         }
     }
@@ -786,11 +771,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @returns bool A boolean value indicating if the sum of distances with "now index" is greater than the sum of
      * distances with "old index".
      */
-    bool sum_distance(std::vector<int>& input, int& old, int& now)
+    [[nodiscard]] bool sum_distance(const std::vector<uint64_t>& input, const uint64_t& old, const uint64_t& now) const
     {
-        float sum_old = 0;
-        float sum_now = 0;
-        for (int j = 0; j < input.size(); j++)
+        double sum_old = 0;
+        double sum_now = 0;
+
+        for (uint64_t j = 0; j < input.size(); j++)
         {
             sum_old += strg->dist_mat[j][old];
             sum_now += strg->dist_mat[j][now];
@@ -806,7 +792,8 @@ template <class T>
 charge_distribution_surface(const T&) -> charge_distribution_surface<T>;
 
 template <class T>
-charge_distribution_surface(const T&, const physical_params&, const sidb_charge_state &cs) -> charge_distribution_surface<T>;
+charge_distribution_surface(const T&, const physical_params&, const sidb_charge_state& cs)
+    -> charge_distribution_surface<T>;
 
 template <class T>
 charge_distribution_surface(const T&, const physical_params&) -> charge_distribution_surface<T>;

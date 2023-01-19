@@ -6,8 +6,8 @@
 #define FICTION_EXGS_HPP
 
 #include "fiction/technology/charge_distribution_surface.hpp"
-#include "fiction/utils/hash.hpp"
 #include <mockturtle/utils/stopwatch.hpp>
+#include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
 
 namespace fiction
 
@@ -19,10 +19,10 @@ struct exgs_stats
     mockturtle::stopwatch<>::duration time_total{0};
     std::vector<charge_distribution_surface<Lyt>> valid_lyts{};
 
-    void report(std::ostream& out = std::cout)
+    void report(std::ostream& out = std::cout) const
     {
-        out << fmt::format("total time  = {:.2f} millisecs\n", time_total / 1000);
-        if (!get_statistics<Lyt>(valid_lyts).empty())
+        out << fmt::format("total time  = {:.2f} secs\n", mockturtle::to_seconds(time_total));
+        if (!valid_lyts.empty())
         {
             for (auto [energy, count] : get_statistics<Lyt>(valid_lyts))
             {
