@@ -23,6 +23,7 @@
 #include <optional>
 #include <set>
 #include <vector>
+#include <iostream>
 
 namespace fiction
 {
@@ -90,7 +91,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
     }
 
     float best_energy = MAXFLOAT;
-    auto  bound       = static_cast<uint64_t>(0.6 * lyt.num_cells());
+    auto  bound       = static_cast<uint64_t>(round(0.6 * lyt.num_cells()));
     for (uint64_t z = 0u; z < iteration_steps; z++)
     {
         for (uint64_t i = 0u; i < bound; i++)

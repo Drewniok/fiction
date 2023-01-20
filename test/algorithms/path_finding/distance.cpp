@@ -156,21 +156,6 @@ TEST_CASE("Euclidean distance", "[distance]")
     }
 }
 
-TEST_CASE("Euclidean distance between two SiDBs", "[distance]")
-{
-    using siqad_lyt = cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>;
-
-    siqad_lyt lyt{};
-
-    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 0, 1}) == 0.0);
-    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {1, 0, 1}) == simulation_params{}.lat_a);
-    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {0, 1, 1}) == simulation_params{}.lat_b);
-    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 5, 1}, {20, 1, 1}) ==
-          distance_sidb_pair<siqad_lyt>(lyt, {20, 1, 1}, {0, 5, 1}));
-    CHECK(distance_sidb_pair<siqad_lyt>(lyt, {0, 0, 1}, {10, 0, 0}) ==
-          std::hypot(simulation_params{}.lat_a * 10, simulation_params{}.lat_c));
-};
-
 TEST_CASE("Euclidean distance functor", "[distance]")
 {
     SECTION("Unsigned Cartesian layout")

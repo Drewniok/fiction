@@ -9,6 +9,8 @@
 #include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
 #include <mockturtle/utils/stopwatch.hpp>
 
+#include <iostream>
+
 
 namespace fiction
 

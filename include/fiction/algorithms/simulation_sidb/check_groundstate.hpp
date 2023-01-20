@@ -13,11 +13,12 @@ namespace fiction
 {
 
 /**
-* @brief This function checks if the ground state function is found by the quicksim algorithm.
-* @tparam Lyt The type of the charge distribution surface layout.
-* @param result_new_ap The set of valid charge distribution surfaces obtained from the new quicksim algorithm (see quicksim.hpp).
-* @param result_exact The set of valid charge distribution surfaces obtained from the exact method (ExGS, see ExGS.hpp).
-* @return Returns true if the relative difference between the ground state energies of the two sets is less than
+* This function checks if the ground state is found by the quicksim algorithm.
+*
+* @tparam Lyt cell-level layout.
+* @param result_new_ap All found physically valid charge distribution surfaces obtained with the new quicksim algorithm (see quicksim.hpp).
+* @param result_exact All valid charge distribution surfaces (ExGS, see ExGS.hpp).
+* @return Returns true if the relative difference between the lowest energies of the two sets is less than
 0.00001, false otherwise.
 */
 template <typename Lyt>

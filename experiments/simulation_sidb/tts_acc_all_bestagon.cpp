@@ -6,19 +6,16 @@
 #include <fiction/algorithms/simulation_sidb/TTS.hpp>
 #include <fiction/io/read_sqd_layout.hpp>  // reader for SiDB layouts including surface scan data
 #include <fiction/technology/charge_distribution_surface.hpp>
-#include <fiction/technology/sidb_defects.hpp>  // SiDB defect classes
 #include <fiction/types.hpp>                    // pre-defined types suitable for the FCN domain
-
 #include <fmt/format.h>  // output formatting
-
 #include <cstdint>
 #include <string>
-
+#include <filesystem>
 #include <../experiments/fiction_experiments.hpp>
 
 using namespace fiction;
 
-int main()
+int main() // NOLINT
 {
     experiments::experiment<std::string, double, double, double, double, std::string> simulation_exp{
         "benchmark",

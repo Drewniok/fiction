@@ -6,13 +6,14 @@
 #include <fiction/algorithms/simulation_sidb/TTS.hpp>
 #include <fiction/io/read_sqd_layout.hpp>  // reader for SiDB layouts including surface scan data
 #include <fiction/technology/charge_distribution_surface.hpp>
-#include <fiction/technology/sidb_defects.hpp>  // SiDB defect classes
 #include <fiction/types.hpp>                    // pre-defined types suitable for the FCN domain
 #include <fmt/format.h>  // output formatting
+#include <filesystem>
+#include <iostream>
 
 using namespace fiction;
 
-int main()
+int main() // NOLINT
 {
 
     std::vector<std::string> folders = {

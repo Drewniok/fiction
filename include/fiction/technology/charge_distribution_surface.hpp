@@ -9,12 +9,15 @@
 #include "fiction/algorithms/simulation_sidb/simulation_parameters.hpp"
 #include "fiction/technology/cell_technologies.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
+#include "fiction/technology/sign_to_label.hpp"
+#include "fiction/technology/transform_to_sign.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
 #include "fiction/utils/hash.hpp"
 
 #include <cassert>
 #include <limits>
+#include <random>
 
 namespace fiction
 {
@@ -67,19 +70,22 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         explicit charge_distribution_storage(const physical_params& sim_param_default = physical_params{}) :
                 phys_params{sim_param_default} {};
 
-        physical_params        phys_params{};  // all physical parameters used for the simulation are stored in a struct.
-        std::vector<cell<Lyt>> sidb_order{};   // all cells that are occupied by an SiDB are stored in this vector.
+        physical_params phys_params{};        // all physical parameters used for the simulation are stored in a struct.
+        std::vector<cell<Lyt>> sidb_order{};  // all cells that are occupied by an SiDB are stored in this vector.
         std::vector<sidb_charge_state>
             cell_charge{};  // the SiDBs' charge states are stored. Corresponding cells are stored in "sidb_order".
         distance_matrix dist_mat{};  // distance between SiDBs are stored as matrix.
         potential_matrix
             pot_mat{};  // electrostatic potential between SiDBs are stored as matrix (here, still charge-independent).
-        local_potential loc_pot{};  // electrostatic potential at each SiDB postion (has to be updated when charge distribution is changed).
+        local_potential loc_pot{};  // electrostatic potential at each SiDB postion (has to be updated when charge
+                                    // distribution is changed).
         double system_energy{0.0};  // electrostatic energy of a given charge distribution.
         bool   validity = false;    // labels if given charge distribution is physically valid (compare Paper XXX).
         std::pair<uint64_t, uint8_t>
-            charge_index{};  // each charge distribution is assigned a unique index (first entry of pair), second one stores the base number (2 or 3 state simulation).
-        uint64_t max_charge_index{};  // depending on the number of SiDBs and the base number, a maximal number of possible charge distributions exists.
+            charge_index{};  // each charge distribution is assigned a unique index (first entry of pair), second one
+                             // stores the base number (2 or 3 state simulation).
+        uint64_t max_charge_index{};  // depending on the number of SiDBs and the base number, a maximal number of
+                                      // possible charge distributions exists.
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -87,7 +93,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * Standard constructor for empty layouts.
      *
-     * @param sidb_charge_state charge state used for the initialization of all SiDBs, default is negative charge for all SiDBs.
+     * @param sidb_charge_state charge state used for the initialization of all SiDBs, default is negative charge for
+     * all SiDBs.
      * @param physical_params physical parameters used for the simulation (µ_minus, base number, ...).
      */
     explicit charge_distribution_surface(const physical_params&   sim_param_default = physical_params{},
@@ -148,7 +155,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         this->chargeconf_to_index();
         this->initialize_distance_matrix();
         this->initialize_potential_matrix();
-        strg->max_charge_index = static_cast<uint64_t>(std::pow(static_cast<double>(strg->phys_params.base), this->num_cells()) - 1);
+        strg->max_charge_index =
+            static_cast<uint64_t>(std::pow(static_cast<double>(strg->phys_params.base), this->num_cells()) - 1);
         this->local_potential();
         this->system_energy();
         this->validity_check();
@@ -213,7 +221,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         auto index = cell_to_index(cell);
         if (index != -1)
         {
-            strg->cell_charge[index] = cs;
+            strg->cell_charge[static_cast<uint64_t>(index)] = cs;
         }
         else
         {
@@ -270,7 +278,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         if (auto index = cell_to_index(c); index != -1)
         {
-            return strg->cell_charge[index];
+            return strg->cell_charge[static_cast<uint64_t>(index)];
         }
         return sidb_charge_state::NONE;
     }
@@ -359,7 +367,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     [[nodiscard]] constexpr double get_distance_cell(const cell<Lyt>& cell1, const cell<Lyt>& cell2)
     {
-        return strg->dist_mat[cell_to_index(cell1)][cell_to_index(cell2)];
+        auto index1 = cell_to_index(cell1);
+        if (auto index2 = cell_to_index(cell2); (index1 != -1) && (index2 != -1))
+        {
+            return strg->dist_mat[static_cast<uint64_t>(index1)][static_cast<uint64_t>(index2)];
+        }
+        return 0;
     }
 
     /**
@@ -383,7 +396,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     [[nodiscard]] constexpr double get_potential_cell(const cell<Lyt>& cell1, const cell<Lyt>& cell2)
     {
-        return strg->pot_mat[cell_to_index(cell1)][cell_to_index(cell2)];
+        auto index1 = cell_to_index(cell1);
+        if (auto index2 = cell_to_index(cell2); (index1 != -1) && (index2 != -1))
+        {
+            return strg->pot_mat[static_cast<uint64_t>(index1)][static_cast<uint64_t>(index2)];
+        }
+        return 0;
     }
 
     /**
@@ -401,9 +419,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * The electrostatic potential between two cells (SiDBs) is calculated.
      *
-    * @param input1 The first index.
-    * @param input2 The second index.
-    * @return The potential between input1 and input2.
+     * @param input1 The first index.
+     * @param input2 The second index.
+     * @return The potential between input1 and input2.
      */
     [[nodiscard]] double potential_sidb_pair_index(const uint64_t& index1, const uint64_t& index2) const
     {
@@ -459,13 +477,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * The function returns the local electrostatic potential at a given SiDB position.
      *
      * @param cell.
-     * @return local potential at given cell position. If there is no SiDB at the given cell, the null pointer is returned.
+     * @return local potential at given cell position. If there is no SiDB at the given cell, the null pointer is
+     * returned.
      */
     std::optional<double> get_loc_pot_cell(const cell<Lyt>& c1)
     {
         if (auto index = cell_to_index(c1); index != -1)
         {
-            return strg->loc_pot[index];
+            return strg->loc_pot[static_cast<uint64_t>(index)];
         }
         return std::nullopt;
     };
@@ -474,7 +493,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * The function returns the local electrostatic potential at a given index position.
      *
      * @param cell.
-     * @return local potential at given index position. If there is no SiDB at the given index (which corresponds to a unique cell), the null pointer is returned.
+     * @return local potential at given index position. If there is no SiDB at the given index (which corresponds to a
+     * unique cell), the null pointer is returned.
      */
     std::optional<double> get_loc_pot_index(const uint64_t& c1)
     {
@@ -508,7 +528,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * The physically validity of the current charge distribution is evaluated and stored in the storage struct. A charge distribution is valid if the *Population Stability* and the *Configuration Stability* is fulfilled.
+     * The physically validity of the current charge distribution is evaluated and stored in the storage struct. A
+     * charge distribution is valid if the *Population Stability* and the *Configuration Stability* is fulfilled.
      */
     void validity_check()
     {
@@ -535,7 +556,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         if (flag_fd == 0)
         {
 
-            auto hopDel = [this](const uint64_t& c1, const uint64_t& c2)
+            auto hop_del = [this](const uint64_t& c1, const uint64_t& c2)
             {
                 int dn_i = (strg->cell_charge[c1] == sidb_charge_state::NEGATIVE) ? 1 : -1;
                 int dn_j = -dn_i;
@@ -559,9 +580,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                         break;
                     }
 
-                    auto E_del = hopDel(i, j);
+                    auto e_del = hop_del(i, j);
                     if ((transform_to_sign(strg->cell_charge[j]) > transform_to_sign(strg->cell_charge[i])) &&
-                        (E_del < -physical_sim_constants::POP_STABILITY_ERR))
+                        (e_del < -physical_sim_constants::POP_STABILITY_ERR))
                     {
                         flag_value = 1;
                         break;
@@ -591,7 +612,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * The charge distribution of the charge distribution surface is converted to a unique index. It is used to map every possible charge distribution of an SiDB layout to a unique index.
+     * The charge distribution of the charge distribution surface is converted to a unique index. It is used to map
+     * every possible charge distribution of an SiDB layout to a unique index.
      */
     void chargeconf_to_index() const
     {
@@ -631,7 +653,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         while (charge_quot > 0)
         {
             div_t d;
-            d           = div(charge_quot, base);
+            d           = div(static_cast<int>(charge_quot), static_cast<int>(base));
             charge_quot = static_cast<uint64_t>(d.quot);
 
             this->assign_charge_state_index(counter, sign_to_label(d.rem - 1));
@@ -669,7 +691,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     }
 
     /**
-     * Assigns a certain charge state to a given index (which corresponds to a certain SiDB) and the charge distribution is updated correspondingly.
+     * Assigns a certain charge state to a given index (which corresponds to a certain SiDB) and the charge distribution
+     * is updated correspondingly.
      */
     void assign_charge_index(const uint64_t& index)
     {
@@ -688,7 +711,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void adjacent_search(const double alpha, std::vector<uint64_t>& index_db)
     {
-        uint64_t              count    = 0;
         double                dist_max = 0;
         int                   coord    = -1;
         std::vector<uint64_t> index_vector{};
@@ -703,7 +725,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             {
                 continue;
             }
-            count += 1;
 
             auto dist_min = std::accumulate(index_db.begin(), index_db.end(), std::numeric_limits<double>::max(),
                                             [&](double acc, uint64_t occ)
@@ -732,7 +753,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
         if (!candidates.empty())
         {
-            auto random_index = static_cast<uint64_t>(rand() % candidates.size());
+            auto random_index = static_cast<uint64_t>(rand()) % candidates.size();
 
             auto random_element               = index_vector[candidates[random_index]];
             strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;
