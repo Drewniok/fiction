@@ -56,8 +56,8 @@ class sidb_surface<Lyt, false> : public Lyt
     {
         explicit sidb_surface_storage(sidb_surface_params ps = {}) : params(std::move(ps)) {}
 
-        sidb_surface_params                              params{};
-        std::unordered_map<coordinate<Lyt>, sidb_defect> defective_coordinates{};
+        sidb_surface_params                                       params{};
+        std::unordered_map<typename Lyt::coordinate, sidb_defect> defective_coordinates{};
     };
 
     using storage = std::shared_ptr<sidb_surface_storage>;
