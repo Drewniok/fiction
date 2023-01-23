@@ -61,7 +61,7 @@ int main() // NOLINT
             tts_stats tts_stat{};
             sim_acc_tts<sidb_cell_clk_lyt_siq>(chargelyt, tts_stat, exgs_stats);
 
-            simulation_exp(benchmark, mockturtle::to_seconds(exgs_stats.time_total), tts_stat.acc, tts_stat.tts,
+            simulation_exp(benchmark.string(), mockturtle::to_seconds(exgs_stats.time_total), tts_stat.acc, tts_stat.tts,
                            tts_stat.mean_single_runtime, std::to_string(lyt.num_cells()));
             db_num.push_back(lyt.num_cells());
             sum_sr += mockturtle::to_seconds(exgs_stats.time_total);

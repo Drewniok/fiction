@@ -264,7 +264,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param c cell.
      * @return The charge state of the given cell.
      */
-    [[nodiscard]] sidb_charge_state get_charge_state_cell(const coordinate<Lyt>& c) const noexcept
+    [[nodiscard]] sidb_charge_state get_charge_state_cell(const typename Lyt::cell& c) const noexcept
     {
         if (auto index = cell_to_index(c); index != -1)
         {
