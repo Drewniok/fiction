@@ -34,12 +34,12 @@ int main() // NOLINT
     uint64_t              benchmark_counter = 0u;
 
     std::vector<std::string> folders = {
-        "../../experiments/bestagon/layouts/gates/and/",       "../../experiments/bestagon/layouts/gates/cx/",
-        "../../experiments/bestagon/layouts/gates/fo2/",       "../../experiments/bestagon/layouts/gates/ha/",
-        "../../experiments/bestagon/layouts/gates/hourglass/", "../../experiments/bestagon/layouts/gates/inv/",
-        "../../experiments/bestagon/layouts/gates/nand/",      "../../experiments/bestagon/layouts/gates/nor/",
-        "../../experiments/bestagon/layouts/gates/or/",        "../../experiments/bestagon/layouts/gates/wire/",
-        "../../experiments/bestagon/layouts/gates/xnor/",      "../../experiments/bestagon/layouts/gates/xor/",
+        "../../experiments/bestagon/layouts/gates/and/",       //"../../experiments/bestagon/layouts/gates/cx/",
+//        "../../experiments/bestagon/layouts/gates/fo2/",       "../../experiments/bestagon/layouts/gates/ha/",
+//        "../../experiments/bestagon/layouts/gates/hourglass/", "../../experiments/bestagon/layouts/gates/inv/",
+//        "../../experiments/bestagon/layouts/gates/nand/",      "../../experiments/bestagon/layouts/gates/nor/",
+//        "../../experiments/bestagon/layouts/gates/or/",        "../../experiments/bestagon/layouts/gates/wire/",
+//        "../../experiments/bestagon/layouts/gates/xnor/",      "../../experiments/bestagon/layouts/gates/xor/",
     };
 
     for (const auto& folder : folders)
@@ -50,7 +50,7 @@ int main() // NOLINT
             const auto& benchmark = file.path();
             std::cout << benchmark << std::endl;
 
-            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark);
+            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark, "bestagon_tts_acc_result");
 
             const physical_params                              params{2, -0.32};
             charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};
