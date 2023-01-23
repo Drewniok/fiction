@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <string>
 #include <filesystem>
-#include <../experiments/fiction_experiments.hpp>
+#include <fiction_experiments.hpp>
 
 using namespace fiction;
 
