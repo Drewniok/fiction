@@ -47,7 +47,7 @@ int main() // NOLINT
         for (const auto& file : std::filesystem::directory_iterator(folder))
         {
             benchmark_counter += 1;
-            const auto& benchmark = file.path();
+            std::string benchmark = file.path();
             std::cout << benchmark << std::endl;
 
             const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark, "bestagon_tts_acc_result");
