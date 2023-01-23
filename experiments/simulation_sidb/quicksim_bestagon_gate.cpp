@@ -21,9 +21,9 @@ int main() // NOLINT
     {
         for (const auto& file : std::filesystem::directory_iterator(folder))
         {
-            auto benchmark = file.path();
+            auto const& benchmark = file.path();
 
-            const auto                     lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark);
+            const auto                     lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark.string());
             const fiction::physical_params params{2, -0.32};
             charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};
 
