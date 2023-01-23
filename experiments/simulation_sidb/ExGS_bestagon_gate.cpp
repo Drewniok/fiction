@@ -17,7 +17,7 @@ int main() // NOLINT
 {
 
     std::vector<std::string> folders = {
-        "../../experiments/bestagon/layouts/gates/and/",
+        "../../experiments/bestagon/layouts/gates/and/"
     };
 
     for (const auto& folder : folders)

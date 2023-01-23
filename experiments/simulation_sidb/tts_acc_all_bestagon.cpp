@@ -39,7 +39,7 @@ int main() // NOLINT
         "../../experiments/bestagon/layouts/gates/hourglass/", "../../experiments/bestagon/layouts/gates/inv/",
         "../../experiments/bestagon/layouts/gates/nand/",      "../../experiments/bestagon/layouts/gates/nor/",
         "../../experiments/bestagon/layouts/gates/or/",        "../../experiments/bestagon/layouts/gates/wire/",
-        "../../experiments/bestagon/layouts/gates/xnor/",      "../../experiments/bestagon/layouts/gates/xor/",
+        "../../experiments/bestagon/layouts/gates/xnor/",      "../../experiments/bestagon/layouts/gates/xor/"
     };
 
     for (const auto& folder : folders)
