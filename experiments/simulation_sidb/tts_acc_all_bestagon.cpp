@@ -47,10 +47,10 @@ int main() // NOLINT
         for (const auto& file : std::filesystem::directory_iterator(folder))
         {
             benchmark_counter += 1;
-            std::string benchmark = file.path();
+            const std::string benchmark = file.path();
             std::cout << benchmark << std::endl;
 
-            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark, "bestagon_tts_acc_result");
+            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark);
 
             const physical_params                              params{2, -0.32};
             charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};

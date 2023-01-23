@@ -108,7 +108,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
         }
     }
     auto end      = std::chrono::high_resolution_clock::now();
-    ps.time_total = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    ps.time_total = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 }
 
 }  // namespace fiction

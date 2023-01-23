@@ -24,7 +24,7 @@ int main() // NOLINT
     {
         for (const auto& file : std::filesystem::directory_iterator(folder))
         {
-            std::string benchmark = file.path();
+            const std::string benchmark = file.path();
 
             const auto                                         lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark);
             const physical_params                              params{2, -0.32};
