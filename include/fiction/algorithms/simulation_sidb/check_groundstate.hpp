@@ -7,7 +7,6 @@
 
 #include "fiction/algorithms/simulation_sidb/ExGS.hpp"
 #include "fiction/algorithms/simulation_sidb/quicksim.hpp"
-#include "fiction/technology/charge_distribution_surface.hpp"
 
 namespace fiction
 {

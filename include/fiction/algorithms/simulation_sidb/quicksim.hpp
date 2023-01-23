@@ -5,23 +5,13 @@
 #ifndef FICTION_QUICKSIM_HPP
 #define FICTION_QUICKSIM_HPP
 
-#include "fiction/algorithms/network_transformation/fanout_substitution.hpp"
 #include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
 #include "fiction/algorithms/simulation_sidb/minimum_energy.hpp"
-#include "fiction/io/print_layout.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/traits.hpp"
 
 #include <fmt/format.h>
-#include <mockturtle/traits.hpp>
-#include <mockturtle/utils/node_map.hpp>
-#include <mockturtle/utils/stopwatch.hpp>
-#include <mockturtle/views/fanout_view.hpp>
-#include <mockturtle/views/topo_view.hpp>
-
 #include <algorithm>
-#include <optional>
-#include <set>
 #include <vector>
 #include <iostream>
 
@@ -91,7 +81,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
     }
 
     float best_energy = MAXFLOAT;
-    auto  bound       = static_cast<uint64_t>(round(0.6 * lyt.num_cells()));
+    auto  bound       = static_cast<uint64_t>(round(0.6 * static_cast<double>(lyt.num_cells())));
     for (uint64_t z = 0u; z < iteration_steps; z++)
     {
         for (uint64_t i = 0u; i < bound; i++)

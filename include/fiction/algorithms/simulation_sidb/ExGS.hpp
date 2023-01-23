@@ -8,7 +8,6 @@
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
 #include <mockturtle/utils/stopwatch.hpp>
-
 #include <iostream>
 
 

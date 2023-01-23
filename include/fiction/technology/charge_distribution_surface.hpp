@@ -5,17 +5,13 @@
 #ifndef FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 #define FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 
-#include "fiction/algorithms/path_finding/distance.hpp"
 #include "fiction/algorithms/simulation_sidb/simulation_parameters.hpp"
-#include "fiction/technology/cell_technologies.hpp"
+#include "fiction/layouts/cell_level_layout.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
-#include "fiction/technology/sign_to_label.hpp"
-#include "fiction/technology/transform_to_sign.hpp"
-#include "fiction/traits.hpp"
 #include "fiction/types.hpp"
-#include "fiction/utils/hash.hpp"
 
 #include <cassert>
+#include <cstdint>
 #include <limits>
 #include <random>
 
@@ -144,14 +140,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         strg->cell_charge.reserve(this->num_cells());
         this->foreach_cell([this](const auto& c1) { strg->sidb_order.push_back(c1); });
         this->foreach_cell([this, &cs](const auto&) { strg->cell_charge.push_back(cs); });
-        if (strg->phys_params.base == 3)
-        {
-            assert(this->num_cells() < 41 && "number of SiDBs is too large");
-        }
-        else
-        {
-            assert(this->num_cells() < 64 && "number of SiDBs is too large");
-        }
+        assert(((this->num_cells() < 41) && (strg->phys_params.base == 3)) && "number of SiDBs is too large");
+        assert(((strg->phys_params.base == 3) && (this->num_cells() < 64)) && "number of SiDBs is too large");
         this->chargeconf_to_index();
         this->initialize_distance_matrix();
         this->initialize_potential_matrix();
@@ -336,6 +326,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     [[nodiscard]] constexpr double distance_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2) const
     {
+        // @Marcel: I checked if I can use the euclidean_distance (see distance.hpp) function, but as it is now, I guess I cannot use it.
         const auto pos_c1 = nm_position(c1);
         const auto pos_c2 = nm_position(c2);
         const auto x      = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);
@@ -467,7 +458,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             double collect = 0;
             for (uint64_t j = 0u; j < strg->sidb_order.size(); j++)
             {
-                collect += strg->pot_mat[i][j] * transform_to_sign(strg->cell_charge[j]);
+                collect += strg->pot_mat[i][j] * static_cast<double>(transform_to_sign(strg->cell_charge[j]));
             }
             strg->loc_pot[i] = collect;
         }
@@ -753,7 +744,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
 
         if (!candidates.empty())
         {
-            auto random_index = static_cast<uint64_t>(rand()) % candidates.size();
+
+            auto random_index =
+                static_cast<uint64_t>(rand()) %
+                candidates.size();  // Yes, it is wright what clang-tidy says, but the other way is much slower.
 
             auto random_element               = index_vector[candidates[random_index]];
             strg->cell_charge[random_element] = sidb_charge_state::NEGATIVE;

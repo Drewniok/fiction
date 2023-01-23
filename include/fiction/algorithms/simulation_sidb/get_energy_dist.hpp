@@ -6,11 +6,11 @@
 #define FICTION_GET_ENERGY_DIST_HPP
 
 #include "fiction/technology/charge_distribution_surface.hpp"
-#include "fiction/traits.hpp"
 
 #include <iostream>
-#include <map>
 #include <vector>
+#include <map>
+
 
 namespace fiction
 {

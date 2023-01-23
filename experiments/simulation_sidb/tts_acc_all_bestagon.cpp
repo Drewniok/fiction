@@ -50,7 +50,7 @@ int main() // NOLINT
             const auto& benchmark = file.path();
             std::cout << benchmark << std::endl;
 
-            const auto lyt = fiction::read_sqd_layout<fiction::sidb_cell_clk_lyt_siq>(benchmark);
+            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark);
 
             const physical_params                              params{2, -0.32};
             charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};
