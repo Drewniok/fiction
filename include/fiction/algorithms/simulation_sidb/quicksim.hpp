@@ -10,6 +10,7 @@
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/traits.hpp"
 
+#include <limits>
 #include <fmt/format.h>
 #include <algorithm>
 #include <vector>
@@ -80,7 +81,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
         ps.valid_lyts.push_back(lyt_new);
     }
 
-    float best_energy = MAXFLOAT;
+    float best_energy = std::numeric_limits<float>::max();
     auto  bound       = static_cast<uint64_t>(round(0.6 * static_cast<double>(lyt.num_cells())));
     for (uint64_t z = 0u; z < iteration_steps; z++)
     {
