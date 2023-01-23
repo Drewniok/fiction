@@ -68,7 +68,7 @@ class sidb_surface<Lyt, false> : public Lyt
     explicit sidb_surface(const sidb_surface_params& ps = {}) : Lyt(), strg{std::make_shared<sidb_surface_storage>(ps)}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-        static_assert(std::is_same_v<technology<Lyt>, sidb_technology>, "Lyt is not an SiDB layout");
+        static_assert(std::is_same_v<typename Lyt::technology, sidb_technology>, "Lyt is not an SiDB layout");
 
         assert(strg->params.ignore.count(sidb_defect_type::NONE) == 0 && "The defect type 'NONE' cannot be ignored");
     }
@@ -98,7 +98,7 @@ class sidb_surface<Lyt, false> : public Lyt
             strg{std::make_shared<sidb_surface_storage>(ps)}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
-        static_assert(std::is_same_v<technology<Lyt>, sidb_technology>, "Lyt is not an SiDB layout");
+        static_assert(std::is_same_v<typename Lyt::technology, sidb_technology>, "Lyt is not an SiDB layout");
 
         assert(strg->params.ignore.count(sidb_defect_type::NONE) == 0 && "The defect type 'NONE' cannot be ignored");
     }
