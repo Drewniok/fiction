@@ -24,7 +24,7 @@ enum class sidb_charge_state
  * @param cs sidb charge state.
  * @return int representing the SiDB's charge state.
  */
-[[nodiscard]] static constexpr int transform_to_sign(const sidb_charge_state& cs) noexcept
+[[nodiscard]] constexpr int transform_to_sign(const sidb_charge_state& cs) noexcept
 {
     if (cs == sidb_charge_state::POSITIVE)
     {
@@ -48,7 +48,7 @@ enum class sidb_charge_state
  * @param sq charge state as integer (-1,0,1).
  * @return sidb_charge_state.
  */
-[[nodiscard]] static constexpr sidb_charge_state sign_to_label(const int& sg) noexcept
+[[nodiscard]] constexpr sidb_charge_state sign_to_label(const int& sg) noexcept
 {
     if (sg == 1)
     {

@@ -93,7 +93,8 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
             lyt.local_potential();
             lyt.system_energy();
 
-            for (uint64_t num = 0; num < lyt.num_cells() / 1.5; num++)
+            auto upperlimit = static_cast<uint64_t>(static_cast<double>(lyt.num_cells()) / 1.5);
+            for (uint64_t num = 0; num < upperlimit; num++)
             {
                 lyt.adjacent_search(alpha, index_start);
                 lyt.validity_check();
