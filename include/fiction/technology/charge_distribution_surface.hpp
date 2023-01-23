@@ -67,7 +67,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 phys_params{sim_param_default} {};
 
         physical_params phys_params{};        // all physical parameters used for the simulation are stored in a struct.
-        std::vector<cell<Lyt>> sidb_order{};  // all cells that are occupied by an SiDB are stored in this vector.
+        std::vector<typename Lyt::cell> sidb_order{};  // all cells that are occupied by an SiDB are stored in this vector.
         std::vector<sidb_charge_state>
             cell_charge{};  // the SiDBs' charge states are stored. Corresponding cells are stored in "sidb_order".
         distance_matrix dist_mat{};  // distance between SiDBs are stored as matrix.
@@ -98,7 +98,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             Lyt(),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
-        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+        static_assert(std::is_same_v<typename Lyt::cell, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
         initialize(cs);
@@ -114,7 +114,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
-        static_assert(std::is_same_v<cell<Lyt>, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+        static_assert(std::is_same_v<typename Lyt::cell, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
         initialize(cs);
@@ -206,7 +206,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param cell The cell to which a state of charge is to be assigned.
      * @param cs The charge state to be assigned to the cell.
      */
-    void assign_charge_state_cell(const cell<Lyt>& cell, const sidb_charge_state& cs) const
+    void assign_charge_state_cell(const typename Lyt::cell& cell, const sidb_charge_state& cs) const
     {
         auto index = cell_to_index(cell);
         if (index != -1)
@@ -295,7 +295,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param c The cell to compute the position for.
      * @return A pair of double values representing the x,y position of the cell in nanometers.
      */
-    std::pair<double, double> nm_position(const cell<Lyt>& c) const
+    std::pair<double, double> nm_position(const typename Lyt::cell& c) const
     {
         const auto x = static_cast<double>(c.x * strg->phys_params.lat_a);
         const auto y = static_cast<double>(c.y * strg->phys_params.lat_b + c.z * strg->phys_params.lat_c);
@@ -324,7 +324,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param c2 The second cell.
      * @return The distance between the two cells in nanometers.
      */
-    [[nodiscard]] constexpr double distance_sidb_pair(const cell<Lyt>& c1, const cell<Lyt>& c2) const
+    [[nodiscard]] constexpr double distance_sidb_pair(const typename Lyt::cell& c1, const typename Lyt::cell& c2) const
     {
         // @Marcel: I checked if I can use the euclidean_distance (see distance.hpp) function, but as it is now, I guess I cannot use it.
         const auto pos_c1 = nm_position(c1);
@@ -340,7 +340,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param cell The cell to find the index of.
      * @return The index of the cell in the layout. Returns -1 if the cell is not part of the layout.
      */
-    [[nodiscard]] constexpr int64_t cell_to_index(const cell<Lyt>& cell) const
+    [[nodiscard]] constexpr int64_t cell_to_index(const typename Lyt::cell& cell) const
     {
         if (auto it = std::find(strg->sidb_order.begin(), strg->sidb_order.end(), cell); it != strg->sidb_order.end())
         {
@@ -356,7 +356,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *  @param cell2 the second cell to compare
      *  @return a constexpr double representing the distance between the two cells
      */
-    [[nodiscard]] constexpr double get_distance_cell(const cell<Lyt>& cell1, const cell<Lyt>& cell2)
+    [[nodiscard]] constexpr double get_distance_cell(const typename Lyt::cell& cell1, const typename Lyt::cell& cell2)
     {
         auto index1 = cell_to_index(cell1);
         if (auto index2 = cell_to_index(cell2); (index1 != -1) && (index2 != -1))
@@ -385,7 +385,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param input2 The second cell
      * @return The potential between input1 and input2
      */
-    [[nodiscard]] constexpr double get_potential_cell(const cell<Lyt>& cell1, const cell<Lyt>& cell2)
+    [[nodiscard]] constexpr double get_potential_cell(const typename Lyt::cell& cell1, const typename Lyt::cell& cell2)
     {
         auto index1 = cell_to_index(cell1);
         if (auto index2 = cell_to_index(cell2); (index1 != -1) && (index2 != -1))
@@ -433,7 +433,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param c2 The second cell.
      * @return The potential between c1 and c2.
      */
-    [[nodiscard]] double potential_sidb_pair_cell(const cell<Lyt>& c1, const cell<Lyt>& c2) const
+    [[nodiscard]] double potential_sidb_pair_cell(const typename Lyt::cell& c1, const typename Lyt::cell& c2) const
     {
         auto index1 = cell_to_index(c1);
         auto index2 = cell_to_index(c2);
@@ -471,7 +471,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @return local potential at given cell position. If there is no SiDB at the given cell, the null pointer is
      * returned.
      */
-    std::optional<double> get_loc_pot_cell(const cell<Lyt>& c1)
+    std::optional<double> get_loc_pot_cell(const typename Lyt::cell& c1)
     {
         if (auto index = cell_to_index(c1); index != -1)
         {
