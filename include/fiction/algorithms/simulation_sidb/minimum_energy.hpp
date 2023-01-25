@@ -7,6 +7,8 @@
 
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include <vector>
+#include <algorithm>
+#include <limits>
 
 namespace fiction
 {

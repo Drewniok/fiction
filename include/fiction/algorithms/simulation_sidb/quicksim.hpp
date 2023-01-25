@@ -5,16 +5,18 @@
 #ifndef FICTION_QUICKSIM_HPP
 #define FICTION_QUICKSIM_HPP
 
-#include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
+#include "fiction/algorithms/simulation_sidb/energy_distribution.hpp"
 #include "fiction/algorithms/simulation_sidb/minimum_energy.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/traits.hpp"
 
-#include <limits>
 #include <fmt/format.h>
 #include <algorithm>
-#include <vector>
 #include <iostream>
+#include <limits>
+#include <vector>
+#include <cstdint>
+#include <cmath>
 
 namespace fiction
 {
@@ -82,7 +84,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
     }
 
     auto best_energy = std::numeric_limits<double>::max();
-    auto  bound       = static_cast<uint64_t>(round(0.6 * static_cast<double>(lyt.num_cells())));
+    auto  bound       = static_cast<uint64_t>(std::round(0.6 * static_cast<double>(lyt.num_cells())));
     for (uint64_t z = 0u; z < iteration_steps; z++)
     {
         for (uint64_t i = 0u; i < bound; i++)

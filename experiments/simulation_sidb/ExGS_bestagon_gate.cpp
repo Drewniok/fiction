@@ -16,12 +16,8 @@ using namespace fiction;
 int main() // NOLINT
 {
 
-    static const std::array<std::string,1> folders = {
-        "../../experiments/bestagon/layouts/gates/and/"
-    };
+    const std::string folder = fmt::format("{}/bestagon_gates/and/", EXPERIMENTS_PATH);
 
-    for (const auto& folder : folders)
-    {
         for (const auto& file : std::filesystem::directory_iterator(folder))
         {
             const auto& benchmark = file.path();
@@ -35,6 +31,6 @@ int main() // NOLINT
             exgs<sidb_cell_clk_lyt_siq>(chargelyt, stats, params);
             stats.report();
         }
-    }
+
     return EXIT_SUCCESS;
 }

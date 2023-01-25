@@ -5,20 +5,20 @@
 #ifndef FICTION_EXHAUSTIVE_GROUND_STATE_SIMULATION_HPP
 #define FICTION_EXHAUSTIVE_GROUND_STATE_SIMULATION_HPP
 
+#include "fiction/algorithms/simulation_sidb/energy_distribution.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
-#include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
+
 #include <mockturtle/utils/stopwatch.hpp>
+
 #include <iostream>
 
-
 namespace fiction
-
 {
 
 template <typename Lyt>
 struct exgs_stats
 {
-    mockturtle::stopwatch<>::duration time_total{0};
+    mockturtle::stopwatch<>::duration             time_total{0};
     std::vector<charge_distribution_surface<Lyt>> valid_lyts{};
 
     void report(std::ostream& out = std::cout) const
@@ -52,7 +52,6 @@ struct exgs_stats
 template <typename Lyt>
 void exgs(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& ps,
           const physical_params& phys_params = physical_params{})
-
 {
     mockturtle::stopwatch stop{ps.time_total};
     ps = exgs_stats<Lyt>{};
@@ -83,10 +82,8 @@ void exgs(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& ps,
     {
         charge_distribution_surface<Lyt> lyt_new{lyt};
         ps.valid_lyts.push_back(lyt_new);
-        std::cout << "found" << std::endl;
     }
-
-};
-};  // namespace fiction
+}
+}  // namespace fiction
 
 #endif  // FICTION_EXHAUSTIVE_GROUND_STATE_SIMULATION_HPP

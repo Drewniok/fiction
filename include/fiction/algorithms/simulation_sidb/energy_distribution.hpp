@@ -2,15 +2,14 @@
 // Created by Jan Drewniok on 17.01.23.
 //
 
-#ifndef FICTION_GET_ENERGY_DIST_HPP
-#define FICTION_GET_ENERGY_DIST_HPP
+#ifndef FICTION_ENERGY_DISTRIBUTION_HPP
+#define FICTION_ENERGY_DISTRIBUTION_HPP
 
 #include "fiction/technology/charge_distribution_surface.hpp"
-
 #include <iostream>
 #include <vector>
 #include <map>
-
+#include <cmath>
 
 namespace fiction
 {
@@ -29,11 +28,11 @@ std::map<double, uint64_t> get_statistics(const std::vector<charge_distribution_
     std::map<double, uint64_t> statistics;
     for (auto& lyt : input_vec)
     {
-        auto energy = round(lyt.get_system_energy() * 100000) / 100000;
+        const auto energy = std::round(lyt.get_system_energy() * 100000) / 100000;
         statistics[energy]++;
     }
     return statistics;
 }
 }  // namespace fiction
 
-#endif  // FICTION_GET_ENERGY_DIST_HPP
+#endif  // FICTION_ENERGY_DISTRIBUTION_HPP

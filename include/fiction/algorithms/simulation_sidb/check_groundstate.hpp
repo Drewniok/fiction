@@ -7,6 +7,7 @@
 
 #include "fiction/algorithms/simulation_sidb/exhaustive_ground_state_simulation.hpp"
 #include "fiction/algorithms/simulation_sidb/quicksim.hpp"
+#include <cmath>
 
 namespace fiction
 {
@@ -27,8 +28,8 @@ bool check_groundstate(const quicksim_stats<Lyt>& result_new_ap, const exgs_stat
     {
         return false;
     }
-    auto min_energy_exact  = minimum_energy(result_exact.valid_lyts);
-    auto min_energy_new_ap = minimum_energy(result_new_ap.valid_lyts);
+    const auto min_energy_exact  = minimum_energy(result_exact.valid_lyts);
+    const auto min_energy_new_ap = minimum_energy(result_new_ap.valid_lyts);
 
     return std::abs(min_energy_exact - min_energy_new_ap) / min_energy_exact < 0.00001;
 }

@@ -19,7 +19,7 @@
 
 using namespace fiction;
 
-int main() // NOLINT
+int main()  // NOLINT
 {
     experiments::experiment<std::string, double, double, double, double, std::string> simulation_exp{
         "benchmark",
@@ -37,18 +37,15 @@ int main() // NOLINT
     std::vector<uint64_t> db_num{};
     uint64_t              benchmark_counter = 0u;
 
-    static const std::array<std::string,12> folders = {
-        "../../experiments/bestagon/layouts/gates/and/",       "../../experiments/bestagon/layouts/gates/cx/",
-        "../../experiments/bestagon/layouts/gates/fo2/",       "../../experiments/bestagon/layouts/gates/ha/",
-        "../../experiments/bestagon/layouts/gates/hourglass/", "../../experiments/bestagon/layouts/gates/inv/",
-        "../../experiments/bestagon/layouts/gates/nand/",      "../../experiments/bestagon/layouts/gates/nor/",
-        "../../experiments/bestagon/layouts/gates/or/",        "../../experiments/bestagon/layouts/gates/wire/",
-        "../../experiments/bestagon/layouts/gates/xnor/",      "../../experiments/bestagon/layouts/gates/xor/"
-    };
+    const std::string folder = fmt::format("{}/bestagon_gates/", EXPERIMENTS_PATH);
 
-    for (const auto& folder : folders)
+    static const std::array<std::string, 12> folders = {
+        folder + "and/",  folder + "cx/",  folder + "fo2/", folder + "ha/",   folder + "hourglass/", folder + "inv/",
+        folder + "nand/", folder + "nor/", folder + "or/",  folder + "wire/", folder + "xnor/",      folder + "xor/"};
+
+    for (const auto& folder_gate : folders)
     {
-        for (const auto& file : std::filesystem::directory_iterator(folder))
+        for (const auto& file : std::filesystem::directory_iterator(folder_gate))
         {
             benchmark_counter += 1;
             const auto& benchmark = file.path();
@@ -65,13 +62,13 @@ int main() // NOLINT
             tts_stats tts_stat{};
             sim_acc_tts<sidb_cell_clk_lyt_siq>(chargelyt, tts_stat, exgs_stats);
 
-            simulation_exp(benchmark.string(), mockturtle::to_seconds(exgs_stats.time_total), tts_stat.acc, tts_stat.tts,
-                           tts_stat.mean_single_runtime, std::to_string(lyt.num_cells()));
+            simulation_exp(benchmark.string(), mockturtle::to_seconds(exgs_stats.time_total), tts_stat.acc,
+                           tts_stat.time_to_solution, tts_stat.mean_single_runtime, std::to_string(lyt.num_cells()));
             db_num.push_back(lyt.num_cells());
             sum_sr += mockturtle::to_seconds(exgs_stats.time_total);
             sum_sr_quick += tts_stat.mean_single_runtime;
             sum_acc += tts_stat.acc;
-            sum_tts += tts_stat.tts;
+            sum_tts += tts_stat.time_to_solution;
         }
     }
 

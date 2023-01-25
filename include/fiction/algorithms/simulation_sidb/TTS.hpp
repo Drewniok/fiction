@@ -22,22 +22,22 @@ namespace fiction
  */
 struct tts_stats
 {
-    double tts{};
+    double time_to_solution{};
     double acc{};
     double mean_single_runtime{};
 
     void report(std::ostream& out = std::cout)
     {
-        out << fmt::format("tts: {} | acc: {} | t_(s): {} \n", tts, acc, mean_single_runtime);
+        out << fmt::format("time_to_solution: {} | acc: {} | t_(s): {} \n", time_to_solution, acc, mean_single_runtime);
     }
 };
 
 /**
- * This function determines the time-to-solution (tts) and the accuracy (acc) of the quicksim-algorithm.
+ * This function determines the time-to-solution (time_to_solution) and the accuracy (acc) of the quicksim-algorithm.
  *
  * @paramt Lyt cell-level layout.
  * @param charge_distribution_surface<Lyt> charge layout that is used for the simulation.
- * @param tts_stats struct where the results (tts, acc, single runtime) are stored.
+ * @param tts_stats struct where the results (time_to_solution, acc, single runtime) are stored.
  * @param pp number of repetitions to determine the simulation accuracy (pp = 100 ==> accuracy is precise to 1 %).
  * @param iteration_steps simulation parameter (see quicksim.hpp).
  * @param alpha simulation parameter (see quicksim.hpp).
@@ -78,17 +78,15 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stat
     {
         tts = single_runtime;
     }
-
     else
     {
         tts = (single_runtime * log(1.0 - convlevel) / log(1.0 - acc));
     }
 
-    ts.tts                 = tts;
+    ts.time_to_solution    = tts;
     ts.acc                 = acc * 100;
     ts.mean_single_runtime = single_runtime;
 }
-
 }  // namespace fiction
 
 #endif  // FICTION_TTS_HPP
