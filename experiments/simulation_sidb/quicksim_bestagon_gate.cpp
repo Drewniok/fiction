@@ -33,5 +33,5 @@ int main() // NOLINT
             collect.report();
         }
     }
-    return 0;
+    return EXIT_SUCCESS;
 }

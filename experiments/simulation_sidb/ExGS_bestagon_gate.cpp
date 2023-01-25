@@ -36,5 +36,5 @@ int main() // NOLINT
             stats.report();
         }
     }
-    return 0;
+    return EXIT_SUCCESS;
 }
