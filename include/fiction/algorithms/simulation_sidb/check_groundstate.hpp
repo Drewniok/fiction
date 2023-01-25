@@ -5,7 +5,7 @@
 #ifndef FICTION_CHECK_GROUNDSTATE_HPP
 #define FICTION_CHECK_GROUNDSTATE_HPP
 
-#include "fiction/algorithms/simulation_sidb/ExGS.hpp"
+#include "fiction/algorithms/simulation_sidb/exhaustive_ground_state_simulation.hpp"
 #include "fiction/algorithms/simulation_sidb/quicksim.hpp"
 
 namespace fiction

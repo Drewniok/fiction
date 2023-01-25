@@ -6,14 +6,14 @@
 #include <fiction/io/read_sqd_layout.hpp>  // reader for SiDB layouts including surface scan data
 #include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/types.hpp>                    // pre-defined types suitable for the FCN domain
-#include <fmt/format.h>  // output formatting
 #include <filesystem>
+#include <array>
 
 using namespace fiction;
 
 int main() // NOLINT
 {
-    std::vector<std::string> folders = {
+    static const std::array<std::string,1> folders = {
         "../../experiments/bestagon/layouts/gates/and/"
     };
 

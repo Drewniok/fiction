@@ -2,21 +2,21 @@
 // Created by Jan Drewniok on 18.01.23.
 //
 
-#include <fiction/algorithms/simulation_sidb/ExGS.hpp>
 #include <fiction/algorithms/simulation_sidb/TTS.hpp>
+#include <fiction/algorithms/simulation_sidb/exhaustive_ground_state_simulation.hpp>
 #include <fiction/io/read_sqd_layout.hpp>  // reader for SiDB layouts including surface scan data
 #include <fiction/technology/charge_distribution_surface.hpp>
-#include <fiction/types.hpp>                    // pre-defined types suitable for the FCN domain
-#include <fmt/format.h>  // output formatting
+#include <fiction/types.hpp>  // pre-defined types suitable for the FCN domain
+
+#include <array>
 #include <filesystem>
-#include <iostream>
 
 using namespace fiction;
 
 int main() // NOLINT
 {
 
-    std::vector<std::string> folders = {
+    static const std::array<std::string,1> folders = {
         "../../experiments/bestagon/layouts/gates/and/"
     };
 

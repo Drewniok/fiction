@@ -2,8 +2,8 @@
 // Created by Jan Drewniok on 18.12.22.
 //
 
-#ifndef FICTION_EXGS_HPP
-#define FICTION_EXGS_HPP
+#ifndef FICTION_EXHAUSTIVE_GROUND_STATE_SIMULATION_HPP
+#define FICTION_EXHAUSTIVE_GROUND_STATE_SIMULATION_HPP
 
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/algorithms/simulation_sidb/get_energy_dist.hpp"
@@ -89,4 +89,4 @@ void exgs(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& ps,
 };
 };  // namespace fiction
 
-#endif  // FICTION_EXGS_HPP
+#endif  // FICTION_EXHAUSTIVE_GROUND_STATE_SIMULATION_HPP
