@@ -47,7 +47,7 @@ int main() // NOLINT
         for (const auto& file : std::filesystem::directory_iterator(folder))
         {
             benchmark_counter += 1;
-            auto const& benchmark = file.path();
+            const auto& benchmark = file.path();
 
             std::cout << benchmark << std::endl;
 
