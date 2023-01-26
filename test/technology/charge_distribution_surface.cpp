@@ -84,7 +84,7 @@ TEMPLATE_TEST_CASE(
 
 {
     TestType                    lyt{{11, 11}};
-    charge_distribution_surface charge_layout{lyt, physical_params{}};
+    charge_distribution_surface charge_layout{lyt, sidb_simulation_parameters{}};
 
     SECTION("assign and read out charge states")
     {
@@ -200,11 +200,12 @@ TEMPLATE_TEST_CASE(
         charge_layout.initialize();
 
         CHECK(charge_layout.get_distance_cell({0, 0, 0}, {0, 0, 0}) == 0.0);
-        CHECK(charge_layout.get_distance_cell({0, 0, 0}, {1, 0, 0}) == physical_params{}.lat_a);
-        CHECK(charge_layout.get_distance_cell({1, 0, 0}, {0, 0, 0}) == physical_params{}.lat_a);
+        CHECK(charge_layout.get_distance_cell({0, 0, 0}, {1, 0, 0}) == sidb_simulation_parameters{}.lat_a);
+        CHECK(charge_layout.get_distance_cell({1, 0, 0}, {0, 0, 0}) == sidb_simulation_parameters{}.lat_a);
         CHECK(charge_layout.get_distance_cell({1, 0, 0}, {1, 0, 0}) == 0.0);
         CHECK(charge_layout.get_distance_cell({0, 0, 0}, {1, 1, 1}) ==
-              std::hypot(physical_params{}.lat_a, physical_params{}.lat_b + physical_params{}.lat_c));
+              std::hypot(sidb_simulation_parameters{}.lat_a,
+                         sidb_simulation_parameters{}.lat_b + sidb_simulation_parameters{}.lat_c));
         CHECK(charge_layout.get_distance_cell({1, 1, 1}, {1, 1, 1}) == 0);
     }
 //
@@ -291,7 +292,7 @@ TEMPLATE_TEST_CASE(
         layout.assign_cell_type({0, 2, 0}, TestType::cell_type::NORMAL);
         layout.assign_cell_type({4, 1, 1}, TestType::cell_type::NORMAL);
 
-        charge_distribution_surface charge_layout_five{layout, physical_params{}};
+        charge_distribution_surface charge_layout_five{layout, sidb_simulation_parameters{}};
         CHECK(charge_layout_five.get_charge_state_cell({0, 0,0}) == sidb_charge_state::NEGATIVE);
         CHECK(charge_layout_five.get_charge_state_cell({0, 2,0}) == sidb_charge_state::NEGATIVE);
         CHECK(charge_layout_five.get_charge_state_cell({4, 1,1}) == sidb_charge_state::NEGATIVE);
@@ -359,7 +360,7 @@ TEMPLATE_TEST_CASE(
     SECTION("increase charge index")
     {
         TestType                lyt_new{{11, 11}};
-        const physical_params params{3, -0.32, 5.0 * 1E-9, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10};
+        const sidb_simulation_parameters params{3, -0.32, 5.0 * 1E-9, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10};
 
         lyt_new.assign_cell_type({0, 0, 1}, TestType::cell_type::NORMAL);
         lyt_new.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);

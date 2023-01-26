@@ -14,7 +14,7 @@
 using namespace fiction;
 
 TEMPLATE_TEST_CASE(
-    "Test get_statistics function", "[get_statistics]",
+    "Test energy_distribution function", "[energy_distribution]",
     (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, odd_row_hex>>>),
     (cell_level_layout<sidb_technology, clocked_layout<hexagonal_layout<siqad::coord_t, even_row_hex>>>),
@@ -27,7 +27,7 @@ TEMPLATE_TEST_CASE(
     lyt.assign_cell_type({10, 10}, TestType::cell_type::NORMAL);
     lyt.assign_cell_type({9, 9}, TestType::cell_type::NORMAL);
 
-    const auto sim_param = physical_params{};
+    const auto sim_param = sidb_simulation_parameters{};
     std::vector<charge_distribution_surface<TestType>> all_lyts{};
     charge_distribution_surface    charge_layout_first{lyt, sim_param};
 
@@ -51,7 +51,7 @@ TEMPLATE_TEST_CASE(
     charge_layout_third.system_energy();
     all_lyts.push_back(charge_layout_third);
 
-    auto result = get_statistics(all_lyts);
+    auto result = energy_distribution(all_lyts);
 
     auto counter = 0u;
     for (const auto &it : result)

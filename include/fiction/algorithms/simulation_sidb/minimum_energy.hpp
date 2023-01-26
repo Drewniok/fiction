@@ -21,9 +21,9 @@ namespace fiction
  * @return double value of the minimum energy found in the input vector.
  */
 template <typename Lyt>
-double minimum_energy(const std::vector<charge_distribution_surface<Lyt>>& result)
+double minimum_energy(const std::vector<charge_distribution_surface<Lyt>>& charge_lyts)
 {
-    return std::accumulate(result.begin(), result.end(), std::numeric_limits<double>::max(),
+    return std::accumulate(charge_lyts.begin(), charge_lyts.end(), std::numeric_limits<double>::max(),
                            [](double a, const auto& lyt) { return std::min(a, lyt.get_system_energy()); });
 }
 

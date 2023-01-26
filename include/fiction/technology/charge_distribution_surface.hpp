@@ -5,15 +5,21 @@
 #ifndef FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 #define FICTION_CHARGE_DISTRIBUTION_SURFACE_HPP
 
-#include "fiction/algorithms/simulation_sidb/simulation_parameters.hpp"
+#include "fiction/algorithms/simulation_sidb/sidb_simulation_parameters.hpp"
 #include "fiction/layouts/cell_level_layout.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/types.hpp"
+#include "fiction/traits.hpp"
 
 #include <cassert>
 #include <cstdint>
 #include <limits>
 #include <random>
+#include <type_traits>
+#include <utility>
+#include <cmath>
+#include <algorithm>
+#include <iterator>
 
 namespace fiction
 {
@@ -63,10 +69,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         using local_potential = std::vector<double>;
 
       public:
-        explicit charge_distribution_storage(const physical_params& sim_param_default = physical_params{}) :
+        explicit charge_distribution_storage(const sidb_simulation_parameters& sim_param_default = sidb_simulation_parameters{}) :
                 phys_params{sim_param_default} {};
 
-        physical_params phys_params{};        // all physical parameters used for the simulation are stored in a struct.
+        sidb_simulation_parameters
+            phys_params{};        // all physical parameters used for the simulation are stored in a struct.
         std::vector<typename Lyt::cell> sidb_order{};  // all cells that are occupied by an SiDB are stored in this vector.
         std::vector<sidb_charge_state>
             cell_charge{};  // the SiDBs' charge states are stored. Corresponding cells are stored in "sidb_order".
@@ -93,7 +100,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * all SiDBs.
      * @param physical_params physical parameters used for the simulation (µ_minus, base number, ...).
      */
-    explicit charge_distribution_surface(const physical_params&   sim_param_default = physical_params{},
+    explicit charge_distribution_surface(const sidb_simulation_parameters&   sim_param_default = sidb_simulation_parameters{},
                                          const sidb_charge_state& cs                = sidb_charge_state::NEGATIVE) :
             Lyt(),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
@@ -109,7 +116,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param sidb_charge_state charge state used for the initialization of all SiDBs, default is negative charge.
      * @param physical_params physical parameters used for the simulation (µ_minus, base number, ...).
      */
-    explicit charge_distribution_surface(const Lyt& lyt, const physical_params& sim_param_default = physical_params{},
+    explicit charge_distribution_surface(const Lyt& lyt, const sidb_simulation_parameters& sim_param_default = sidb_simulation_parameters{},
                                          const sidb_charge_state& cs = sidb_charge_state::NEGATIVE) :
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
@@ -157,7 +164,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @param sim_param Physical parameters to be set.
      */
-    void set_physical_parameters(const physical_params& sim_param)
+    void set_physical_parameters(const sidb_simulation_parameters& sim_param)
     {
         strg->phys_params         = sim_param;
         strg->charge_index.second = sim_param.base;
@@ -181,9 +188,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * Retrieves the physical parameters of the simulation.
      *
-     * @return physical_params struct containing the physical parameters of the simulation.
+     * @return sidb_simulation_parameters struct containing the physical parameters of the simulation.
      */
-    [[nodiscard]] physical_params get_phys_params() const
+    [[nodiscard]] sidb_simulation_parameters get_phys_params() const
     {
         return strg->phys_params;
     }
@@ -609,7 +616,6 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     void chargeconf_to_index() const
     {
         uint8_t base = strg->phys_params.base;
-        assert(base == 2 || base == 3 && "base must be 2 or 3");
         uint64_t chargeindex = 0;
         uint64_t counter     = 0;
         for (const auto& c : strg->cell_charge)
@@ -769,11 +775,11 @@ template <class T>
 charge_distribution_surface(const T&) -> charge_distribution_surface<T>;
 
 template <class T>
-charge_distribution_surface(const T&, const physical_params&, const sidb_charge_state& cs)
+charge_distribution_surface(const T&, const sidb_simulation_parameters&, const sidb_charge_state& cs)
     -> charge_distribution_surface<T>;
 
 template <class T>
-charge_distribution_surface(const T&, const physical_params&) -> charge_distribution_surface<T>;
+charge_distribution_surface(const T&, const sidb_simulation_parameters&) -> charge_distribution_surface<T>;
 
 }  // namespace fiction
 

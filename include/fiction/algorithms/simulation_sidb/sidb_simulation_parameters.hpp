@@ -2,30 +2,35 @@
 // Created by Jan Drewniok on 24.11.22.
 //
 
-#ifndef FICTION_SIMULATION_PARAMETERS_HPP
-#define FICTION_SIMULATION_PARAMETERS_HPP
+#ifndef FICTION_SIDB_SIMULATION_PARAMETERS_HPP
+#define FICTION_SIDB_SIMULATION_PARAMETERS_HPP
 
 #include "fiction/technology/constants.hpp"
+
 #include <cstdint>
 
 namespace fiction
 {
 /**
-     * This struct collects all physical parameters. It can be useful to change them, especially when experiments bring new insights.
-     *
-     * @param base_number simulation can be conducted with 2 and 3 charge states. 2 ^= (Negative, Neutral), 3 ^= (Negative, Neutral, Positive).
-     * @param mu_minus it is the energy transition level (0/-).
-     * @param relative_permittivity it describes the electric field reduction due to polarization.
-     * @param screening_distance also known as "Thomas-Fermi screening" and it describes the electric field screening due to free charges.
-     * @param a lattice constant.
-     * @param b lattice constant.
-     * @param c lattice constant.
+ * This struct collects all physical parameters. It can be useful to change them, especially when experiments bring new
+ * insights.
+ *
+ * @param base_number simulation can be conducted with 2 and 3 charge states. 2 ^= (Negative, Neutral), 3 ^= (Negative,
+ * Neutral, Positive).
+ * @param mu_minus it is the energy transition level (0/-).
+ * @param relative_permittivity it describes the electric field reduction due to polarization.
+ * @param screening_distance also known as "Thomas-Fermi screening" and it describes the electric field screening due to
+ * free charges.
+ * @param a lattice constant.
+ * @param b lattice constant.
+ * @param c lattice constant.
  */
-struct physical_params
+struct sidb_simulation_parameters
 {
-    explicit physical_params(const uint8_t base_number = 3, const double mu_minus = -0.32, const double relative_permittivity = 5.6, const double screening_distance = 5.0 * 1E-9,
-                               const double a = 3.84 * 1E-10,
-                               const double b = 7.68 * 1E-10, const double c = 2.25 * 1E-10) noexcept :
+    explicit sidb_simulation_parameters(const uint8_t base_number = 3, const double mu_minus = -0.32,
+                                        const double relative_permittivity = 5.6,
+                                        const double screening_distance = 5.0 * 1E-9, const double a = 3.84 * 1E-10,
+                                        const double b = 7.68 * 1E-10, const double c = 2.25 * 1E-10) :
             lat_a{a},
             lat_b{b},
             lat_c{c},
@@ -35,7 +40,6 @@ struct physical_params
             mu{mu_minus},
             mu_p{mu - 0.59},
             base{base_number}
-
     {}
 
     /**
@@ -78,4 +82,4 @@ struct physical_params
 };
 }  // namespace fiction
 
-#endif  // FICTION_SIMULATION_PARAMETERS_HPP
+#endif  // FICTION_SIDB_SIMULATION_PARAMETERS_HPP

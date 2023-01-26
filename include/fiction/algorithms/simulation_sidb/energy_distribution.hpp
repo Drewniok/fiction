@@ -23,7 +23,7 @@ namespace fiction
  * vector as the value.
  */
 template <typename Lyt>
-std::map<double, uint64_t> get_statistics(const std::vector<charge_distribution_surface<Lyt>>& input_vec)
+std::map<double, uint64_t> energy_distribution(const std::vector<charge_distribution_surface<Lyt>>& input_vec)
 {
     std::map<double, uint64_t> statistics;
     for (auto& lyt : input_vec)

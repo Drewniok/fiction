@@ -23,14 +23,13 @@ int main() // NOLINT
             const auto& benchmark = file.path();
 
             const auto                                         lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark.string());
-            const physical_params                              params{2, -0.32};
+            const sidb_simulation_parameters                   params{2, -0.32};
             charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};
 
-            exgs_stats<sidb_cell_clk_lyt_siq> stats{};
 
-            exgs<sidb_cell_clk_lyt_siq>(chargelyt, stats, params);
+            exgs_stats<sidb_cell_clk_lyt_siq> stats{};
+            exgs<sidb_cell_clk_lyt_siq>(chargelyt, params, &stats);
             stats.report();
         }
-
     return EXIT_SUCCESS;
 }

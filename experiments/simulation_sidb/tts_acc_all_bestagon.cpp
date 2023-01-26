@@ -54,10 +54,10 @@ int main()  // NOLINT
 
             const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark.string());
 
-            const physical_params                              params{2, -0.32};
+            const sidb_simulation_parameters                   params{2, -0.32};
             charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};
             exgs_stats<sidb_cell_clk_lyt_siq>                  exgs_stats{};
-            exgs<sidb_cell_clk_lyt_siq>(chargelyt, exgs_stats, params);
+            exgs<sidb_cell_clk_lyt_siq>(chargelyt, params, &exgs_stats);
 
             tts_stats tts_stat{};
             sim_acc_tts<sidb_cell_clk_lyt_siq>(chargelyt, tts_stat, exgs_stats);

@@ -34,7 +34,8 @@ TEMPLATE_TEST_CASE(
 
     charge_distribution_surface charge_layout{lyt};
     quicksim_stats<TestType> quicksimstats{};
-    quicksim<TestType>(charge_layout, quicksimstats);
+    const sidb_simulation_parameters params{2, -0.32};
+    quicksim<TestType>(charge_layout, params, &quicksimstats);
 
     CHECK(!quicksimstats.valid_lyts.empty());
 

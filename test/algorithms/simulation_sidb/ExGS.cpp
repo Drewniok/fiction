@@ -35,16 +35,17 @@ TEMPLATE_TEST_CASE(
 
     charge_distribution_surface charge_layout{lyt};
     exgs_stats<TestType>  exgs_stats{};
-    exgs<TestType>(charge_layout, exgs_stats);
+    const sidb_simulation_parameters params{2, -0.32};
+    exgs<TestType>(charge_layout,params, &exgs_stats);
     auto size_before = exgs_stats.valid_lyts.size();
-    exgs<TestType>(charge_layout, exgs_stats);
+    exgs<TestType>(charge_layout, params, &exgs_stats);
     auto size_after = exgs_stats.valid_lyts.size();
     CHECK(size_before == size_after);
 
     CHECK(!exgs_stats.valid_lyts.empty());
 
-    const physical_params     params{2};
-    exgs<TestType>(charge_layout, exgs_stats, params);
+    const sidb_simulation_parameters params_new{3, -0.32};
+    exgs<TestType>(charge_layout, params_new, &exgs_stats);
 
 
     for (const auto& it : exgs_stats.valid_lyts)

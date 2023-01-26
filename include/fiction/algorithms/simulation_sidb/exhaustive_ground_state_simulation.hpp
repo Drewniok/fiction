@@ -26,7 +26,7 @@ struct exgs_stats
         out << fmt::format("total time  = {:.2f} secs\n", mockturtle::to_seconds(time_total));
         if (!valid_lyts.empty())
         {
-            for (auto [energy, count] : get_statistics<Lyt>(valid_lyts))
+            for (auto [energy, count] : energy_distribution<Lyt>(valid_lyts))
             {
                 out << fmt::format("energy: {} | occurance: {} \n", energy, count);
             }
@@ -50,11 +50,10 @@ struct exgs_stats
  * @return a vector of different charge distribution layouts, all of which satisfy the validity test.
  */
 template <typename Lyt>
-void exgs(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& ps,
-          const physical_params& phys_params = physical_params{})
+void exgs(charge_distribution_surface<Lyt>& lyt, const sidb_simulation_parameters& phys_params = sidb_simulation_parameters{}, exgs_stats<Lyt> *ps = nullptr)
 {
-    mockturtle::stopwatch stop{ps.time_total};
-    ps = exgs_stats<Lyt>{};
+    exgs_stats<Lyt> st{};
+    mockturtle::stopwatch stop{st.time_total};
     lyt.set_physical_parameters(phys_params);
     lyt.set_charge_states(sidb_charge_state::NEGATIVE);
     lyt.chargeconf_to_index();
@@ -68,7 +67,7 @@ void exgs(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& ps,
         if (lyt.get_validity())
         {
             charge_distribution_surface<Lyt> lyt_new{lyt};
-            ps.valid_lyts.push_back(lyt_new);
+            st.valid_lyts.push_back(lyt_new);
         }
 
         lyt.increase_charge_index();
@@ -81,7 +80,12 @@ void exgs(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& ps,
     if (lyt.get_validity())
     {
         charge_distribution_surface<Lyt> lyt_new{lyt};
-        ps.valid_lyts.push_back(lyt_new);
+        st.valid_lyts.push_back(lyt_new);
+    }
+
+    if (ps)
+    {
+        *ps = st;
     }
 }
 }  // namespace fiction

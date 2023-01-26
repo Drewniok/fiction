@@ -22,14 +22,14 @@ namespace fiction
 0.00001, false otherwise.
 */
 template <typename Lyt>
-bool check_groundstate(const quicksim_stats<Lyt>& result_new_ap, const exgs_stats<Lyt>& result_exact)
+bool check_groundstate(const quicksim_stats<Lyt>& quicksim_results, const exgs_stats<Lyt>& exhaustive__results)
 {
-    if (result_exact.valid_lyts.empty())
+    if (exhaustive__results.valid_lyts.empty())
     {
         return false;
     }
-    const auto min_energy_exact  = minimum_energy(result_exact.valid_lyts);
-    const auto min_energy_new_ap = minimum_energy(result_new_ap.valid_lyts);
+    const auto min_energy_exact  = minimum_energy(exhaustive__results.valid_lyts);
+    const auto min_energy_new_ap = minimum_energy(quicksim_results.valid_lyts);
 
     return std::abs(min_energy_exact - min_energy_new_ap) / min_energy_exact < 0.00001;
 }

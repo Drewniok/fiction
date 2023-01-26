@@ -56,7 +56,7 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stat
     {
         quicksim_stats<Lyt> stats_quick{};
         const auto          t_start = std::chrono::high_resolution_clock::now();
-        quicksim<Lyt>(lyt, stats_quick, lyt.get_phys_params(), iteration_steps, alpha);
+        quicksim<Lyt>(lyt, lyt.get_phys_params(), &stats_quick, iteration_steps, alpha);
         const auto t_end      = std::chrono::high_resolution_clock::now();
         const auto elapsed    = t_end - t_start;
         auto       diff_first = std::chrono::duration<double>(elapsed).count();

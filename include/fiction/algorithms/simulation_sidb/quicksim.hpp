@@ -10,18 +10,20 @@
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/traits.hpp"
 
+#include <mockturtle/utils/stopwatch.hpp>
 #include <fmt/format.h>
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <limits>
 #include <vector>
-#include <cstdint>
-#include <cmath>
 
 namespace fiction
 {
 /**
- * This struct stores the simulation runtime and all physically valid charge layouts gained by the quicksim simulation (see quicksim.hpp).
+ * This struct stores the simulation runtime and all physically valid charge layouts gained by the quicksim simulation
+ * (see quicksim.hpp).
  *
  * @paramt Lyt cell-level layout.
  */
@@ -34,9 +36,9 @@ struct quicksim_stats
     void report(std::ostream& out = std::cout)
     {
         out << fmt::format("[i] total time  = {:.2f} millisecs\n", time_total / 1000);
-        if (!get_statistics<Lyt>(valid_lyts).empty())
+        if (!energy_distribution<Lyt>(valid_lyts).empty())
         {
-            for (auto [energy, count] : get_statistics<Lyt>(valid_lyts))
+            for (auto [energy, count] : energy_distribution<Lyt>(valid_lyts))
             {
                 out << fmt::format("[i] the lowest state energy is  = {:.4f} \n", minimum_energy(valid_lyts));
                 out << fmt::format("energy: {} | occurance: {} \n", energy, count);
@@ -51,19 +53,21 @@ struct quicksim_stats
 };
 
 /**
- * quicksim determines physically valid charge configurations (with minimal energy) of a given (already initialized) charge distribution layout. Depending on the simulation paramaters, the ground state is found with a certain probability after one run.
+ * quicksim determines physically valid charge configurations (with minimal energy) of a given (already initialized)
+ * charge distribution layout. Depending on the simulation paramaters, the ground state is found with a certain
+ * probability after one run.
  *
  * @tparam Lyt cell-level layout.
  * @param lyt charge distribution layout.
- * @param ps struct that stores the simulation results (simulation runtime, and all physically valid charge distribution layouts).
+ * @param ps struct that stores the simulation results (simulation runtime, and all physically valid charge distribution
+ * layouts).
  * @param physical_params physical parameters, they are material-specific and may vary from experiment to experiment.
  */
 template <typename Lyt>
-void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
-              const physical_params& phys_params = physical_params{}, const uint64_t iteration_steps = 80,
-              const double alpha = 0.7)
+void quicksim(charge_distribution_surface<Lyt>& lyt, const sidb_simulation_parameters& phys_params = sidb_simulation_parameters{},
+              quicksim_stats<Lyt>* ps = nullptr, const uint64_t iteration_steps = 80, const double alpha = 0.7)
 {
-
+    quicksim_stats<Lyt> st{};
     // set the given physical parameters
     lyt.set_physical_parameters(phys_params);
 
@@ -80,11 +84,11 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
     if (lyt.get_validity())
     {
         charge_distribution_surface<Lyt> lyt_new{lyt};
-        ps.valid_lyts.push_back(lyt_new);
+        st.valid_lyts.push_back(lyt_new);
     }
 
     auto best_energy = std::numeric_limits<double>::max();
-    auto  bound       = static_cast<uint64_t>(std::round(0.6 * static_cast<double>(lyt.num_cells())));
+    auto bound       = static_cast<uint64_t>(std::round(0.6 * static_cast<double>(lyt.num_cells())));
     for (uint64_t z = 0u; z < iteration_steps; z++)
     {
         for (uint64_t i = 0u; i < bound; i++)
@@ -104,13 +108,18 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, quicksim_stats<Lyt>& ps,
                 if (lyt.get_validity() && (lyt.get_system_energy() <= best_energy))
                 {
                     charge_distribution_surface<Lyt> lyt_new{lyt};
-                    ps.valid_lyts.push_back(lyt_new);
+                    st.valid_lyts.push_back(lyt_new);
                 }
             }
         }
     }
     auto end      = std::chrono::high_resolution_clock::now();
-    ps.time_total = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+    st.time_total = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+
+    if (ps)
+    {
+        *ps = st;
+    }
 }
 
 }  // namespace fiction
