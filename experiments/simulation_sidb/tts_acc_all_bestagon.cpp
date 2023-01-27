@@ -39,9 +39,11 @@ int main()  // NOLINT
 
     const std::string folder = fmt::format("{}/bestagon_gates/", EXPERIMENTS_PATH);
 
-    static const std::array<std::string, 12> folders = {
-        folder + "and/",  folder + "cx/",  folder + "fo2/", folder + "ha/",   folder + "hourglass/", folder + "inv/",
-        folder + "nand/", folder + "nor/", folder + "or/",  folder + "wire/", folder + "xnor/",      folder + "xor/"};
+    static const std::array<std::string, 1> folders = {
+        folder + "and/"
+        //        folder + "cx/",  folder + "fo2/", folder + "ha/",   folder + "hourglass/", folder + "inv/",
+//        folder + "nand/", folder + "nor/", folder + "or/",  folder + "wire/", folder + "xnor/",      folder + "xor/"
+                };
 
     for (const auto& folder_gate : folders)
     {

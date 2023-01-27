@@ -33,14 +33,14 @@ TEMPLATE_TEST_CASE(
 
     CHECK(minimum_energy(all_lyts) == std::numeric_limits<double>::max());
 
-    charge_layout_first.assign_charge_state_cell({0, 0}, sidb_charge_state::NEUTRAL);
+    charge_layout_first.assign_charge_state({0, 0}, sidb_charge_state::NEUTRAL);
     charge_layout_first.local_potential();
     charge_layout_first.system_energy();
     all_lyts.push_back(charge_layout_first);
 
     charge_distribution_surface charge_layout_second{lyt};
-    charge_layout_second.assign_charge_state_cell({10, 10}, sidb_charge_state::NEUTRAL);
-    charge_layout_second.assign_charge_state_cell({9, 9}, sidb_charge_state::NEUTRAL);
+    charge_layout_second.assign_charge_state({10, 10}, sidb_charge_state::NEUTRAL);
+    charge_layout_second.assign_charge_state({9, 9}, sidb_charge_state::NEUTRAL);
     charge_layout_second.local_potential();
     charge_layout_second.system_energy();
     all_lyts.push_back(charge_layout_second);

@@ -50,16 +50,31 @@ struct exgs_stats
  * @return a vector of different charge distribution layouts, all of which satisfy the validity test.
  */
 template <typename Lyt>
-void exgs(charge_distribution_surface<Lyt>& lyt, const sidb_simulation_parameters& phys_params = sidb_simulation_parameters{}, exgs_stats<Lyt> *ps = nullptr)
+void exgs(charge_distribution_surface<Lyt>& lyt,
+          const sidb_simulation_parameters& phys_params = sidb_simulation_parameters{}, exgs_stats<Lyt>* ps = nullptr)
 {
-    exgs_stats<Lyt> st{};
-    mockturtle::stopwatch stop{st.time_total};
-    lyt.set_physical_parameters(phys_params);
-    lyt.set_charge_states(sidb_charge_state::NEGATIVE);
-    lyt.chargeconf_to_index();
-
-    while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
+    exgs_stats<Lyt>       st{};
     {
+        mockturtle::stopwatch stop{st.time_total};
+        lyt.set_physical_parameters(phys_params);
+        lyt.set_all_charge_states(sidb_charge_state::NEGATIVE);
+        lyt.chargeconf_to_index();
+
+        while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
+        {
+            lyt.local_potential();
+            lyt.system_energy();
+            lyt.validity_check();
+
+            if (lyt.get_validity())
+            {
+                charge_distribution_surface<Lyt> lyt_new{lyt};
+                st.valid_lyts.push_back(lyt_new);
+            }
+
+            lyt.increase_charge_index();
+        }
+
         lyt.local_potential();
         lyt.system_energy();
         lyt.validity_check();
@@ -69,20 +84,7 @@ void exgs(charge_distribution_surface<Lyt>& lyt, const sidb_simulation_parameter
             charge_distribution_surface<Lyt> lyt_new{lyt};
             st.valid_lyts.push_back(lyt_new);
         }
-
-        lyt.increase_charge_index();
     }
-
-    lyt.local_potential();
-    lyt.system_energy();
-    lyt.validity_check();
-
-    if (lyt.get_validity())
-    {
-        charge_distribution_surface<Lyt> lyt_new{lyt};
-        st.valid_lyts.push_back(lyt_new);
-    }
-
     if (ps)
     {
         *ps = st;

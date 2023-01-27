@@ -8,18 +8,18 @@
 #include "fiction/algorithms/simulation_sidb/sidb_simulation_parameters.hpp"
 #include "fiction/layouts/cell_level_layout.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
-#include "fiction/types.hpp"
 #include "fiction/traits.hpp"
+#include "fiction/types.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstdint>
+#include <iterator>
 #include <limits>
 #include <random>
 #include <type_traits>
 #include <utility>
-#include <cmath>
-#include <algorithm>
-#include <iterator>
 
 namespace fiction
 {
@@ -69,12 +69,14 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         using local_potential = std::vector<double>;
 
       public:
-        explicit charge_distribution_storage(const sidb_simulation_parameters& sim_param_default = sidb_simulation_parameters{}) :
+        explicit charge_distribution_storage(
+            const sidb_simulation_parameters& sim_param_default = sidb_simulation_parameters{}) :
                 phys_params{sim_param_default} {};
 
         sidb_simulation_parameters
-            phys_params{};        // all physical parameters used for the simulation are stored in a struct.
-        std::vector<typename Lyt::cell> sidb_order{};  // all cells that are occupied by an SiDB are stored in this vector.
+            phys_params{};  // all physical parameters used for the simulation are stored in a struct.
+        std::vector<typename Lyt::cell>
+            sidb_order{};  // all cells that are occupied by an SiDB are stored in this vector.
         std::vector<sidb_charge_state>
             cell_charge{};  // the SiDBs' charge states are stored. Corresponding cells are stored in "sidb_order".
         distance_matrix dist_mat{};  // distance between SiDBs are stored as matrix.
@@ -100,10 +102,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * all SiDBs.
      * @param physical_params physical parameters used for the simulation (µ_minus, base number, ...).
      */
-    explicit charge_distribution_surface(const sidb_simulation_parameters&   sim_param_default = sidb_simulation_parameters{},
-                                         const sidb_charge_state& cs                = sidb_charge_state::NEGATIVE) :
+    explicit charge_distribution_surface(
+        const sidb_simulation_parameters& sidb_sim_param = sidb_simulation_parameters{},
+        const sidb_charge_state&          cs             = sidb_charge_state::NEGATIVE) :
             Lyt(),
-            strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
+            strg{std::make_shared<charge_distribution_storage>(sidb_sim_param)}
     {
         static_assert(std::is_same_v<typename Lyt::cell, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
@@ -116,8 +119,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param sidb_charge_state charge state used for the initialization of all SiDBs, default is negative charge.
      * @param physical_params physical parameters used for the simulation (µ_minus, base number, ...).
      */
-    explicit charge_distribution_surface(const Lyt& lyt, const sidb_simulation_parameters& sim_param_default = sidb_simulation_parameters{},
-                                         const sidb_charge_state& cs = sidb_charge_state::NEGATIVE) :
+    explicit charge_distribution_surface(
+        const Lyt& lyt, const sidb_simulation_parameters& sim_param_default = sidb_simulation_parameters{},
+        const sidb_charge_state& cs = sidb_charge_state::NEGATIVE) :
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
@@ -130,7 +134,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     /**
      * Copy constructor.
      *
-     * @param lyt charge_distribution_surface that wants to be copied.
+     * @param lyt charge_distribution_surface
      */
     explicit charge_distribution_surface(const charge_distribution_surface<Lyt>& lyt) :
             strg{std::make_shared<charge_distribution_storage>(*lyt.strg)}
@@ -166,23 +170,37 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void set_physical_parameters(const sidb_simulation_parameters& sim_param)
     {
-        strg->phys_params         = sim_param;
-        strg->charge_index.second = sim_param.base;
-        strg->max_charge_index    = static_cast<uint64_t>(std::pow(strg->phys_params.base, this->num_cells())) - 1;
-        this->local_potential();
-        this->system_energy();
-        this->validity_check();
+        if ((strg->phys_params.lat_a == sim_param.lat_a) && (strg->phys_params.lat_b == sim_param.lat_b) &&
+            (strg->phys_params.lat_a == sim_param.lat_a))
+        {
+            strg->phys_params         = sim_param;
+            strg->charge_index.second = sim_param.base;
+            strg->max_charge_index    = static_cast<uint64_t>(std::pow(strg->phys_params.base, this->num_cells())) - 1;
+            this->local_potential();
+            this->system_energy();
+            this->validity_check();
+        }
+        else
+        {
+            strg->phys_params = sim_param;
+            this->initialize_distance_matrix();
+            this->initialize_potential_matrix();
+            strg->charge_index.second = sim_param.base;
+            strg->max_charge_index    = static_cast<uint64_t>(std::pow(strg->phys_params.base, this->num_cells())) - 1;
+            this->local_potential();
+            this->system_energy();
+            this->validity_check();
+        }
     }
 
     /**
-     * Check if any SiDB is eqaul the given charge state.
+     * Check if any SiDB exhibits the given charge state.
      *
-     * @param cs charge state for which it is checked whether any SiDB has it.
+     * @param cs charge state.
      */
     [[nodiscard]] bool charge_exists(const sidb_charge_state& cs) const
     {
-        return std::accumulate(strg->cell_charge.begin(), strg->cell_charge.end(), true,
-                               [&cs](bool acc, const sidb_charge_state& c) { return acc && c == cs; });
+        return std::any_of(strg->cell_charge.begin(), strg->cell_charge.end(),[&cs](const sidb_charge_state& c) { return c == cs; });
     }
 
     /**
@@ -202,7 +220,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param i The index of the cell.
      * @param cs The charge state to be assigned to the cell.
      */
-    void state_index(const uint64_t& i, const sidb_charge_state& cs) const
+    void assign_charge_by_cell_index(const uint64_t i, const sidb_charge_state& cs) const
     {
         strg->cell_charge[i] = cs;
     }
@@ -213,16 +231,12 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param cell The cell to which a state of charge is to be assigned.
      * @param cs The charge state to be assigned to the cell.
      */
-    void assign_charge_state_cell(const typename Lyt::cell& cell, const sidb_charge_state& cs) const
+    void assign_charge_state(const typename Lyt::cell& cell, const sidb_charge_state& cs) const
     {
-        auto index = cell_to_index(cell);
-        if (index != -1)
+
+        if (auto index = cell_to_index(cell); index != -1)
         {
             strg->cell_charge[static_cast<uint64_t>(index)] = cs;
-        }
-        else
-        {
-            std::cout << "not part of the charge distribution surface" << std::endl;
         }
     }
 
@@ -232,7 +246,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param index The index of the cell to which a state of charge is to be assigned.
      * @param cs The charge state to be assigned to the cell.
      */
-    void assign_charge_state_index(const uint64_t& index, const sidb_charge_state& cs) const
+    void assign_charge_state_by_cell_index(const uint64_t index, const sidb_charge_state& cs) const
     {
         strg->cell_charge[index] = cs;
     }
@@ -242,7 +256,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @param cs The charge state to be assigned to all the SiDBs.
      */
-    void set_charge_states(const sidb_charge_state& cs) const
+    void set_all_charge_states(const sidb_charge_state& cs) const
     {
         for (uint64_t i = 0u; i < strg->cell_charge.size(); i++)
         {
@@ -256,7 +270,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param index The index of the cell.
      * @return The charge state of the cell at the given index.
      */
-    [[nodiscard]] sidb_charge_state get_charge_state_index(const uint64_t& index) const noexcept
+    [[nodiscard]] sidb_charge_state get_charge_state_by_index(const uint64_t& index) const noexcept
     {
         if (index < (strg->cell_charge.size()))
         {
@@ -271,7 +285,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * @param c cell.
      * @return The charge state of the given cell.
      */
-    [[nodiscard]] sidb_charge_state get_charge_state_cell(const typename Lyt::cell& c) const noexcept
+    [[nodiscard]] sidb_charge_state get_charge_state(const typename Lyt::cell& c) const noexcept
     {
         if (auto index = cell_to_index(c); index != -1)
         {
@@ -294,7 +308,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                 strg->dist_mat[i][j] = distance_sidb_pair(strg->sidb_order[i], strg->sidb_order[j]);
             }
         }
-    };
+    }
 
     /**
      * Computes the position of a cell in nanometers.
@@ -333,7 +347,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     [[nodiscard]] constexpr double distance_sidb_pair(const typename Lyt::cell& c1, const typename Lyt::cell& c2) const
     {
-        // @Marcel: I checked if I can use the euclidean_distance (see distance.hpp) function, but as it is now, I guess I cannot use it.
+        // @Marcel: I checked if I can use the euclidean_distance (see distance.hpp) function, but as it is now, I guess
+        // I cannot use it.
         const auto pos_c1 = nm_position(c1);
         const auto pos_c2 = nm_position(c2);
         const auto x      = static_cast<double>(pos_c1.first) - static_cast<double>(pos_c2.first);
@@ -615,7 +630,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void chargeconf_to_index() const
     {
-        uint8_t base = strg->phys_params.base;
+        uint8_t  base        = strg->phys_params.base;
         uint64_t chargeindex = 0;
         uint64_t counter     = 0;
         for (const auto& c : strg->cell_charge)
@@ -653,7 +668,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             d           = div(static_cast<int>(charge_quot), static_cast<int>(base));
             charge_quot = static_cast<uint64_t>(d.quot);
 
-            this->assign_charge_state_index(counter, sign_to_label(d.rem - 1));
+            this->assign_charge_state_by_cell_index(counter, sign_to_label(d.rem - 1));
             counter -= 1;
         }
     }

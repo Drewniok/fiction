@@ -8,6 +8,7 @@
 #include "fiction/algorithms/simulation_sidb/energy_distribution.hpp"
 #include "fiction/algorithms/simulation_sidb/minimum_energy.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
+#include "fiction/algorithms/simulation_sidb/quicksim_params.hpp"
 #include "fiction/traits.hpp"
 
 #include <mockturtle/utils/stopwatch.hpp>
@@ -30,12 +31,12 @@ namespace fiction
 template <typename Lyt>
 struct quicksim_stats
 {
-    double                                        time_total{0};
+    mockturtle::stopwatch<>::duration             time_total{0};
     std::vector<charge_distribution_surface<Lyt>> valid_lyts{};
 
     void report(std::ostream& out = std::cout)
     {
-        out << fmt::format("[i] total time  = {:.2f} millisecs\n", time_total / 1000);
+        out << fmt::format("total time  = {:.2f} secs\n", mockturtle::to_seconds(time_total));
         if (!energy_distribution<Lyt>(valid_lyts).empty())
         {
             for (auto [energy, count] : energy_distribution<Lyt>(valid_lyts))
@@ -64,57 +65,58 @@ struct quicksim_stats
  * @param physical_params physical parameters, they are material-specific and may vary from experiment to experiment.
  */
 template <typename Lyt>
-void quicksim(charge_distribution_surface<Lyt>& lyt, const sidb_simulation_parameters& phys_params = sidb_simulation_parameters{},
-              quicksim_stats<Lyt>* ps = nullptr, const uint64_t iteration_steps = 80, const double alpha = 0.7)
+void quicksim(charge_distribution_surface<Lyt>& lyt, const quicksim_params &quick_params = quicksim_params{},
+              quicksim_stats<Lyt>* ps = nullptr)
 {
     quicksim_stats<Lyt> st{};
     // set the given physical parameters
-    lyt.set_physical_parameters(phys_params);
 
-    // measure run time
-    auto start = std::chrono::high_resolution_clock::now();
+    lyt.set_physical_parameters(quick_params.phys_params);
 
-    std::vector<charge_distribution_surface<Lyt>> result{};
-
-    lyt.set_charge_states(sidb_charge_state::NEUTRAL);
-    lyt.local_potential();
-    lyt.system_energy();
-    lyt.validity_check();
-
-    if (lyt.get_validity())
+    // measure run time (artificial scope)
     {
-        charge_distribution_surface<Lyt> lyt_new{lyt};
-        st.valid_lyts.push_back(lyt_new);
-    }
+        mockturtle::stopwatch stop{st.time_total};
 
-    auto best_energy = std::numeric_limits<double>::max();
-    auto bound       = static_cast<uint64_t>(std::round(0.6 * static_cast<double>(lyt.num_cells())));
-    for (uint64_t z = 0u; z < iteration_steps; z++)
-    {
-        for (uint64_t i = 0u; i < bound; i++)
+        std::vector<charge_distribution_surface<Lyt>> result{};
+
+        lyt.set_all_charge_states(sidb_charge_state::NEUTRAL);
+        lyt.local_potential();
+        lyt.system_energy();
+        lyt.validity_check();
+
+        if (lyt.get_validity())
         {
-            std::vector<uint64_t> index_start = {i};
-            lyt.set_charge_states(sidb_charge_state::NEUTRAL);
-            lyt.assign_charge_state_index(i, sidb_charge_state::NEGATIVE);
-            lyt.local_potential();
-            lyt.system_energy();
+            charge_distribution_surface<Lyt> lyt_new{lyt};
+            st.valid_lyts.push_back(lyt_new);
+        }
 
-            auto upperlimit = static_cast<uint64_t>(static_cast<double>(lyt.num_cells()) / 1.5);
-            for (uint64_t num = 0; num < upperlimit; num++)
+        auto best_energy = std::numeric_limits<double>::max();
+        auto bound       = static_cast<uint64_t>(std::round(0.6 * static_cast<double>(lyt.num_cells())));
+        for (uint64_t z = 0u; z < quick_params.interation_steps; z++)
+        {
+            for (uint64_t i = 0u; i < bound; i++)
             {
-                lyt.adjacent_search(alpha, index_start);
-                lyt.validity_check();
+                std::vector<uint64_t> index_start = {i};
+                lyt.set_all_charge_states(sidb_charge_state::NEUTRAL);
+                lyt.assign_charge_state_by_cell_index(i, sidb_charge_state::NEGATIVE);
+                lyt.local_potential();
+                lyt.system_energy();
 
-                if (lyt.get_validity() && (lyt.get_system_energy() <= best_energy))
+                auto upperlimit = static_cast<uint64_t>(static_cast<double>(lyt.num_cells()) / 1.5);
+                for (uint64_t num = 0; num < upperlimit; num++)
                 {
-                    charge_distribution_surface<Lyt> lyt_new{lyt};
-                    st.valid_lyts.push_back(lyt_new);
+                    lyt.adjacent_search(quick_params.alpha, index_start);
+                    lyt.validity_check();
+
+                    if (lyt.get_validity() && (lyt.get_system_energy() <= best_energy))
+                    {
+                        charge_distribution_surface<Lyt> lyt_new{lyt};
+                        st.valid_lyts.push_back(lyt_new);
+                    }
                 }
             }
         }
     }
-    auto end      = std::chrono::high_resolution_clock::now();
-    st.time_total = static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
 
     if (ps)
     {

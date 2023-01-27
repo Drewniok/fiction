@@ -28,7 +28,8 @@ std::map<double, uint64_t> energy_distribution(const std::vector<charge_distribu
     std::map<double, uint64_t> statistics;
     for (auto& lyt : input_vec)
     {
-        const auto energy = std::round(lyt.get_system_energy() * 100000) / 100000;
+        const auto energy = std::round(lyt.get_system_energy() * 1000000) / 1000000; // rounding to 6 decimal place.
+
         statistics[energy]++;
     }
     return statistics;

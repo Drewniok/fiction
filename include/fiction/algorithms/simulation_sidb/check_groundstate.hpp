@@ -22,13 +22,16 @@ namespace fiction
 0.00001, false otherwise.
 */
 template <typename Lyt>
-bool check_groundstate(const quicksim_stats<Lyt>& quicksim_results, const exgs_stats<Lyt>& exhaustive__results)
+bool check_groundstate(const quicksim_stats<Lyt>& quicksim_results, const exgs_stats<Lyt>& exhaustive_results)
 {
-    if (exhaustive__results.valid_lyts.empty())
+    static_assert(std::is_same_v<typename Lyt::cell, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+    static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+    static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+    if (exhaustive_results.valid_lyts.empty())
     {
         return false;
     }
-    const auto min_energy_exact  = minimum_energy(exhaustive__results.valid_lyts);
+    const auto min_energy_exact  = minimum_energy(exhaustive_results.valid_lyts);
     const auto min_energy_new_ap = minimum_energy(quicksim_results.valid_lyts);
 
     return std::abs(min_energy_exact - min_energy_new_ap) / min_energy_exact < 0.00001;

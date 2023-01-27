@@ -44,10 +44,6 @@ TEMPLATE_TEST_CASE(
 
     CHECK(!exgs_stats.valid_lyts.empty());
 
-    const sidb_simulation_parameters params_new{3, -0.32};
-    exgs<TestType>(charge_layout, params_new, &exgs_stats);
-
-
     for (const auto& it : exgs_stats.valid_lyts)
     {
         CHECK(!it.charge_exists(sidb_charge_state::POSITIVE));

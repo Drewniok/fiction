@@ -10,6 +10,7 @@
 #include "fiction/algorithms/simulation_sidb/exhaustive_ground_state_simulation.hpp"
 #include "fiction/algorithms/simulation_sidb/quicksim.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
+#include "fiction/algorithms/simulation_sidb/quicksim_params.hpp"
 
 #include <chrono>
 
@@ -45,7 +46,7 @@ struct tts_stats
  */
 template <typename Lyt>
 void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stats<Lyt>& result_exact,
-                 const int& pp = 100, const int iteration_steps = 100, const double alpha = 0.7,
+                 const int& pp = 100,
                  const double convlevel = 0.997)
 {
     int                 count = 0;
@@ -55,8 +56,9 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, tts_stats& ts, exgs_stat
     for (uint64_t i = 0; i < pp; i++)
     {
         quicksim_stats<Lyt> stats_quick{};
+        quicksim_params quicksim_params{};
         const auto          t_start = std::chrono::high_resolution_clock::now();
-        quicksim<Lyt>(lyt, lyt.get_phys_params(), &stats_quick, iteration_steps, alpha);
+        quicksim<Lyt>(lyt, quicksim_params, &stats_quick);
         const auto t_end      = std::chrono::high_resolution_clock::now();
         const auto elapsed    = t_end - t_start;
         auto       diff_first = std::chrono::duration<double>(elapsed).count();

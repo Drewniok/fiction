@@ -8,6 +8,7 @@
 #include "fiction/technology/constants.hpp"
 
 #include <cstdint>
+#include <cassert>
 
 namespace fiction
 {
@@ -40,7 +41,10 @@ struct sidb_simulation_parameters
             mu{mu_minus},
             mu_p{mu - 0.59},
             base{base_number}
-    {}
+
+    {
+        assert(base == 2 || base == 3 && "base must be 2 or 3");
+    }
 
     /**
      * lat_a is the lattice vector in x-direction.

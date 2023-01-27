@@ -2,7 +2,7 @@
 // Created by marcel on 06.01.20.
 //
 
-#if (FICTION_Z3_SOLVER)
+#if (!FICTION_Z3_SOLVER)
 
 #ifndef FICTION_EXACT_HPP
 #define FICTION_EXACT_HPP
