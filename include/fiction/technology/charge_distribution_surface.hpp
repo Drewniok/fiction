@@ -152,7 +152,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     void set_physical_parameters(const sidb_simulation_parameters& sim_param)
     {
         if ((strg->phys_params.lat_a == sim_param.lat_a) && (strg->phys_params.lat_b == sim_param.lat_b) &&
-            (strg->phys_params.lat_a == sim_param.lat_a))
+            (strg->phys_params.lat_c == sim_param.lat_c))
         {
             strg->phys_params         = sim_param;
             strg->charge_index.second = sim_param.base;

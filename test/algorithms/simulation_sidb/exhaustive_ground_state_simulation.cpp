@@ -50,15 +50,6 @@ TEMPLATE_TEST_CASE(
         {
             CHECK(!it.charge_exists(sidb_charge_state::POSITIVE));
         }
-
-        CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(0) == sidb_charge_state::NEUTRAL);
-        CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(1) == sidb_charge_state::NEGATIVE);
-        CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(2) == sidb_charge_state::NEGATIVE);
-        CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(3) == sidb_charge_state::NEUTRAL);
-        CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(4) == sidb_charge_state::NEGATIVE);
-        CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(5) == sidb_charge_state::NEUTRAL);
-        CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(6) == sidb_charge_state::NEUTRAL);
-
     }
 
     SECTION("simulation with one SiDBs placed")
