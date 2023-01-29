@@ -39,11 +39,9 @@ int main()  // NOLINT
 
     const std::string folder = fmt::format("{}/bestagon_gates/", EXPERIMENTS_PATH);
 
-    static const std::array<std::string, 1> folders = {
-        folder + "and/"
-        //        folder + "cx/",  folder + "fo2/", folder + "ha/",   folder + "hourglass/", folder + "inv/",
-//        folder + "nand/", folder + "nor/", folder + "or/",  folder + "wire/", folder + "xnor/",      folder + "xor/"
-                };
+    static const std::array<std::string, 12> folders = {
+        folder + "and/",  folder + "cx/",  folder + "fo2/", folder + "ha/",   folder + "hourglass/", folder + "inv/",
+        folder + "nand/", folder + "nor/", folder + "or/",  folder + "wire/", folder + "xnor/",      folder + "xor/"};
 
     for (const auto& folder_gate : folders)
     {
@@ -62,7 +60,7 @@ int main()  // NOLINT
             exgs<sidb_cell_clk_lyt_siqad>(chargelyt, params, &exgs_stats);
 
             tts_stats tts_stat{};
-            sim_acc_tts<sidb_cell_clk_lyt_siqad>(chargelyt, tts_stat, exgs_stats);
+            sim_acc_tts<sidb_cell_clk_lyt_siqad>(chargelyt, exgs_stats, &tts_stat);
 
             simulation_exp(benchmark.string(), mockturtle::to_seconds(exgs_stats.time_total), tts_stat.acc,
                            tts_stat.time_to_solution, tts_stat.mean_single_runtime, std::to_string(lyt.num_cells()));

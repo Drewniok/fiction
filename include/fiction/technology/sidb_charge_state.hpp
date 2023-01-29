@@ -41,26 +41,21 @@ enum class sidb_charge_state
 /**
  * Converts the charge state (-1,0,1) into enum.
  *
- * @param sq charge state as integer (-1,0,1).
+ * @param sg charge state as integer (-1,0,1).
  * @return sidb_charge_state.
  */
-[[nodiscard]] constexpr sidb_charge_state sign_to_label(const int& sg) noexcept
+[[nodiscard]] constexpr sidb_charge_state sign_to_charge_state(const int& sg) noexcept
 {
-    if (sg == 1)
-    {
-        return sidb_charge_state::POSITIVE;
+    switch (sg) {
+        case 1:
+            return sidb_charge_state::POSITIVE;
+        case -1:
+            return sidb_charge_state::NEGATIVE;
+        case 0:
+            return sidb_charge_state::NEUTRAL;
+        default:
+            return sidb_charge_state::NONE;
     }
-    if (sg == -1)
-    {
-        return sidb_charge_state::NEGATIVE;
-    }
-
-    if (sg == 0)
-    {
-        return sidb_charge_state::NEUTRAL;
-    }
-
-    return sidb_charge_state::NONE;
 }
 
 } // namespace fiction

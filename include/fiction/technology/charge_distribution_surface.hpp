@@ -112,7 +112,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             Lyt(),
             strg{std::make_shared<charge_distribution_storage>(sidb_sim_param)}
     {
-        static_assert(std::is_same_v<typename Lyt::cell, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+        static_assert(is_siqad_coord_v<Lyt>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
         initialize(cs);
@@ -129,7 +129,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(sim_param_default)}
     {
-        static_assert(std::is_same_v<typename Lyt::cell, siqad::coord_t>, "Lyt is not based on SiQAD coordinates");
+        static_assert(is_siqad_coord_v<Lyt>, "Lyt is not based on SiQAD coordinates");
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
         initialize(cs);
@@ -605,7 +605,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             d           = div(static_cast<int>(charge_quot), static_cast<int>(base));
             charge_quot = static_cast<uint64_t>(d.quot);
 
-            this->assign_charge_state_by_cell_index(counter, sign_to_label(d.rem - 1), false);
+            this->assign_charge_state_by_cell_index(counter, sign_to_charge_state(d.rem - 1), false);
             counter -= 1;
         }
     }
@@ -783,7 +783,7 @@ charge_distribution_surface(const T&, const sidb_simulation_parameters&, const s
     -> charge_distribution_surface<T>;
 
 template <class T>
-charge_distribution_surface(const T&, const sidb_simulation_parameters&)->charge_distribution_surface<T>;
+charge_distribution_surface(const T&, const sidb_simulation_parameters&) -> charge_distribution_surface<T>;
 
 }  // namespace fiction
 

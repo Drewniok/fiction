@@ -5,10 +5,10 @@
 #ifndef FICTION_SIDB_SIMULATION_PARAMETERS_HPP
 #define FICTION_SIDB_SIMULATION_PARAMETERS_HPP
 
-#include "fiction/technology/constants.hpp"
+#include "fiction/technology/physical_constants.hpp"
 
-#include <cstdint>
 #include <cassert>
+#include <cstdint>
 
 namespace fiction
 {
