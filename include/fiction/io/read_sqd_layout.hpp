@@ -80,7 +80,7 @@ class read_sqd_layout_impl
                 throw sqd_parsing_error("Error parsing SQD file: no attribute 'type' in element 'layer'");
             }
 
-            if (layer_type == std::string{"DB"} && !is_sidb_coord_v<Lyt>)
+            if (layer_type == std::string{"DB"} && !is_siqad_coord_v<Lyt>)
             {
                 for (const auto* db_dot = layer->FirstChildElement("dbdot"); db_dot != nullptr;
                      db_dot             = db_dot->NextSiblingElement("dbdot"))
@@ -89,7 +89,7 @@ class read_sqd_layout_impl
                 }
             }
 
-            if (layer_type == std::string{"DB"} && is_sidb_coord_v<Lyt>)
+            if (layer_type == std::string{"DB"} && is_siqad_coord_v<Lyt>)
             {
                 for (const auto* db_dot = layer->FirstChildElement("dbdot"); db_dot != nullptr;
                      db_dot             = db_dot->NextSiblingElement("dbdot"))

@@ -58,28 +58,21 @@ void exgs(charge_distribution_surface<Lyt>& lyt,
         mockturtle::stopwatch stop{st.time_total};
         lyt.set_physical_parameters(phys_params);
         lyt.set_all_charge_states(sidb_charge_state::NEGATIVE);
-        lyt.chargeconf_to_index();
+        lyt.update_after_charge_change();
 
-        while (lyt.get_charge_index().first <= lyt.get_max_charge_index() - 1)
+        while (lyt.get_charge_index().first < lyt.get_max_charge_index())
         {
-            lyt.local_potential();
-            lyt.system_energy();
-            lyt.validity_check();
 
-            if (lyt.get_validity())
+            if (lyt.is_physically_valid())
             {
                 charge_distribution_surface<Lyt> lyt_new{lyt};
                 st.valid_lyts.push_back(lyt_new);
             }
 
-            lyt.increase_charge_index();
+            lyt.increase_charge_index_by_one();
         }
 
-        lyt.local_potential();
-        lyt.system_energy();
-        lyt.validity_check();
-
-        if (lyt.get_validity())
+        if (lyt.is_physically_valid())
         {
             charge_distribution_surface<Lyt> lyt_new{lyt};
             st.valid_lyts.push_back(lyt_new);

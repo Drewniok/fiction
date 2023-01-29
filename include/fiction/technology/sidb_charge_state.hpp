@@ -24,23 +24,19 @@ enum class sidb_charge_state
  * @param cs sidb charge state.
  * @return int representing the SiDB's charge state.
  */
-[[nodiscard]] constexpr int transform_to_sign(const sidb_charge_state& cs) noexcept
+[[nodiscard]] constexpr int charge_state_to_sign(const sidb_charge_state& cs) noexcept
 {
-    if (cs == sidb_charge_state::POSITIVE)
+    switch (cs)
     {
-        return +1;
+        case sidb_charge_state::POSITIVE:
+            return +1;
+        case sidb_charge_state::NEGATIVE:
+            return -1;
+        default:
+            return 0;
     }
-    if (cs == sidb_charge_state::NEGATIVE)
-    {
-        return -1;
-    }
-
-    if (cs == sidb_charge_state::NEUTRAL)
-    {
-        return 0;
-    }
-    return 0;
 }
+
 
 /**
  * Converts the charge state (-1,0,1) into enum.

@@ -36,7 +36,7 @@ struct sidb_simulation_parameters
             lat_b{b},
             lat_c{c},
             epsilon_r{relative_permittivity},
-            k{1.0 / (4.0 * fiction::physical_sim_constants::PI * fiction::physical_sim_constants::EPSILON * epsilon_r)},
+            k{1.0 / (4.0 * fiction::physical_constants::PI * fiction::physical_constants::EPSILON * epsilon_r)},
             lambda_tf{screening_distance},
             mu{mu_minus},
             mu_p{mu - 0.59},

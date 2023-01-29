@@ -80,11 +80,18 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, const quicksim_params &quic
         std::vector<charge_distribution_surface<Lyt>> result{};
 
         lyt.set_all_charge_states(sidb_charge_state::NEUTRAL);
-        lyt.local_potential();
-        lyt.system_energy();
-        lyt.validity_check();
+        lyt.update_after_charge_change();
 
-        if (lyt.get_validity())
+        if (lyt.is_physically_valid())
+        {
+            charge_distribution_surface<Lyt> lyt_new{lyt};
+            st.valid_lyts.push_back(lyt_new);
+        }
+
+        lyt.set_all_charge_states(sidb_charge_state::NEGATIVE);
+        lyt.update_after_charge_change();
+
+        if (lyt.is_physically_valid())
         {
             charge_distribution_surface<Lyt> lyt_new{lyt};
             st.valid_lyts.push_back(lyt_new);
@@ -99,7 +106,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, const quicksim_params &quic
                 std::vector<uint64_t> index_start = {i};
                 lyt.set_all_charge_states(sidb_charge_state::NEUTRAL);
                 lyt.assign_charge_state_by_cell_index(i, sidb_charge_state::NEGATIVE);
-                lyt.local_potential();
+                lyt.update_local_potential();
                 lyt.system_energy();
 
                 auto upperlimit = static_cast<uint64_t>(static_cast<double>(lyt.num_cells()) / 1.5);
@@ -108,7 +115,7 @@ void quicksim(charge_distribution_surface<Lyt>& lyt, const quicksim_params &quic
                     lyt.adjacent_search(quick_params.alpha, index_start);
                     lyt.validity_check();
 
-                    if (lyt.get_validity() && (lyt.get_system_energy() <= best_energy))
+                    if (lyt.is_physically_valid() && (lyt.get_system_energy() <= best_energy))
                     {
                         charge_distribution_surface<Lyt> lyt_new{lyt};
                         st.valid_lyts.push_back(lyt_new);

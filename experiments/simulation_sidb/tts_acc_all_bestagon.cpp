@@ -54,15 +54,15 @@ int main()  // NOLINT
 
             std::cout << benchmark << std::endl;
 
-            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark.string());
+            const auto lyt = read_sqd_layout<sidb_cell_clk_lyt_siqad>(benchmark.string());
 
             const sidb_simulation_parameters                   params{2, -0.32};
-            charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};
-            exgs_stats<sidb_cell_clk_lyt_siq>                  exgs_stats{};
-            exgs<sidb_cell_clk_lyt_siq>(chargelyt, params, &exgs_stats);
+            charge_distribution_surface<sidb_cell_clk_lyt_siqad> chargelyt{lyt};
+            exgs_stats<sidb_cell_clk_lyt_siqad>                  exgs_stats{};
+            exgs<sidb_cell_clk_lyt_siqad>(chargelyt, params, &exgs_stats);
 
             tts_stats tts_stat{};
-            sim_acc_tts<sidb_cell_clk_lyt_siq>(chargelyt, tts_stat, exgs_stats);
+            sim_acc_tts<sidb_cell_clk_lyt_siqad>(chargelyt, tts_stat, exgs_stats);
 
             simulation_exp(benchmark.string(), mockturtle::to_seconds(exgs_stats.time_total), tts_stat.acc,
                            tts_stat.time_to_solution, tts_stat.mean_single_runtime, std::to_string(lyt.num_cells()));

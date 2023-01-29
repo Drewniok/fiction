@@ -88,7 +88,6 @@ struct hash<std::pair<T1, T2>>
         fiction::hash_combine(h, p.first, p.second);
 
         return h;
-
     }
 };
 

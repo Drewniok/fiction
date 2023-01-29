@@ -2,10 +2,10 @@
 // Created by Jan Drewniok on 24.11.22.
 //
 
-#ifndef FICTION_CONSTANTS_HPP
-#define FICTION_CONSTANTS_HPP
+#ifndef FICTION_PHYSICAL_CONSTANTS_HPP
+#define FICTION_PHYSICAL_CONSTANTS_HPP
 
-namespace fiction::physical_sim_constants
+namespace fiction::physical_constants
 {
 /**
  * epsilon is the vacuum permittivity [F/m].
@@ -24,6 +24,6 @@ constexpr double POP_STABILITY_ERR = 1E-6;
  */
 constexpr double PI = 3.14159265359;
 
-}  // namespace fiction::physical_sim_constants
+}  // namespace fiction::physical_constants
 
-#endif  // FICTION_CONSTANTS_HPP
+#endif  // FICTION_PHYSICAL_CONSTANTS_HPP

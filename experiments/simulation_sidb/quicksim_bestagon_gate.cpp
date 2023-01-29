@@ -19,13 +19,15 @@ int main() // NOLINT
         {
             const auto& benchmark = file.path();
 
-            const auto                     lyt = read_sqd_layout<sidb_cell_clk_lyt_siq>(benchmark.string());
-            const sidb_simulation_parameters params{2, -0.32};
-            charge_distribution_surface<sidb_cell_clk_lyt_siq> chargelyt{lyt};
+            const auto                     lyt = read_sqd_layout<sidb_cell_clk_lyt_siqad>(benchmark.string());
 
-            quicksim_stats<sidb_cell_clk_lyt_siq> collect{};
+            const quicksim_params          params{sidb_simulation_parameters{2, -0.32}};
 
-            quicksim<sidb_cell_clk_lyt_siq>(chargelyt, params, &collect);
+            charge_distribution_surface<sidb_cell_clk_lyt_siqad> chargelyt{lyt};
+
+            quicksim_stats<sidb_cell_clk_lyt_siqad> collect{};
+
+            quicksim<sidb_cell_clk_lyt_siqad>(chargelyt, params, &collect);
             collect.report();
         }
     return EXIT_SUCCESS;
