@@ -145,6 +145,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {}
 
     /**
+     * Copy assignment operator.
+     */
+    charge_distribution_surface& operator=(const charge_distribution_surface& lyt) {
+        if (this != &lyt) {
+            strg = std::make_shared<charge_distribution_storage>(*lyt.strg);
+        }
+        return *this;
+    }
+
+    /**
      * Set the physical parameters for the simulation.
      *
      * @param sim_param Physical parameters to be set.
