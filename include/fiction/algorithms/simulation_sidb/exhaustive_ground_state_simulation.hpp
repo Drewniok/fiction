@@ -50,7 +50,7 @@ struct exgs_stats
  * @return a vector of different charge distribution layouts, all of which satisfy the validity test.
  */
 template <typename Lyt>
-void exgs(charge_distribution_surface<Lyt>& lyt,
+void exhaustive_ground_state_simulation(charge_distribution_surface<Lyt>& lyt,
           const sidb_simulation_parameters& phys_params = sidb_simulation_parameters{}, exgs_stats<Lyt>* ps = nullptr)
 {
     exgs_stats<Lyt>       st{};

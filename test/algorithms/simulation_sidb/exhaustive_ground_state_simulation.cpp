@@ -38,9 +38,9 @@ TEMPLATE_TEST_CASE(
         charge_distribution_surface      charge_layout{lyt};
         exgs_stats<TestType>             exgs_stats{};
         const sidb_simulation_parameters params{2, -0.32};
-        exgs<TestType>(charge_layout, params, &exgs_stats);
+        exhaustive_ground_state_simulation<TestType>(charge_layout, params, &exgs_stats);
         auto size_before = exgs_stats.valid_lyts.size();
-        exgs<TestType>(charge_layout, params, &exgs_stats);
+        exhaustive_ground_state_simulation<TestType>(charge_layout, params, &exgs_stats);
         auto size_after = exgs_stats.valid_lyts.size();
         CHECK(size_before == size_after);
 
@@ -59,7 +59,7 @@ TEMPLATE_TEST_CASE(
         charge_distribution_surface      charge_layout{lyt};
         exgs_stats<TestType>             exgs_stats{};
         const sidb_simulation_parameters params{2, -0.32};
-        exgs<TestType>(charge_layout, params, &exgs_stats);
+        exhaustive_ground_state_simulation<TestType>(charge_layout, params, &exgs_stats);
 
         CHECK(exgs_stats.valid_lyts.size() == 1);
         CHECK(exgs_stats.valid_lyts[0].get_charge_state_by_index(0) == sidb_charge_state::NEGATIVE);
@@ -71,7 +71,7 @@ TEMPLATE_TEST_CASE(
         charge_distribution_surface      charge_layout{lyt};
         exgs_stats<TestType>             exgs_stats{};
         const sidb_simulation_parameters params{2, -0.32};
-        exgs<TestType>(charge_layout, params, &exgs_stats);
+        exhaustive_ground_state_simulation<TestType>(charge_layout, params, &exgs_stats);
 
         CHECK(exgs_stats.valid_lyts.size() == 0);  // empty layout is saved.
 

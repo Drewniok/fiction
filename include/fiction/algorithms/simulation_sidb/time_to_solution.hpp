@@ -2,8 +2,8 @@
 // Created by Jan Drewniok on 23.12.22.
 //
 
-#ifndef FICTION_TTS_HPP
-#define FICTION_TTS_HPP
+#ifndef FICTION_TIME_TO_SOLUTION_HPP
+#define FICTION_TIME_TO_SOLUTION_HPP
 
 #include "fiction/algorithms//simulation_sidb/check_groundstate.hpp"
 #include "fiction/algorithms//simulation_sidb/minimum_energy.hpp"
@@ -21,7 +21,7 @@ namespace fiction
  * This struct stores the time-to-solution, the simulation accuracy and the average single simulation runtime of quicksim (see quicksim.hpp).
  *
  */
-struct tts_stats
+struct time_to_solution_stats
 {
     double time_to_solution{};
     double acc{};
@@ -45,13 +45,14 @@ struct tts_stats
  * @param convlevel the time-to-solution also depends one the given confidence level which can be set here.
  */
 template <typename Lyt>
-void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& result_exact, tts_stats* ps = nullptr,
+void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& result_exact,
+                 time_to_solution_stats* ps = nullptr,
                  const int& pp = 100, const double convlevel = 0.997)
 {
     static_assert(is_siqad_coord_v<Lyt>, "Lyt is not based on SiQAD coordinates");
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
-    tts_stats           st{};
+    time_to_solution_stats st{};
     int                 count = 0;
     std::vector<double> time;
     time.reserve(pp);
@@ -99,4 +100,4 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& result_
 }
 }  // namespace fiction
 
-#endif  // FICTION_TTS_HPP
+#endif  // FICTION_TIME_TO_SOLUTION_HPP

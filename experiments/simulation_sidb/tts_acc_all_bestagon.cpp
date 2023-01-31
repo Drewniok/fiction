@@ -2,8 +2,8 @@
 // Created by Jan Drewniok 01.01.23
 //
 
-#include <fiction/algorithms/simulation_sidb/TTS.hpp>
 #include <fiction/algorithms/simulation_sidb/exhaustive_ground_state_simulation.hpp>
+#include <fiction/algorithms/simulation_sidb/time_to_solution.hpp>
 #include <fiction/io/read_sqd_layout.hpp>  // reader for SiDB layouts including surface scan data
 #include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/types.hpp>  // pre-defined types suitable for the FCN domain
@@ -57,9 +57,9 @@ int main()  // NOLINT
             const sidb_simulation_parameters                   params{2, -0.32};
             charge_distribution_surface<sidb_cell_clk_lyt_siqad> chargelyt{lyt};
             exgs_stats<sidb_cell_clk_lyt_siqad>                  exgs_stats{};
-            exgs<sidb_cell_clk_lyt_siqad>(chargelyt, params, &exgs_stats);
+            exhaustive_ground_state_simulation<sidb_cell_clk_lyt_siqad>(chargelyt, params, &exgs_stats);
 
-            tts_stats tts_stat{};
+            time_to_solution_stats tts_stat{};
             sim_acc_tts<sidb_cell_clk_lyt_siqad>(chargelyt, exgs_stats, &tts_stat);
 
             simulation_exp(benchmark.string(), mockturtle::to_seconds(exgs_stats.time_total), tts_stat.acc,
