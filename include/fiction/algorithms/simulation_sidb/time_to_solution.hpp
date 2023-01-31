@@ -39,7 +39,7 @@ struct time_to_solution_stats
  * @paramt Lyt cell-level layout.
  * @param charge_distribution_surface<Lyt> charge layout that is used for the simulation.
  * @param tts_stats struct where the results (time_to_solution, acc, single runtime) are stored.
- * @param pp number of repetitions to determine the simulation accuracy (pp = 100 ==> accuracy is precise to 1 %).
+ * @param repetitions number of repetitions to determine the simulation accuracy (repetitions = 100 ==> accuracy is precise to 1 %).
  * @param iteration_steps simulation parameter (see quicksim.hpp).
  * @param alpha simulation parameter (see quicksim.hpp).
  * @param convlevel the time-to-solution also depends one the given confidence level which can be set here.
@@ -47,7 +47,7 @@ struct time_to_solution_stats
 template <typename Lyt>
 void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& result_exact,
                  time_to_solution_stats* ps = nullptr,
-                 const int& pp = 100, const double convlevel = 0.997)
+                 const uint64_t& repetitions = 100, const double convlevel = 0.997)
 {
     static_assert(is_siqad_coord_v<Lyt>, "Lyt is not based on SiQAD coordinates");
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
@@ -55,9 +55,9 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& result_
     time_to_solution_stats st{};
     int                 count = 0;
     std::vector<double> time;
-    time.reserve(pp);
+    time.reserve(repetitions);
 
-    for (uint64_t i = 0; i < pp; i++)
+    for (uint64_t i = 0; i < repetitions; i++)
     {
         quicksim_stats<Lyt> stats_quick{};
         quicksim_params     quicksim_params{};
@@ -74,9 +74,9 @@ void sim_acc_tts(charge_distribution_surface<Lyt>& lyt, exgs_stats<Lyt>& result_
         }
     }
 
-    auto single_runtime = std::accumulate(time.begin(), time.end(), 0.0) / pp;
+    auto single_runtime = std::accumulate(time.begin(), time.end(), 0.0) / static_cast<double>(repetitions);
     std::cout << single_runtime << std::endl;
-    auto acc = static_cast<double>(count) / static_cast<double>(pp);
+    auto acc = static_cast<double>(count) / static_cast<double>(repetitions);
 
     double tts = single_runtime;
 
