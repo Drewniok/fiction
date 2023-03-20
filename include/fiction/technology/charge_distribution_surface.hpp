@@ -488,7 +488,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             double collect = 0;
             for (uint64_t j = 0u; j < strg->sidb_order.size(); j++)
             {
-                collect += strg->pot_mat[i][j] * static_cast<double>(charge_state_to_sign(strg->cell_charge[j]));
+                if (auto charge_sign = static_cast<double>(charge_state_to_sign(strg->cell_charge[j])) != 0.0)
+                {
+                    collect += strg->pot_mat[i][j] * charge_sign;
+                }
             }
 
             strg->loc_pot[i] = collect;
@@ -795,6 +798,25 @@ class charge_distribution_surface<Lyt, false> : public Lyt
             {
                 strg->loc_pot[i] += -(this->get_electrostatic_potential_by_indices(i, random_element));
             }
+        }
+    }
+
+    void set_local_pot(uint64_t index, bool allowed = false)
+    {
+        if (allowed)
+        {
+            for (uint64_t i = 0u; i < strg->pot_mat.size(); ++i)
+            {
+                strg->loc_pot[i] += -(this->get_electrostatic_potential_by_indices(i, index));
+            }
+        }
+    }
+
+    void set_system_energy(uint64_t index, bool allowed = false)
+    {
+        if (allowed)
+        {
+            strg->system_energy += -(this->get_local_potential_by_index(index).value());
         }
     }
 
