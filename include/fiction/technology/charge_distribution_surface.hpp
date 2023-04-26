@@ -165,6 +165,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         std::vector<typename Lyt::cell> three_state_cells{};
 
         bool dependent_cell_in_sub_layout{};
+
+        uint64_t charge_index_of_some_cells{};
     };
 
     using storage = std::shared_ptr<charge_distribution_storage>;
@@ -310,6 +312,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         {
             strg->max_charge_index = static_cast<uint64_t>(std::pow(static_cast<double>(base), this->num_cells()) - 1);
         }
+    }
+
+    void set_chaqrge_index_of_some_cells(const uint64_t& index)
+    {
+        strg->charge_index_of_some_cells = index;
+    }
+
+    void get_chaqrge_index_of_some_cells() const
+    {
+        return strg->charge_index_of_some_cells;
     }
 
     void base_to_three() noexcept
@@ -1176,12 +1188,30 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      * The charge distribution of the charge distribution surface is converted to a unique index. It is used to map
      * every possible charge distribution of an SiDB layout to a unique index.
      */
+    void charge_distr_to_index()
+    {
+
+        const uint8_t base = strg->phys_params.base;
+
+        uint64_t chargeindex = 0;
+        uint64_t counter     = 0;
+
+        for (const auto& c : strg->cell_charge)
+        {
+            chargeindex +=
+                static_cast<uint64_t>((charge_state_to_sign(c) + 1) * std::pow(base, this->num_cells() - counter - 1));
+            counter += 1;
+        }
+
+        strg->charge_index = {chargeindex, base};
+    }
+
     void charge_distribution_to_index() const noexcept
     {
         const uint8_t base = strg->phys_params.base;
 
-        uint64_t   chargeindex          = 0;
-        uint64_t   counter              = 0;
+        uint64_t chargeindex = 0;
+        uint64_t counter     = 0;
 
         uint64_t chargeindex_sub_layout = 0;
         uint64_t counter_sub_layout     = 0;
@@ -1703,7 +1733,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @return Vector with all cells.
      */
-    std::vector<typename Lyt::cell> get_sidb_order() noexcept
+    std::vector<typename Lyt::cell> get_sidb_order() const noexcept
     {
         return strg->sidb_order;
     }

@@ -105,8 +105,8 @@ void exhaustive_ground_state_simulation(
         // efficient way to prune the search space by 2^k with k being the number of detected negatively charged SiDBs.
         const auto detected_negative_sidb_indices = charge_lyt.negative_sidb_detection();
         // determine if three state simulation (i.e. positively charged SiDBs can occur) is required.
-        const auto three_state_simulation_required = charge_lyt.three_state_sim_required();
-        // const auto                      three_state_simulation_required = false;
+        // const auto three_state_simulation_required = charge_lyt.three_state_sim_required();
+        const auto                      three_state_simulation_required = false;
         std::vector<typename Lyt::cell> detected_negative_sidbs{};
         detected_negative_sidbs.reserve(detected_negative_sidb_indices.size());
 
@@ -185,6 +185,7 @@ void exhaustive_ground_state_simulation(
                         {
                             charge_lyt_copy.adding_sidb_to_layout(cell, -1);
                         }
+                        charge_lyt_copy.charge_distr_to_index();
                         st.valid_lyts.push_back(charge_lyt_copy);
                     }
                 }
@@ -321,6 +322,7 @@ void exhaustive_ground_state_simulation(
             if (charge_lyt.is_physically_valid())
             {
                 charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+                charge_lyt_copy.charge_distr_to_index();
                 st.valid_lyts.push_back(charge_lyt_copy);
             }
         }
@@ -333,6 +335,7 @@ void exhaustive_ground_state_simulation(
             {
                 charge_lyt.adding_sidb_to_layout(cell, -1);
             }
+            charge_lyt_copy.charge_distr_to_index();
             st.valid_lyts.push_back(charge_lyt_copy);
         }
     }
