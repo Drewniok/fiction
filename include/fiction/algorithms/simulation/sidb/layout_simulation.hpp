@@ -8,6 +8,7 @@
 #include "fiction/algorithms/simulation/sidb/energy_distribution.hpp"
 #include "fiction/algorithms/simulation/sidb/exhaustive_ground_state_simulation.hpp"
 #include "fiction/algorithms/simulation/sidb/minimum_energy.hpp"
+#include "fiction/algorithms/simulation/sidb/quicksim.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_parameters.hpp"
 #include "fiction/io/write_sqd_layout.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
@@ -171,7 +172,7 @@ class layout_simulation_impl
                     uint64_t counter = 0;
                     for (auto it = cells.begin(); it != cells.end(); it++)
                     {
-                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 5)
+                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 4)
                         {
                             //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
                             //                            siqad::to_siqad_coord(start_cell).y)
@@ -244,16 +245,11 @@ class layout_simulation_impl
             std::cout << "border cells: " << std::to_string(border_cells.size()) << std::endl;
             std::set<uint64_t> charge_index{};
 
-            border_cell_index = 0;
-            //            while (border_cell_index <= border_cell_max_charge_index)
-            //            {
-            //                if (border_cell_index % 1000 == 0)
-            //                {
-            //                    std::cout << border_cell_index << std::endl;
-            //                }
-            while (border_cell_index <= 1)
+            border_cell_index    = 0;
+            auto lyts_collection = std::vector<charge_distribution_surface<Lyt>>{};
+            std::vector<std::unordered_map<typename Lyt::cell, const sidb_defect>> all_defect_confs{};
+            while (border_cell_index <= border_cell_max_charge_index)
             {
-
                 this->index_to_charge_distribution();
 
                 this->defect_map_update();
@@ -263,34 +259,53 @@ class layout_simulation_impl
                 //                {
                 //                    defect_charges.push_back(sign_to_charge_state(charge));
                 //                }
-                //
-                //                std::cout << charge_configuration_to_string(defect_charges) << std::endl;
 
+                //    std::cout << charge_configuration_to_string(defect_charges) << std::endl;
+                // std::cout << border_cell_index << std::endl;
                 std::unordered_map<typename Lyt::cell, const sidb_defect> defect{};
                 for (uint64_t i = 0; i < defect_cell.size(); i++)
                 {
                     defect.insert({defect_cell[i],
                                    sidb_defect{sidb_defect_type::UNKNOWN, static_cast<double>(defect_charge[i])}});
                 }
-                // std::cout << "defects: " << defect.size() << std::endl;
-                exgs_stats<Lyt> exgs_stats{};
-                // std::vector<uint64_t> charge_index_in{};
-                // exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, defect);
-                for (const auto& lyt_loop : exgs_stats.valid_lyts)
-                {
-                    charge_index.insert(lyt_loop.get_charge_index().first);
-                    // charge_index_in.emplace_back(charge_distribution_external_to_index(defect_cell, lyt_loop));
-                }
-                // charge_index_innen.emplace_back(charge_index_in);
-                all_charge_lyts.emplace_back(exgs_stats.valid_lyts);
-                region_num.emplace_back(counter);
-
-                all_defect_charges.emplace_back(defect_charge);
                 border_cell_index += 1;
+                all_defect_confs.push_back(defect);
             }
+            std::cout << "defect confs:" << std::to_string(all_defect_confs.size()) << std::endl;
+            // std::cout << "defects: " << defect.size() << std::endl;
+            exgs_stats<Lyt> exgs_stats{};
+            // std::vector<uint64_t> charge_index_in{};
+            exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, all_defect_confs);
+            for (const auto& lyt_loop : exgs_stats.valid_lyts)
+            {
+                charge_index.insert(lyt_loop.get_charge_index().first);
+                // charge_index_in.emplace_back(charge_distribution_external_to_index(defect_cell, lyt_loop));
+            }
+            // charge_index_innen.emplace_back(charge_index_in);
+            all_charge_lyts.emplace_back(exgs_stats.valid_lyts);
+            for (const auto& solution_lyts : exgs_stats.valid_lyts)
+            {
+                lyts_collection.emplace_back(solution_lyts);
+            }
+            region_num.emplace_back(counter);
+
+            all_defect_charges.emplace_back(defect_charge);
+            // border_cell_index += 1;
+
+            std::vector<charge_distribution_surface<Lyt>> unique_lyts{};
+            for (const auto& index : charge_index)
+            {
+                for (const auto& lyt : lyts_collection)
+                {
+                    if (lyt.get_charge_index().first == index)
+                    {
+                        unique_lyts.push_back(lyt);
+                        break;
+                    }
+                }
+            }
+            lyts_of_regions.emplace_back(unique_lyts);
             all_defect_cells.emplace_back(defect_cell);
-            //            write_sqd_layout(lyt, "/Users/jandrewniok/Desktop/investi/" +
-            //                                      std::to_string(border_cell_index) + ".sqd");
 
             std::cout << "number valid lyts: " << charge_index.size() << std::endl;
 
@@ -302,9 +317,9 @@ class layout_simulation_impl
 
             if (border_cell_max_charge_index == 0)
             {
-                exgs_stats<Lyt> exgs_stats{};
-                exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats);
-                all_charge_lyts.emplace_back(exgs_stats.valid_lyts);
+                fiction::exgs_stats<Lyt> exgs_stats_second{};
+                exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats_second);
+                all_charge_lyts.emplace_back(exgs_stats_second.valid_lyts);
                 region_num.emplace_back(counter);
             }
             // std::cout << all_charge_lyts.size() << std::endl;
@@ -314,28 +329,79 @@ class layout_simulation_impl
         return true;
     };
 
-    //    bool getting_final_layout()
-    //    {
-    //        charge_index_innen = {};
-    //        auto region_num_unique = region_num;
-    //        std::sort(region_num_unique.begin(), region_num_unique.end());
-    //        auto last = std::unique(region_num_unique.begin(), region_num_unique.end());
-    //        region_num_unique.erase(last, region_num_unique.end());
-    //
-    //        for (uint64_t i = 1; i < (region_num_unique.size()); i++)
+    //        bool getting_final_layout()
     //        {
-    //            for (uint64_t j = 0; j < region_num.size(); j++)
+    //            charge_index_innen = {};
+    //            auto region_num_unique = region_num;
+    //            std::sort(region_num_unique.begin(), region_num_unique.end());
+    //            auto last = std::unique(region_num_unique.begin(), region_num_unique.end());
+    //            region_num_unique.erase(last, region_num_unique.end());
+    //
+    //            for (uint64_t i = 1; i < (region_num_unique.size()); i++)
     //            {
-    //                if (region_num[j] == i)
+    //                for (uint64_t j = 0; j < region_num.size(); j++)
     //                {
-    //                    charge_index_innen.emplace_back(charge_distribution_external_to_index(all_defect_cells[i],
-    //                    all_charge_lyts[i][j]));
+    //                    if (region_num[j] == i)
+    //                    {
+    //                        charge_index_innen.emplace_back(charge_distribution_external_to_index(all_defect_cells[i],
+    //                        all_charge_lyts[i][j]));
+    //                    }
     //                }
     //            }
-    //        }
     //
-    //        return true;
-    //    }
+    //            return true;
+    //        }
+
+    void combining_all()
+    {
+        std::cout << "combining starts" << std::endl;
+        std::cout << lyts_of_regions.size() << std::endl;
+        const auto                       lyt_one   = lyts_of_regions[0];
+        const auto                       lyt_two   = lyts_of_regions[1];
+        const auto                       lyt_three = lyts_of_regions[2];
+        const auto                       lyt_four  = lyts_of_regions[3];
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (const auto& lyts_one : lyt_one)
+        {
+            for (const auto& lyts_two : lyt_two)
+            {
+                for (const auto& lyts_three : lyt_three)
+                {
+                    for (const auto& lyts_four : lyt_four)
+                    {
+                        lyts_one.foreach_cell(
+                            [this, &charge_lyt, &lyts_one](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false); });
+                        lyts_two.foreach_cell(
+                            [this, &charge_lyt, &lyts_two](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
+                        lyts_three.foreach_cell(
+                            [this, &charge_lyt, &lyts_three](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false); });
+                        lyts_four.foreach_cell(
+                            [this, &charge_lyt, &lyts_four](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false); });
+                        charge_lyt.update_after_charge_change();
+                        if (charge_lyt.is_physically_valid())
+                        {
+                            if (charge_lyt.get_system_energy() < energy_threas)
+                            {
+                                std::cout << charge_lyt.get_system_energy() << std::endl;
+                                energy_threas = charge_lyt.get_system_energy();
+                            }
+                        }
+                        counter += 1;
+
+                        // std::cout << counter << std::endl;
+                    }
+                }
+            }
+        }
+        // std::cout << *std::min_element(valid_energies.begin(), valid_energies.end()) << std::endl;
+    }
 
   private:
     Lyt&                                                       layout;
@@ -353,6 +419,7 @@ class layout_simulation_impl
     std::set<typename Lyt::cell>                               total_cells{};
     uint64_t                                                   layout_num{};
     std::vector<std::vector<charge_distribution_surface<Lyt>>> all_charge_lyts{};
+    std::vector<std::vector<charge_distribution_surface<Lyt>>> lyts_of_regions{};
     std::vector<std::vector<uint64_t>>                         charge_index_innen{};
     std::vector<std::vector<typename Lyt::cell>>               all_defect_cells{};
     std::vector<std::vector<int8_t>>                           all_defect_charges{};
@@ -369,7 +436,7 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
     detail::layout_simulation_impl<Lyt> p{lyt, params, st};
 
     auto result = p.run_simulation();
-    // auto result1 = p.getting_final_layout();
+    p.combining_all();
 
     if (ps)
     {
