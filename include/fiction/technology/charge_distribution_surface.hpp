@@ -149,7 +149,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         /**
          * This unordered map stores the cells and the placed defect.
          */
-        std::unordered_map<typename Lyt::cell, const sidb_defect> defects{};
+        std::unordered_map<typename Lyt::cell, sidb_defect> defects{};
         /**
          * Dependent cell is the cell which charge state is determined by all other SiDBs in the layout.
          */
@@ -407,6 +407,17 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         {
             this->charge_distribution_to_index();
         }
+    }
+
+    /**
+     * This function assigns a defect to the layout.
+     *
+     * @param c The cell to which a defect is assigned.
+     * @param defect Defect which is assigned to the layout.
+     */
+    void assign_defect_charge_state(const typename Lyt::cell& c, const double charge_state) noexcept
+    {
+        strg->defects[c].charge = charge_state;
     }
 
     /**
@@ -875,7 +886,7 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         return strg->defect_local_pot;
     }
 
-    std::unordered_map<typename Lyt::cell, const sidb_defect> get_defects() noexcept
+    std::unordered_map<typename Lyt::cell, sidb_defect> get_defects() noexcept
     {
         return strg->defects;
     }
