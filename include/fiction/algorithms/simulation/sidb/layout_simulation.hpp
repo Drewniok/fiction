@@ -13,6 +13,7 @@
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_result.hpp"
 #include "fiction/io/write_sqd_layout.hpp"
 #include "fiction/io/write_sqd_sim_result.hpp"
+#include "fiction/layouts/bounding_box.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/technology/sidb_defects.hpp"
@@ -105,27 +106,45 @@ class layout_simulation_impl
 
     bool init()
     {
-        std::vector<typename Lyt::cell> all_cells = {};
+        //        const auto min_coordinate = wbb.get_min();
+        //        std::cout << min_coordinate.x << std::endl;
+        std::vector<cube::coord_t> all_cells = {};
         // obtain all cells in the surfaces and order them by their position to achieve a reproducible output
-        layout.foreach_cell([this, &all_cells](const cell<Lyt>& c) { all_cells.push_back(c); });
-        std::sort(all_cells.begin(), all_cells.end());
+        layout.foreach_cell([this, &all_cells](const cell<Lyt>& c)
+                            { all_cells.push_back(fiction::siqad::to_fiction_coord<cube::coord_t>(c)); });
 
-        left_corner_cell = all_cells.front();
-        cells            = {};
-        total_cells      = {};
-        start_cell       = fiction::siqad::to_fiction_coord<cube::coord_t>(left_corner_cell);
+        int32_t x_min = 100000000;
+        int32_t y_min = 100000000;
+        for (const auto& cells : all_cells)
+        {
+            if (cells.x < x_min)
+            {
+                x_min = cells.x;
+            }
+            if (cells.y < y_min)
+            {
+                y_min = cells.y;
+            }
+        }
+        cells       = {};
+        total_cells = {};
+        start_cell  = cube::coord_t{x_min, y_min};
         std::cout << "finished" << std::endl;
     }
 
     bool layout_generation()
     {
-        uint64_t length    = 1;
+        cells           = {};
+        uint64_t length = 0;
+
         uint64_t allowed   = start_cell.x + length;
         uint64_t allowed_y = start_cell.y + length;
 
-        cells              = {};
         border_cells       = {};
         border_cell_charge = {};
+
+        //        cells.insert(start_cell);
+        //        total_cells.insert(start_cell);
 
         //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
         //        {
@@ -133,7 +152,7 @@ class layout_simulation_impl
         //            total_cells.insert(siqad::to_siqad_coord(start_cell));
         //        }
 
-        while (total_cells.size() < layout.num_cells() && cells.size() < 19)
+        while (total_cells.size() < layout.num_cells() && cells.size() < 27)
         {
             layout.foreach_cell(
                 [&allowed, &allowed_y, this](const cell<Lyt>& c)
@@ -146,22 +165,28 @@ class layout_simulation_impl
                             cells.insert(c);
                             total_cells.insert(c);
                         }
-                        if (cell_conv.x > start_cell.x && cell_conv.y <= allowed_y && cell_conv.x <= allowed)
+                        if (cell_conv.x >= start_cell.x && cell_conv.y <= allowed_y && cell_conv.x <= allowed)
                         {
                             cells.insert(c);
                             total_cells.insert(c);
                         }
-                        if (cell_conv.x == start_cell.x && cell_conv.y <= allowed_y && cell_conv.x <= allowed)
-                        {
-                            cells.insert(c);
-                            total_cells.insert(c);
-                        }
+                        //                        if (cell_conv.x == start_cell.x && cell_conv.y <= allowed_y &&
+                        //                        cell_conv.y > start_cell.y)
+                        //                        {
+                        //                            cells.insert(c);
+                        //                            total_cells.insert(c);
+                        //                        }
                     }
                 });
             length += 1;
             allowed   = start_cell.x + length;
             allowed_y = start_cell.y + length;
+            //            std::cout << allowed << std::endl;
+            //            std::cout << allowed_y << std::endl;
+            //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+            //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
         }
+        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
         std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
         std::cout << allowed << std::endl;
         std::cout << allowed_y << std::endl;
@@ -174,7 +199,7 @@ class layout_simulation_impl
                     uint64_t counter = 0;
                     for (auto it = cells.begin(); it != cells.end(); it++)
                     {
-                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 5)
+                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 3)
                         {
                             //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
                             //                            siqad::to_siqad_coord(start_cell).y)
@@ -331,76 +356,140 @@ class layout_simulation_impl
         return true;
     };
 
-    void combining_all()
-    {
-        auto compareFunc =
-            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
-        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+    //    void combining_all()
+    //    {
+    //        auto compareFunc =
+    //            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+    //        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+    //
+    //        std::cout << "combining starts" << std::endl;
+    //        std::cout << lyts_of_regions.size() << std::endl;
+    //        auto lyt_one   = lyts_of_regions[0];
+    //        auto lyt_two   = lyts_of_regions[1];
+    //        auto lyt_three = lyts_of_regions[2];
+    //        auto lyt_four  = lyts_of_regions[3];
+    //
+    //        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+    //        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+    //        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+    //        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+    //
+    //        charge_distribution_surface<Lyt> charge_lyt{layout};
+    //        uint64_t                         counter = 0;
+    //        std::vector<double>              valid_energies{};
+    //        double                           energy_threas = 1000;
+    //        for (const auto& lyts_one : lyt_one)
+    //        {
+    //            for (const auto& lyts_two : lyt_two)
+    //            {
+    //                for (const auto& lyts_three : lyt_three)
+    //                {
+    //                    for (const auto& lyts_four : lyt_four)
+    //                    {
+    //                        {
+    //                            lyts_one.foreach_cell(
+    //                                [this, &charge_lyt, &lyts_one](const auto& c1)
+    //                                { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false); });
+    //                            lyts_two.foreach_cell(
+    //                                [this, &charge_lyt, &lyts_two](const auto& c1)
+    //                                { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
+    //                            lyts_three.foreach_cell(
+    //                                [this, &charge_lyt, &lyts_three](const auto& c1)
+    //                                { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false); });
+    //                            lyts_four.foreach_cell(
+    //                                [this, &charge_lyt, &lyts_four](const auto& c1)
+    //                                { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false); });
+    //                            charge_lyt.update_after_charge_change();
+    //                            if (charge_lyt.is_physically_valid())
+    //                            {
+    //                                if (charge_lyt.get_system_energy() < energy_threas)
+    //                                {
+    //                                    std::vector<charge_distribution_surface<Lyt>> lyts{};
+    //                                    std::cout << charge_lyt.get_system_energy() << std::endl;
+    //
+    //                                    sidb_simulation_result<Lyt> sim_result{};
+    //                                    sim_result.algorithm_name = "ExGS";
+    //                                    charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+    //                                    lyts.emplace_back(charge_lyt_copy);
+    //                                    sim_result.charge_distributions = lyts;
+    //                                    energy_threas                   = charge_lyt.get_system_energy();
+    //                                    write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/CLionProjects/"
+    //                                                                          "fiction_fork/experiments/result.xml");
+    //                                }
+    //                            }
+    //                            counter += 1;
+    //
+    //                            // std::cout << counter << std::endl;
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
 
-        std::cout << "combining starts" << std::endl;
-        std::cout << lyts_of_regions.size() << std::endl;
-        auto lyt_one   = lyts_of_regions[0];
-        auto lyt_two   = lyts_of_regions[1];
-        auto lyt_three = lyts_of_regions[2];
-        auto lyt_four  = lyts_of_regions[3];
-
-        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
-        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
-        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
-        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
-
-        charge_distribution_surface<Lyt> charge_lyt{layout};
-        uint64_t                         counter = 0;
-        std::vector<double>              valid_energies{};
-        double                           energy_threas = 1000;
-        for (const auto& lyts_one : lyt_one)
-        {
-            for (const auto& lyts_two : lyt_two)
-            {
-                for (const auto& lyts_three : lyt_three)
-                {
-                    for (const auto& lyts_four : lyt_four)
-                    {
-                        {
-                            lyts_one.foreach_cell(
-                                [this, &charge_lyt, &lyts_one](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false); });
-                            lyts_two.foreach_cell(
-                                [this, &charge_lyt, &lyts_two](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
-                            lyts_three.foreach_cell(
-                                [this, &charge_lyt, &lyts_three](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false); });
-                            lyts_four.foreach_cell(
-                                [this, &charge_lyt, &lyts_four](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false); });
-                            charge_lyt.update_after_charge_change();
-                            if (!charge_lyt.is_physically_valid())
-                            {
-                                if (charge_lyt.get_system_energy() < energy_threas)
-                                {
-                                    std::vector<charge_distribution_surface<Lyt>> lyts{};
-                                    std::cout << charge_lyt.get_system_energy() << std::endl;
-
-                                    sidb_simulation_result<Lyt> sim_result{};
-                                    sim_result.algorithm_name = "ExGS";
-                                    charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
-                                    lyts.emplace_back(charge_lyt_copy);
-                                    sim_result.charge_distributions = lyts;
-                                    energy_threas                   = charge_lyt.get_system_energy();
-                                    write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/CLionProjects/"
-                                                                          "fiction_fork/experiments/result.xml");
-                                }
-                            }
-                            counter += 1;
-
-                            // std::cout << counter << std::endl;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    //    void combining_all()
+    //    {
+    //        uint64_t counter_lyts = 1;
+    //        for (const auto& lyts_region : lyts_of_regions)
+    //        {
+    //            counter_lyts *= lyts_region.size();
+    //        }
+    //        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+    //
+    //        auto compareFunc =
+    //            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+    //        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+    //
+    //        std::cout << "combining starts" << std::endl;
+    //        std::cout << lyts_of_regions.size() << std::endl;
+    //        auto lyt_one = lyts_of_regions[0];
+    //        auto lyt_two = lyts_of_regions[1];
+    //
+    //        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+    //        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+    //
+    //        charge_distribution_surface<Lyt> charge_lyt{layout};
+    //        uint64_t                         counter = 0;
+    //        std::vector<double>              valid_energies{};
+    //        double                           energy_threas = 1000;
+    //        for (const auto& lyts_one : lyt_one)
+    //        {
+    //            for (const auto& lyts_two : lyt_two)
+    //            {
+    //                lyts_one.foreach_cell([this, &charge_lyt, &lyts_one](const auto& c1)
+    //                                      { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false);
+    //                                      });
+    //                lyts_two.foreach_cell([this, &charge_lyt, &lyts_two](const auto& c1)
+    //                                      { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false);
+    //                                      });
+    //
+    //                charge_lyt.update_after_charge_change();
+    //                if (charge_lyt.is_physically_valid())
+    //                {
+    //                    if (charge_lyt.get_system_energy() < energy_threas)
+    //                    {
+    //                        std::vector<charge_distribution_surface<Lyt>> lyts{};
+    //                        std::cout << charge_lyt.get_system_energy() << std::endl;
+    //
+    //                        sidb_simulation_result<Lyt> sim_result{};
+    //                        sim_result.algorithm_name = "ExGS";
+    //                        charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+    //                        lyts.emplace_back(charge_lyt_copy);
+    //                        sim_result.charge_distributions = lyts;
+    //                        energy_threas                   = charge_lyt.get_system_energy();
+    //                        write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/CLionProjects/"
+    //                                                              "fiction_fork/experiments/result.xml");
+    //                    }
+    //                }
+    //                counter += 1;
+    //
+    //                if (counter % 100000 == 0)
+    //                {
+    //                    std::cout << counter << std::endl;
+    //                }
+    //            }
+    //        }
+    //    }
 
     //        void combining_all()
     //        {
@@ -419,10 +508,15 @@ class layout_simulation_impl
     //            std::cout << lyts_of_regions.size() << std::endl;
     //            auto lyt_one   = lyts_of_regions[0];
     //            auto lyt_two   = lyts_of_regions[1];
+    //            auto lyt_three = lyts_of_regions[2];
+    //            auto lyt_four  = lyts_of_regions[3];
+    //            auto lyt_five  = lyts_of_regions[4];
     //
     //            std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
     //            std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
-    //
+    //            std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+    //            std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+    //            std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
     //
     //            charge_distribution_surface<Lyt> charge_lyt{layout};
     //            uint64_t                         counter = 0;
@@ -432,6 +526,12 @@ class layout_simulation_impl
     //            {
     //                for (const auto& lyts_two : lyt_two)
     //                {
+    //                    for (const auto& lyts_three : lyt_three)
+    //                    {
+    //                        for (const auto& lyts_four : lyt_four)
+    //                        {
+    //                            for (const auto& lyts_five : lyt_five)
+    //                            {
     //                                lyts_one.foreach_cell(
     //                                    [this, &charge_lyt, &lyts_one](const auto& c1)
     //                                    { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false);
@@ -440,7 +540,18 @@ class layout_simulation_impl
     //                                    [this, &charge_lyt, &lyts_two](const auto& c1)
     //                                    { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false);
     //                                    });
-    //
+    //                                lyts_three.foreach_cell(
+    //                                    [this, &charge_lyt, &lyts_three](const auto& c1)
+    //                                    { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false);
+    //                                    });
+    //                                lyts_four.foreach_cell(
+    //                                    [this, &charge_lyt, &lyts_four](const auto& c1)
+    //                                    { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false);
+    //                                    });
+    //                                lyts_five.foreach_cell(
+    //                                    [this, &charge_lyt, &lyts_five](const auto& c1)
+    //                                    { charge_lyt.assign_charge_state(c1, lyts_five.get_charge_state(c1), false);
+    //                                    });
     //
     //                                charge_lyt.update_after_charge_change();
     //                                if (charge_lyt.is_physically_valid())
@@ -462,14 +573,17 @@ class layout_simulation_impl
     //                                }
     //                                counter += 1;
     //
-    //                                if (counter % 100000 == 0)
+    //                                if (counter % 10000000 == 0)
     //                                {
     //                                    std::cout << counter << std::endl;
     //                                }
     //                            }
     //                        }
     //                    }
-    // std::cout << *std::min_element(valid_energies.begin(), valid_energies.end()) << std::endl;
+    //                    // std::cout << *std::min_element(valid_energies.begin(), valid_energies.end()) << std::endl;
+    //                }
+    //            }
+    //        }
 
     //    void combining_all()
     //    {
@@ -489,14 +603,10 @@ class layout_simulation_impl
     //        auto lyt_one   = lyts_of_regions[0];
     //        auto lyt_two   = lyts_of_regions[1];
     //        auto lyt_three = lyts_of_regions[2];
-    //        auto lyt_four  = lyts_of_regions[3];
-    //        auto lyt_five  = lyts_of_regions[4];
     //
     //        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
     //        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
     //        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
-    //        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
-    //        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
     //
     //        charge_distribution_surface<Lyt> charge_lyt{layout};
     //        uint64_t                         counter = 0;
@@ -508,54 +618,41 @@ class layout_simulation_impl
     //            {
     //                for (const auto& lyts_three : lyt_three)
     //                {
-    //                    for (const auto& lyts_four : lyt_four)
+    //                    lyts_one.foreach_cell(
+    //                        [this, &charge_lyt, &lyts_one](const auto& c1)
+    //                        { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false); });
+    //                    lyts_two.foreach_cell(
+    //                        [this, &charge_lyt, &lyts_two](const auto& c1)
+    //                        { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
+    //                    lyts_three.foreach_cell(
+    //                        [this, &charge_lyt, &lyts_three](const auto& c1)
+    //                        { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false); });
+    //
+    //                    charge_lyt.update_after_charge_change();
+    //                    if (charge_lyt.is_physically_valid())
     //                    {
-    //                        for (const auto& lyts_five : lyt_five)
+    //                        if (charge_lyt.get_system_energy() < energy_threas)
     //                        {
-    //                            lyts_one.foreach_cell(
-    //                                [this, &charge_lyt, &lyts_one](const auto& c1)
-    //                                { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false); });
-    //                            lyts_two.foreach_cell(
-    //                                [this, &charge_lyt, &lyts_two](const auto& c1)
-    //                                { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
-    //                            lyts_three.foreach_cell(
-    //                                [this, &charge_lyt, &lyts_three](const auto& c1)
-    //                                { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false); });
-    //                            lyts_four.foreach_cell(
-    //                                [this, &charge_lyt, &lyts_four](const auto& c1)
-    //                                { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false); });
-    //                            lyts_five.foreach_cell(
-    //                                [this, &charge_lyt, &lyts_five](const auto& c1)
-    //                                { charge_lyt.assign_charge_state(c1, lyts_five.get_charge_state(c1), false); });
+    //                            std::vector<charge_distribution_surface<Lyt>> lyts{};
+    //                            std::cout << charge_lyt.get_system_energy() << std::endl;
     //
-    //                            charge_lyt.update_after_charge_change();
-    //                            if (charge_lyt.is_physically_valid())
-    //                            {
-    //                                if (charge_lyt.get_system_energy() < energy_threas)
-    //                                {
-    //                                    std::vector<charge_distribution_surface<Lyt>> lyts{};
-    //                                    std::cout << charge_lyt.get_system_energy() << std::endl;
-    //
-    //                                    sidb_simulation_result<Lyt> sim_result{};
-    //                                    sim_result.algorithm_name = "ExGS";
-    //                                    charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
-    //                                    lyts.emplace_back(charge_lyt_copy);
-    //                                    sim_result.charge_distributions = lyts;
-    //                                    energy_threas                   = charge_lyt.get_system_energy();
-    //                                    write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/CLionProjects/"
-    //                                                                          "fiction_fork/experiments/result.xml");
-    //                                }
-    //                            }
-    //                            counter += 1;
-    //
-    //                            if (counter % 10000000 == 0)
-    //                            {
-    //                                std::cout << counter << std::endl;
-    //                            }
+    //                            sidb_simulation_result<Lyt> sim_result{};
+    //                            sim_result.algorithm_name = "ExGS";
+    //                            charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+    //                            lyts.emplace_back(charge_lyt_copy);
+    //                            sim_result.charge_distributions = lyts;
+    //                            energy_threas                   = charge_lyt.get_system_energy();
+    //                            write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/CLionProjects/"
+    //                                                                  "fiction_fork/experiments/result.xml");
     //                        }
     //                    }
+    //                    counter += 1;
+    //
+    //                    if (counter % 10000000 == 0)
+    //                    {
+    //                        std::cout << counter << std::endl;
+    //                    }
     //                }
-    //                // std::cout << *std::min_element(valid_energies.begin(), valid_energies.end()) << std::endl;
     //            }
     //        }
     //    }
@@ -649,147 +746,133 @@ class layout_simulation_impl
     //        }
     //    }
 
-    //    void combining_all_nine()
-    //    {
-    //        auto compareFunc =
-    //            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
-    //        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
-    //
-    //        std::cout << "combining starts" << std::endl;
-    //        std::cout << lyts_of_regions.size() << std::endl;
-    //        auto lyt_one   = lyts_of_regions[0];
-    //        auto lyt_two   = lyts_of_regions[1];
-    //        auto lyt_three = lyts_of_regions[2];
-    //        auto lyt_four  = lyts_of_regions[3];
-    //        auto lyt_five  = lyts_of_regions[4];
-    //        auto lyt_six   = lyts_of_regions[5];
-    //        auto lyt_seven = lyts_of_regions[6];
-    //        auto lyt_eight = lyts_of_regions[7];
-    //        auto lyt_nine  = lyts_of_regions[8];
-    //
-    //        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
-    //        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
-    //        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
-    //        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
-    //        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
-    //        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
-    //        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
-    //        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
-    //        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
-    //
-    //        charge_distribution_surface<Lyt> charge_lyt{layout};
-    //        uint64_t                         counter = 0;
-    //        std::vector<double>              valid_energies{};
-    //        double                           energy_threas = 1000;
-    //        for (const auto& lyts_one : lyt_one)
-    //        {
-    //            for (const auto& lyts_two : lyt_two)
-    //            {
-    //                for (const auto& lyts_three : lyt_three)
-    //                {
-    //                    for (const auto& lyts_four : lyt_four)
-    //                    {
-    //                        for (const auto& lyts_five : lyt_five)
-    //                        {
-    //                            for (const auto& lyts_six : lyt_six)
-    //                            {
-    //                                for (const auto& lyts_seven : lyt_seven)
-    //                                {
-    //                                    for (const auto& lyts_eight : lyt_eight)
-    //                                    {
-    //                                        for (const auto& lyts_nine : lyt_nine)
-    //                                        {
-    //                                            lyts_one.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_one](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_one.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_two.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_two](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_two.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_three.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_three](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_three.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_four.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_four](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_four.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_five.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_five](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_five.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_six.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_six](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_six.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_seven.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_seven](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_seven.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_eight.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_eight](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_eight.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            lyts_nine.foreach_cell(
-    //                                                [this, &charge_lyt, &lyts_nine](const auto& c1) {
-    //                                                    charge_lyt.assign_charge_state(c1,
-    //                                                    lyts_nine.get_charge_state(c1),
-    //                                                                                   false);
-    //                                                });
-    //                                            charge_lyt.update_after_charge_change();
-    //                                            if (!charge_lyt.is_physically_valid())
-    //                                            {
-    //                                                if (charge_lyt.get_system_energy() < energy_threas)
-    //                                                {
-    //                                                    std::vector<charge_distribution_surface<Lyt>> lyts{};
-    //                                                    std::cout << charge_lyt.get_system_energy() <<
-    //                                                    std::endl;
-    //
-    //                                                    sidb_simulation_result<Lyt> sim_result{};
-    //                                                    sim_result.algorithm_name = "ExGS";
-    //                                                    charge_distribution_surface<Lyt>
-    //                                                    charge_lyt_copy{charge_lyt};
-    //                                                    lyts.emplace_back(charge_lyt_copy);
-    //                                                    sim_result.charge_distributions = lyts;
-    //                                                    energy_threas                   =
-    //                                                    charge_lyt.get_system_energy();
-    //                                                    write_sqd_sim_result<Lyt>(sim_result,
-    //                                                                              "/Users/jandrewniok/CLionProjects/"
-    //                                                                              "fiction_fork/experiments/result.xml");
-    //                                                }
-    //                                            }
-    //                                            counter += 1;
-    //
-    //                                            // std::cout << counter << std::endl;
-    //                                        }
-    //                                    }
-    //                                }
-    //                            }
-    //                        }
-    //                        // std::cout << *std::min_element(valid_energies.begin(), valid_energies.end()) <<
-    //                        std::endl;
-    //                    }
-    //                }
-    //            }
-    //        }
-    //    }
+    void combining_all()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts" << std::endl;
+        std::cout << lyts_of_regions.size() << std::endl;
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (const auto& lyts_one : lyt_one)
+        {
+            for (const auto& lyts_two : lyt_two)
+            {
+                for (const auto& lyts_three : lyt_three)
+                {
+                    for (const auto& lyts_four : lyt_four)
+                    {
+                        for (const auto& lyts_five : lyt_five)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+                                    for (const auto& lyts_eight : lyt_eight)
+                                    {
+                                        for (const auto& lyts_nine : lyt_nine)
+                                        {
+                                            lyts_one.foreach_cell(
+                                                [this, &charge_lyt, &lyts_one](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_two.foreach_cell(
+                                                [this, &charge_lyt, &lyts_two](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_three.foreach_cell(
+                                                [this, &charge_lyt, &lyts_three](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_four.foreach_cell(
+                                                [this, &charge_lyt, &lyts_four](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_five.foreach_cell(
+                                                [this, &charge_lyt, &lyts_five](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_five.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_six.foreach_cell(
+                                                [this, &charge_lyt, &lyts_six](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_six.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_seven.foreach_cell(
+                                                [this, &charge_lyt, &lyts_seven](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_seven.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_eight.foreach_cell(
+                                                [this, &charge_lyt, &lyts_eight](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_eight.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            lyts_nine.foreach_cell(
+                                                [this, &charge_lyt, &lyts_nine](const auto& c1) {
+                                                    charge_lyt.assign_charge_state(c1, lyts_nine.get_charge_state(c1),
+                                                                                   false);
+                                                });
+                                            charge_lyt.update_after_charge_change();
+                                            if (!charge_lyt.is_physically_valid())
+                                            {
+                                                if (charge_lyt.get_system_energy() < energy_threas)
+                                                {
+                                                    std::vector<charge_distribution_surface<Lyt>> lyts{};
+                                                    std::cout << charge_lyt.get_system_energy() << std::endl;
+
+                                                    sidb_simulation_result<Lyt> sim_result{};
+                                                    sim_result.algorithm_name = "ExGS";
+                                                    charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+                                                    lyts.emplace_back(charge_lyt_copy);
+                                                    sim_result.charge_distributions = lyts;
+                                                    energy_threas                   = charge_lyt.get_system_energy();
+                                                    write_sqd_sim_result<Lyt>(sim_result,
+                                                                              "/Users/jandrewniok/CLionProjects/"
+                                                                              "fiction_fork/experiments/result.xml");
+                                                }
+                                            }
+                                            counter += 1;
+
+                                            // std::cout << counter << std::endl;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
   private:
     Lyt&                                                       layout;

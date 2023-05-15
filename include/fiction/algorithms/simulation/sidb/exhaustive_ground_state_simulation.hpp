@@ -76,7 +76,7 @@ void exhaustive_ground_state_simulation(
         for (const auto& defect_conf : defects)
         {
             counter_conf += 1;
-            if (counter_conf % 1000 == 0)
+            if (counter_conf % 3 == 0)
             {
                 std::cout << counter_conf << std::endl;
             }
