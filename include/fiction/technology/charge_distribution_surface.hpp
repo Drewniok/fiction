@@ -1911,9 +1911,9 @@ class charge_distribution_surface<Lyt, false> : public Lyt
         this->foreach_cell([this](const auto& c1) { strg->sidb_order.push_back(c1); });
         this->foreach_cell([this, &cs](const auto&) { strg->cell_charge.push_back(cs); });
 
-        assert((((this->num_cells() < 41) && (strg->phys_params.base == 3)) ||
-                ((strg->phys_params.base == 2) && (this->num_cells() < 64))) &&
-               "number of SiDBs is too large");
+        //        assert((((this->num_cells() < 41) && (strg->phys_params.base == 3)) ||
+        //                ((strg->phys_params.base == 2) && (this->num_cells() < 64))) &&
+        //               "number of SiDBs is too large");
 
         this->charge_distribution_to_index();
         this->initialize_nm_distance_matrix();

@@ -23,7 +23,8 @@ template <typename Lyt>
 struct exgs_stats
 {
     mockturtle::stopwatch<>::duration             time_total{0};
-    std::vector<charge_distribution_surface<Lyt>> valid_lyts{};
+    std::vector<charge_distribution_surface<Lyt>>                      valid_lyts{};
+    std::vector<std::pair<charge_distribution_surface<Lyt>, uint64_t>> defect_iter_num_valid_lyts{};
 
     void report(std::ostream& out = std::cout) const
     {
@@ -65,7 +66,11 @@ void exhaustive_ground_state_simulation(
 
     exgs_stats<Lyt> st{};
 
+    auto compareFunc = [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+    { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
     {
+        exgs_stats<Lyt>       st_part{};
         mockturtle::stopwatch stop{st.time_total};
 
         charge_distribution_surface charge_lyt{lyt, params, sidb_charge_state::NEGATIVE};
@@ -75,8 +80,8 @@ void exhaustive_ground_state_simulation(
         uint64_t counter_conf = 0;
         for (const auto& defect_conf : defects)
         {
-            counter_conf += 1;
-            if (counter_conf % 3 == 0)
+
+            if (counter_conf % 1000 == 0)
             {
                 std::cout << counter_conf << std::endl;
             }
@@ -172,6 +177,8 @@ void exhaustive_ground_state_simulation(
                 charge_lyt_new.update_after_charge_change(false);
 
                 // if no positively charged DB can occur in the layout, this scope is executed.
+                std::vector<charge_distribution_surface<Lyt>>                      charge_lyt_coll{};
+                std::vector<std::pair<charge_distribution_surface<Lyt>, uint64_t>> defect_coll{};
                 if (!three_state_simulation_required)
                 {
                     charge_lyt_new.set_base_num(2);
@@ -196,7 +203,27 @@ void exhaustive_ground_state_simulation(
                                 charge_lyt_copy.adding_sidb_to_layout(cell, -1);
                             }
                             charge_lyt_copy.charge_distr_to_index();
-                            st.valid_lyts.push_back(charge_lyt_copy);
+                            charge_lyt_coll.push_back(charge_lyt_copy);
+                            defect_coll.push_back(std::make_pair(charge_lyt_copy, counter_conf));
+                            //                            st.valid_lyts.push_back(charge_lyt_copy);
+                            //                            st.defect_iter_num_valid_lyts.push_back(std::make_pair(charge_lyt_copy,
+                            //                            counter_conf));
+                        }
+                    }
+
+                    auto min_energy = minimum_energy(charge_lyt_coll);
+                    for (const auto& lyts : charge_lyt_coll)
+                    {
+                        if (lyts.get_system_energy() == min_energy)
+                        {
+                            st.valid_lyts.push_back(lyts);
+                        }
+                    }
+                    for (const auto& coll : defect_coll)
+                    {
+                        if (coll.first.get_system_energy() == min_energy)
+                        {
+                            st.defect_iter_num_valid_lyts.push_back(std::make_pair(coll.first, coll.second));
                         }
                     }
 
@@ -205,6 +232,14 @@ void exhaustive_ground_state_simulation(
                     {
                         lyt.assign_cell_type(cell, Lyt::cell_type::NORMAL);
                     }
+                    //                    auto min_energy = minimum_energy(st_part.valid_lyts);
+                    //                    for (const auto &lyts: st_part.valid_lyts)
+                    //                    {
+                    //                        if (lyts.get_system_energy()==min_energy)
+                    //                        {
+                    //                            st.valid_lyts.push_back(lyts);
+                    //                        }
+                    //                    }
                 }
 
                 // if positively charged DBs can occur in the layout, 3-state simulation is conducted.
@@ -348,9 +383,11 @@ void exhaustive_ground_state_simulation(
                 charge_lyt_copy.charge_distr_to_index();
                 st.valid_lyts.push_back(charge_lyt_copy);
             }
+            counter_conf += 1;
         }
     }
 
+    // std::sort(st.valid_lyts.begin(), st.valid_lyts.end(),compareFunc);
     if (ps)
     {
         *ps = st;
