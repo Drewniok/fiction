@@ -775,23 +775,29 @@ class layout_simulation_impl
                         continue;
                     }
 
-                    typename Lyt::cell cells1{};
-                    typename Lyt::cell cells2{};
-                    uint64_t           counter_neg = 0;
+                    uint64_t counter_small_distance = 0;
+
                     for (auto i = 0u; i < defect_cell.size(); i++)
                     {
-                        if (defect_charge[i] == -1 && counter_neg == 0)
+                        for (auto j = 0u; j < defect_cell.size(); j++)
                         {
-                            cells1 = defect_cell[i];
-                            counter_neg += 1;
-                        }
-                        else if (defect_charge[i] == -1 && counter_neg == 1)
-                        {
-                            cells2 = defect_cell[i];
+                            if (i == j)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                if (defect_charge[i] == -1 && defect_charge[j] == -1 &&
+                                    (sidb_nanometer_distance<Lyt>(layout, defect_cell[i], defect_cell[j], parameter)) <
+                                        1.3)
+                                {
+                                    counter_small_distance += 1;
+                                }
+                            }
                         }
                     }
 
-                    if (sidb_nanometer_distance<Lyt>(layout, cells1, cells2, parameter) < 1.5)
+                    if (counter_small_distance != 0)
                     {
                         border_cell_index += 1;
                         continue;
@@ -913,336 +919,6 @@ class layout_simulation_impl
             all_pairs.push_back(layout_numbers);
         }
         all_neighbor_pairs = all_pairs;
-    }
-
-    void combining_four()
-    {
-        auto compareFunc =
-            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
-        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
-
-        std::cout << "combining starts" << std::endl;
-        std::cout << lyts_of_regions.size() << std::endl;
-        auto lyt_one   = lyts_of_regions[0];
-        auto lyt_two   = lyts_of_regions[1];
-        auto lyt_three = lyts_of_regions[2];
-        auto lyt_four  = lyts_of_regions[3];
-
-        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
-        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
-        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
-        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
-
-        charge_distribution_surface<Lyt> charge_lyt{layout};
-        uint64_t                         counter = 0;
-        std::vector<double>              valid_energies{};
-        double                           energy_threas = 1000;
-        for (const auto& lyts_one : lyt_one)
-        {
-            for (const auto& lyts_two : lyt_two)
-            {
-                for (const auto& lyts_three : lyt_three)
-                {
-                    for (const auto& lyts_four : lyt_four)
-                    {
-                        {
-                            lyts_one.foreach_cell(
-                                [this, &charge_lyt, &lyts_one](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false); });
-                            lyts_two.foreach_cell(
-                                [this, &charge_lyt, &lyts_two](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
-                            lyts_three.foreach_cell(
-                                [this, &charge_lyt, &lyts_three](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false); });
-                            lyts_four.foreach_cell(
-                                [this, &charge_lyt, &lyts_four](const auto& c1)
-                                { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false); });
-                            charge_lyt.update_after_charge_change();
-                            if (charge_lyt.is_physically_valid())
-                            {
-                                if (charge_lyt.get_system_energy() < energy_threas)
-                                {
-                                    std::vector<charge_distribution_surface<Lyt>> lyts{};
-                                    std::cout << charge_lyt.get_system_energy() << std::endl;
-
-                                    sidb_simulation_result<Lyt> sim_result{};
-                                    sim_result.algorithm_name = "ExGS";
-                                    charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
-                                    lyts.emplace_back(charge_lyt_copy);
-                                    sim_result.charge_distributions = lyts;
-                                    energy_threas                   = charge_lyt.get_system_energy();
-                                    write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/CLionProjects/"
-                                                                          "fiction_fork/experiments/result.xml");
-                                }
-                            }
-                            counter += 1;
-
-                            // std::cout << counter << std::endl;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    void combining_three()
-    {
-        uint64_t counter_lyts = 1;
-        for (const auto& lyts_region : lyts_of_regions)
-        {
-            counter_lyts *= lyts_region.size();
-        }
-        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
-
-        auto compareFunc =
-            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
-        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
-
-        std::cout << "combining starts" << std::endl;
-        std::cout << lyts_of_regions.size() << std::endl;
-        auto lyt_one   = lyts_of_regions[0];
-        auto lyt_two   = lyts_of_regions[1];
-        auto lyt_three = lyts_of_regions[2];
-        auto lyt_four  = lyts_of_regions[3];
-
-        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
-        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
-        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
-        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
-
-        charge_distribution_surface<Lyt> charge_lyt{layout};
-        uint64_t                         counter = 0;
-        std::vector<double>              valid_energies{};
-        double                           energy_threas = 1000;
-        for (const auto& lyts_one : lyt_one)
-        {
-            for (const auto& lyts_two : lyt_two)
-            {
-                for (const auto& lyts_three : lyt_three)
-                {
-                    for (const auto& lyts_four : lyt_four)
-                    {
-                        lyts_one.foreach_cell(
-                            [this, &charge_lyt, &lyts_one](const auto& c1)
-                            { charge_lyt.assign_charge_state(c1, lyts_one.get_charge_state(c1), false); });
-                        lyts_two.foreach_cell(
-                            [this, &charge_lyt, &lyts_two](const auto& c1)
-                            { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
-                        lyts_three.foreach_cell(
-                            [this, &charge_lyt, &lyts_three](const auto& c1)
-                            { charge_lyt.assign_charge_state(c1, lyts_three.get_charge_state(c1), false); });
-                        lyts_four.foreach_cell(
-                            [this, &charge_lyt, &lyts_four](const auto& c1)
-                            { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false); });
-
-                        charge_lyt.update_after_charge_change();
-                        if (charge_lyt.is_physically_valid())
-                        {
-                            if (charge_lyt.get_system_energy() < energy_threas)
-                            {
-                                std::vector<charge_distribution_surface<Lyt>> lyts{};
-                                std::cout << charge_lyt.get_system_energy() << std::endl;
-
-                                sidb_simulation_result<Lyt> sim_result{};
-                                sim_result.algorithm_name = "ExGS";
-                                charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
-                                lyts.emplace_back(charge_lyt_copy);
-                                sim_result.charge_distributions = lyts;
-                                energy_threas                   = charge_lyt.get_system_energy();
-                                write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/CLionProjects/"
-                                                                      "fiction_fork/experiments/result.xml");
-                            }
-                        }
-                        counter += 1;
-
-                        if (counter % 10000000 == 0)
-                        {
-                            std::cout << counter << std::endl;
-                        }
-                    }
-                }
-            }
-        }
-
-        // std::cout << *std::min_element(valid_energies.begin(), valid_energies.end()) << std::endl;
-    }
-
-    void combining_seven()
-    {
-        auto compareFunc =
-            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
-        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
-
-        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
-        uint64_t counter_lyts = 1;
-        for (const auto& lyts_region : lyts_of_regions)
-        {
-            counter_lyts *= lyts_region.size();
-        }
-        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
-
-        auto lyt_one   = lyts_of_regions[0];
-        auto lyt_two   = lyts_of_regions[1];
-        auto lyt_three = lyts_of_regions[2];
-        auto lyt_four  = lyts_of_regions[3];
-        auto lyt_five  = lyts_of_regions[4];
-        auto lyt_six   = lyts_of_regions[5];
-        auto lyt_seven = lyts_of_regions[6];
-
-        //                std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
-        //                std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
-        //                std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
-        //                std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
-        //                std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
-        //                std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
-        //                std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
-        //
-        //                int                                           number = 100;
-        //                std::vector<charge_distribution_surface<Lyt>> lyt_ones(
-        //                    lyt_one.begin(), lyt_one.begin() + std::min(number,
-        //                    static_cast<int>(lyt_one.size())));
-        //                std::vector<charge_distribution_surface<Lyt>> lyt_twos(
-        //                    lyt_two.begin(), lyt_two.begin() + std::min(number,
-        //                    static_cast<int>(lyt_two.size())));
-        //                std::vector<charge_distribution_surface<Lyt>> lyt_threes(
-        //                    lyt_three.begin(), lyt_three.begin() + std::min(number,
-        //                    static_cast<int>(lyt_three.size())));
-        //                std::vector<charge_distribution_surface<Lyt>> lyt_fours(
-        //                    lyt_four.begin(), lyt_four.begin() + std::min(number,
-        //                    static_cast<int>(lyt_four.size())));
-        //
-        //                std::vector<charge_distribution_surface<Lyt>> lyt_fives(
-        //                    lyt_five.begin(), lyt_five.begin() + std::min(number,
-        //                    static_cast<int>(lyt_five.size())));
-        //                std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
-        //                    lyt_six.begin(), lyt_six.begin() + std::min(number,
-        //                    static_cast<int>(lyt_six.size())));
-        //                std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
-        //                    lyt_seven.begin(), lyt_seven.begin() + std::min(number,
-        //                    static_cast<int>(lyt_seven.size())));
-
-        charge_distribution_surface<Lyt> charge_lyt{layout};
-        uint64_t                         counter = 0;
-        std::vector<double>              valid_energies{};
-        double                           energy_threas = 1000;
-        for (auto i = 0u; i < lyt_one.size(); i++)
-        {
-            for (const auto& lyts_two : lyt_two)
-            {
-                for (auto j = 0u; j < lyt_three.size(); j++)
-                {
-                    for (const auto& lyts_four : lyt_four)
-                    {
-                        //                                                uint64_t counter_unmatched = 0;
-                        //                                                for (const auto& neighbor_cell :
-                        //                                                all_defect_cells[0])
-                        //                                                {
-                        //                                                    lyts_four.foreach_cell(
-                        //                                                        [&counter_unmatched, &neighbor_cell,
-                        //                                                        &lyts_four, &i, this](const auto& c1)
-                        //                                                        {
-                        //                                                            if (c1 == neighbor_cell)
-                        //                                                            {
-                        //                                                                if
-                        //                                                                (charge_state_to_sign(lyts_four.get_charge_state(c1))
-                        //                                                                !=
-                        //                                                                    get_charge_state_defect(0,
-                        //                                                                    i, c1))
-                        //                                                                {
-                        //                                                                    counter_unmatched += 1;
-                        //                                                                }
-                        //                                                            }
-                        //                                                        });
-                        //                                                }
-                        //                                                if (counter_unmatched != 0)
-                        //                                                {
-                        //                                                    continue;
-                        //                                                }
-
-                        for (const auto& lyts_five : lyt_five)
-                        {
-                            uint64_t counter_unmatched = 0;
-                            for (const auto& neighbor_cell : all_defect_cells[2])
-                            {
-                                lyts_five.foreach_cell(
-                                    [&counter_unmatched, &neighbor_cell, &lyts_five, &j, this](const auto& c1)
-                                    {
-                                        if (c1 == neighbor_cell)
-                                        {
-                                            if (charge_state_to_sign(lyts_five.get_charge_state(c1)) !=
-                                                get_charge_state_defect(2, j, c1))
-                                            {
-                                                counter_unmatched += 1;
-                                            }
-                                        }
-                                    });
-                            }
-                            if (counter_unmatched != 0)
-                            {
-                                continue;
-                            }
-
-                            for (const auto& lyts_six : lyt_six)
-                            {
-                                for (const auto& lyts_seven : lyt_seven)
-                                {
-                                    lyt_one[i].foreach_cell(
-                                        [this, &charge_lyt, &lyt_one, &i](const auto& c1) {
-                                            charge_lyt.assign_charge_state(c1, lyt_one[i].get_charge_state(c1), false);
-                                        });
-                                    lyts_two.foreach_cell(
-                                        [this, &charge_lyt, &lyts_two](const auto& c1)
-                                        { charge_lyt.assign_charge_state(c1, lyts_two.get_charge_state(c1), false); });
-                                    lyt_three[j].foreach_cell(
-                                        [this, &charge_lyt, &lyt_three, &j](const auto& c1) {
-                                            charge_lyt.assign_charge_state(c1, lyt_three[j].get_charge_state(c1),
-                                                                           false);
-                                        });
-                                    lyts_four.foreach_cell(
-                                        [this, &charge_lyt, &lyts_four](const auto& c1)
-                                        { charge_lyt.assign_charge_state(c1, lyts_four.get_charge_state(c1), false); });
-                                    lyts_five.foreach_cell(
-                                        [this, &charge_lyt, &lyts_five](const auto& c1)
-                                        { charge_lyt.assign_charge_state(c1, lyts_five.get_charge_state(c1), false); });
-                                    lyts_six.foreach_cell(
-                                        [this, &charge_lyt, &lyts_six](const auto& c1)
-                                        { charge_lyt.assign_charge_state(c1, lyts_six.get_charge_state(c1), false); });
-                                    lyts_seven.foreach_cell(
-                                        [this, &charge_lyt, &lyts_seven](const auto& c1) {
-                                            charge_lyt.assign_charge_state(c1, lyts_seven.get_charge_state(c1), false);
-                                        });
-                                    charge_lyt.update_after_charge_change();
-                                    if (charge_lyt.is_physically_valid())
-                                    {
-                                        if (charge_lyt.get_system_energy() < energy_threas)
-                                        {
-                                            std::vector<charge_distribution_surface<Lyt>> lyts{};
-                                            std::cout << charge_lyt.get_system_energy() << std::endl;
-
-                                            sidb_simulation_result<Lyt> sim_result{};
-                                            sim_result.algorithm_name = "ExGS";
-                                            charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
-                                            lyts.emplace_back(charge_lyt_copy);
-                                            sim_result.charge_distributions = lyts;
-                                            energy_threas                   = charge_lyt.get_system_energy();
-                                            write_sqd_sim_result<Lyt>(sim_result,
-                                                                      "/Users/jandrewniok/CLionProjects/"
-                                                                      "fiction_fork/experiments/result.xml");
-                                        }
-                                    }
-                                    counter += 1;
-                                    if (counter % 1000000 == 0)
-                                    {
-                                        std::cout << counter << std::endl;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     void combining_all_12()
@@ -3090,7 +2766,430 @@ class layout_simulation_impl
         }
     }
 
-    void combining_all_16_new()
+    void combining_all_11_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+
+                                                    lyt_one[i].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_one, &i](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_one[i].get_charge_state(c1), false);
+                                                        });
+                                                    lyt_two[j].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_two, &j](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_two[j].get_charge_state(c1), false);
+                                                        });
+                                                    lyt_three[three].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_three, &three](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_three[three].get_charge_state(c1), false);
+                                                        });
+                                                    lyt_four[four].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_four, &four](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_four[four].get_charge_state(c1), false);
+                                                        });
+                                                    lyt_five[five].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_five, &five](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_five[five].get_charge_state(c1), false);
+                                                        });
+                                                    lyts_six.foreach_cell(
+                                                        [this, &charge_lyt, &lyts_six](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyts_six.get_charge_state(c1), false);
+                                                        });
+                                                    lyts_seven.foreach_cell(
+                                                        [this, &charge_lyt, &lyts_seven](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyts_seven.get_charge_state(c1), false);
+                                                        });
+                                                    lyt_eight[eight].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_eight, &eight](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_eight[eight].get_charge_state(c1), false);
+                                                        });
+                                                    lyt_nine[nine].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_nine, &nine](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_nine[nine].get_charge_state(c1), false);
+                                                        });
+                                                    lyt_ten[t].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_ten, &t](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_ten[t].get_charge_state(c1), false);
+                                                        });
+                                                    lyt_11[l].foreach_cell(
+                                                        [this, &charge_lyt, &lyt_11, &l](const auto& c1) {
+                                                            charge_lyt.assign_charge_state(
+                                                                c1, lyt_11[l].get_charge_state(c1), false);
+                                                        });
+                                                    charge_lyt.update_after_charge_change();
+                                                    if (charge_lyt.is_physically_valid())
+                                                    {
+                                                        if (charge_lyt.get_system_energy() < energy_threas)
+                                                        {
+                                                            std::vector<charge_distribution_surface<Lyt>> lyts{};
+                                                            std::cout << charge_lyt.get_system_energy() << std::endl;
+
+                                                            sidb_simulation_result<Lyt> sim_result{};
+                                                            sim_result.algorithm_name = "ExGS";
+                                                            charge_distribution_surface<Lyt> charge_lyt_copy{
+                                                                charge_lyt};
+                                                            lyts.emplace_back(charge_lyt_copy);
+                                                            sim_result.charge_distributions = lyts;
+                                                            energy_threas = charge_lyt.get_system_energy();
+                                                            write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/"
+                                                                                                  "CLionProjects/"
+                                                                                                  "fiction_fork/"
+                                                                                                  "experiments/"
+                                                                                                  "result.xml");
+                                                        }
+                                                    }
+                                                    counter += 1;
+                                                    if (counter % 100000 == 0)
+                                                    {
+                                                        std::cout << counter << std::endl;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_13_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        uint64_t counter_unmatched_one = 0;
+                        for (const auto& neighbor_cell : all_defect_cells[0])
+                        {
+                            lyt_four[four].foreach_cell(
+                                [&counter_unmatched_one, &neighbor_cell, &lyt_four, &i, &four, this](const auto& c1)
+                                {
+                                    if (c1 == neighbor_cell)
+                                    {
+                                        if (charge_state_to_sign(lyt_four[four].get_charge_state(c1)) !=
+                                            get_charge_state_defect(0, i, c1))
+                                        {
+                                            counter_unmatched_one += 1;
+                                        }
+                                    }
+                                });
+                        }
+                        if (counter_unmatched_one != 0)
+                        {
+                            continue;
+                        }
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+                                                            lyt_one[i].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_one, &i](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_one[i].get_charge_state(c1), false);
+                                                                });
+                                                            lyt_two[j].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_two, &j](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_two[j].get_charge_state(c1), false);
+                                                                });
+                                                            lyt_three[three].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_three, &three](const auto& c1)
+                                                                {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_three[three].get_charge_state(c1),
+                                                                        false);
+                                                                });
+                                                            lyt_four[four].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_four, &four](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_four[four].get_charge_state(c1), false);
+                                                                });
+                                                            lyt_five[five].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_five, &five](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_five[five].get_charge_state(c1), false);
+                                                                });
+                                                            lyts_six.foreach_cell(
+                                                                [this, &charge_lyt, &lyts_six](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyts_six.get_charge_state(c1), false);
+                                                                });
+                                                            lyts_seven.foreach_cell(
+                                                                [this, &charge_lyt, &lyts_seven](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyts_seven.get_charge_state(c1), false);
+                                                                });
+                                                            lyt_eight[eight].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_eight, &eight](const auto& c1)
+                                                                {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_eight[eight].get_charge_state(c1),
+                                                                        false);
+                                                                });
+                                                            lyt_nine[nine].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_nine, &nine](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_nine[nine].get_charge_state(c1), false);
+                                                                });
+                                                            lyt_ten[t].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_ten, &t](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_ten[t].get_charge_state(c1), false);
+                                                                });
+                                                            lyt_11[l].foreach_cell(
+                                                                [this, &charge_lyt, &lyt_11, &l](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyt_11[l].get_charge_state(c1), false);
+                                                                });
+                                                            lyts_12.foreach_cell(
+                                                                [this, &charge_lyt, &lyts_12](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyts_12.get_charge_state(c1), false);
+                                                                });
+                                                            lyts_13.foreach_cell(
+                                                                [this, &charge_lyt, &lyts_13](const auto& c1) {
+                                                                    charge_lyt.assign_charge_state(
+                                                                        c1, lyts_13.get_charge_state(c1), false);
+                                                                });
+                                                            charge_lyt.update_after_charge_change();
+                                                            if (charge_lyt.is_physically_valid())
+                                                            {
+                                                                if (charge_lyt.get_system_energy() < energy_threas)
+                                                                {
+                                                                    std::vector<charge_distribution_surface<Lyt>>
+                                                                        lyts{};
+                                                                    std::cout << charge_lyt.get_system_energy()
+                                                                              << std::endl;
+
+                                                                    sidb_simulation_result<Lyt> sim_result{};
+                                                                    sim_result.algorithm_name = "ExGS";
+                                                                    charge_distribution_surface<Lyt> charge_lyt_copy{
+                                                                        charge_lyt};
+                                                                    lyts.emplace_back(charge_lyt_copy);
+                                                                    sim_result.charge_distributions = lyts;
+                                                                    energy_threas = charge_lyt.get_system_energy();
+                                                                    write_sqd_sim_result<Lyt>(sim_result,
+                                                                                              "/Users/jandrewniok/"
+                                                                                              "CLionProjects/"
+                                                                                              "fiction_fork/"
+                                                                                              "experiments/"
+                                                                                              "result.xml");
+                                                                }
+                                                            }
+                                                            counter += 1;
+                                                            if (counter % 100000 == 0)
+                                                            {
+                                                                std::cout << counter << std::endl;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_18_test()
     {
         auto compareFunc =
             [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
@@ -3118,8 +3217,651 @@ class layout_simulation_impl
         auto lyt_12    = lyts_of_regions[11];
         auto lyt_13    = lyts_of_regions[12];
         auto lyt_14    = lyts_of_regions[13];
-        auto lyt_15    = lyts_of_regions[15];
-        auto lyt_16    = lyts_of_regions[16];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                //                                uint64_t counter_unmatched_one = 0;
+                                //                                for (const auto& neighbor_cell : all_defect_cells[0])
+                                //                                {
+                                //                                    lyts_six.foreach_cell(
+                                //                                        [&counter_unmatched_one, &neighbor_cell,
+                                //                                        &lyts_six, &i, this](const auto& c1)
+                                //                                        {
+                                //                                            if (c1 == neighbor_cell)
+                                //                                            {
+                                //                                                if
+                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
+                                //                                                !=
+                                //                                                    get_charge_state_defect(0, i, c1))
+                                //                                                {
+                                //                                                    counter_unmatched_one += 1;
+                                //                                                }
+                                //                                            }
+                                //                                        });
+                                //                                }
+                                //                                if (counter_unmatched_one != 0)
+                                //                                {
+                                //                                    continue;
+                                //                                }
+                                //
+                                //                                uint64_t counter_unmatched = 0;
+                                //                                for (const auto& neighbor_cell : all_defect_cells[1])
+                                //                                {
+                                //                                    lyts_six.foreach_cell(
+                                //                                        [&counter_unmatched, &neighbor_cell,
+                                //                                        &lyts_six, &j, this](const auto& c1)
+                                //                                        {
+                                //                                            if (c1 == neighbor_cell)
+                                //                                            {
+                                //                                                if
+                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
+                                //                                                !=
+                                //                                                    get_charge_state_defect(1, j, c1))
+                                //                                                {
+                                //                                                    counter_unmatched += 1;
+                                //                                                }
+                                //                                            }
+                                //                                        });
+                                //                                }
+                                //                                if (counter_unmatched != 0)
+                                //                                {
+                                //                                    continue;
+                                //                                }
+
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+                                    //                                    uint64_t counter_three = 0;
+                                    //                                    for (const auto& neighbor_cell :
+                                    //                                    all_defect_cells[2])
+                                    //                                    {
+                                    //                                        lyts_seven.foreach_cell(
+                                    //                                            [&counter_three, &neighbor_cell,
+                                    //                                            &lyts_seven, &three, this](const auto&
+                                    //                                            c1)
+                                    //                                            {
+                                    //                                                if (c1 == neighbor_cell)
+                                    //                                                {
+                                    //                                                    if
+                                    //                                                    (charge_state_to_sign(lyts_seven.get_charge_state(c1))
+                                    //                                                    !=
+                                    //                                                        get_charge_state_defect(2,
+                                    //                                                        three, c1))
+                                    //                                                    {
+                                    //                                                        counter_three += 1;
+                                    //                                                    }
+                                    //                                                }
+                                    //                                            });
+                                    //                                    }
+                                    //                                    if (counter_three != 0)
+                                    //                                    {
+                                    //                                        continue;
+                                    //                                    }
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+                                        //                                        uint64_t counter_unmatched_4 = 0;
+                                        //                                        for (const auto& neighbor_cell_four :
+                                        //                                        all_defect_cells[3])
+                                        //                                        {
+                                        //                                            lyt_eight[eight].foreach_cell(
+                                        //                                                [&counter_unmatched_4,
+                                        //                                                &neighbor_cell_four,
+                                        //                                                &lyt_eight, &four, &eight,
+                                        //                                                 this](const auto& c1)
+                                        //                                                {
+                                        //                                                    if (c1 ==
+                                        //                                                    neighbor_cell_four)
+                                        //                                                    {
+                                        //                                                        if
+                                        //                                                        (charge_state_to_sign(lyt_eight[eight].get_charge_state(
+                                        //                                                                c1)) !=
+                                        //                                                                get_charge_state_defect(3,
+                                        //                                                                four, c1))
+                                        //                                                        {
+                                        //                                                            counter_unmatched_4
+                                        //                                                            += 1;
+                                        //                                                        }
+                                        //                                                    }
+                                        //                                                });
+                                        //                                        }
+                                        //                                        if (counter_unmatched_4 != 0)
+                                        //                                        {
+                                        //                                            continue;
+                                        //                                        }
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+                                            //                                            uint64_t
+                                            //                                            counter_unmatched_five = 0;
+                                            //                                            for (const auto&
+                                            //                                            neighbor_cell_five :
+                                            //                                            all_defect_cells[4])
+                                            //                                            {
+                                            //                                                lyt_nine[nine].foreach_cell(
+                                            //                                                    [&counter_unmatched_five,
+                                            //                                                    &neighbor_cell_five,
+                                            //                                                    &lyt_nine, &five,
+                                            //                                                     &nine, this](const
+                                            //                                                     auto& c1)
+                                            //                                                    {
+                                            //                                                        if (c1 ==
+                                            //                                                        neighbor_cell_five)
+                                            //                                                        {
+                                            //                                                            if
+                                            //                                                            (charge_state_to_sign(lyt_nine[nine].get_charge_state(
+                                            //                                                                    c1))
+                                            //                                                                    !=
+                                            //                                                                    get_charge_state_defect(4,
+                                            //                                                                    five,
+                                            //                                                                    c1))
+                                            //                                                            {
+                                            //                                                                counter_unmatched_five
+                                            //                                                                += 1;
+                                            //                                                            }
+                                            //                                                        }
+                                            //                                                    });
+                                            //                                            }
+                                            //                                            if (counter_unmatched_five !=
+                                            //                                            0)
+                                            //                                            {
+                                            //                                                continue;
+                                            //                                            }
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                //                                                uint64_t
+                                                //                                                counter_unmatched_7 =
+                                                //                                                0; for (const auto&
+                                                //                                                neighbor_cell_seven :
+                                                //                                                all_defect_cells[6])
+                                                //                                                {
+                                                //                                                    lyt_ten[t].foreach_cell(
+                                                //                                                        [&counter_unmatched_7,
+                                                //                                                        &neighbor_cell_seven,
+                                                //                                                        &lyt_ten, &t,
+                                                //                                                         this](const
+                                                //                                                         auto& c1)
+                                                //                                                        {
+                                                //                                                            if (c1 ==
+                                                //                                                            neighbor_cell_seven)
+                                                //                                                            {
+                                                //                                                                if
+                                                //                                                                (charge_state_to_sign(lyt_ten[t].get_charge_state(
+                                                //                                                                        c1)) != get_charge_state_defect(6, t, c1))
+                                                //                                                                {
+                                                //                                                                    counter_unmatched_7
+                                                //                                                                    +=
+                                                //                                                                    1;
+                                                //                                                                }
+                                                //                                                            }
+                                                //                                                        });
+                                                //                                                }
+                                                //                                                if
+                                                //                                                (counter_unmatched_7
+                                                //                                                != 0)
+                                                //                                                {
+                                                //                                                    continue;
+                                                //                                                }
+
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+                                                        //                                                        uint64_t
+                                                        //                                                        counter_unmatched_9
+                                                        //                                                        = 0;
+                                                        //                                                        for
+                                                        //                                                        (const
+                                                        //                                                        auto&
+                                                        //                                                        neighbor_cell_nine
+                                                        //                                                        :
+                                                        //                                                        all_defect_cells[8])
+                                                        //                                                        {
+                                                        //                                                            lyts_12.foreach_cell(
+                                                        //                                                                [&counter_unmatched_9, &neighbor_cell_nine, &lyts_12,
+                                                        //                                                                 &nine, this](const auto& c1)
+                                                        //                                                                {
+                                                        //                                                                    if (c1 == neighbor_cell_nine)
+                                                        //                                                                    {
+                                                        //                                                                        if (charge_state_to_sign(
+                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
+                                                        //                                                                            get_charge_state_defect(8, nine, c1))
+                                                        //                                                                        {
+                                                        //                                                                            counter_unmatched_9 += 1;
+                                                        //                                                                        }
+                                                        //                                                                    }
+                                                        //                                                                });
+                                                        //                                                        }
+                                                        //                                                        if
+                                                        //                                                        (counter_unmatched_9
+                                                        //                                                        != 0)
+                                                        //                                                        {
+                                                        //                                                            continue;
+                                                        //                                                        }
+
+                                                        //                                                        uint64_t
+                                                        //                                                        counter_unmatched_8
+                                                        //                                                        = 0;
+                                                        //                                                        for
+                                                        //                                                        (const
+                                                        //                                                        auto&
+                                                        //                                                        neighbor_cell_eight
+                                                        //                                                        :
+                                                        //                                                        all_defect_cells[7])
+                                                        //                                                        {
+                                                        //                                                            lyts_12.foreach_cell(
+                                                        //                                                                [&counter_unmatched_8, &neighbor_cell_eight, &lyts_12,
+                                                        //                                                                 &eight, this](const auto& c1)
+                                                        //                                                                {
+                                                        //                                                                    if (c1 == neighbor_cell_eight)
+                                                        //                                                                    {
+                                                        //                                                                        if (charge_state_to_sign(
+                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
+                                                        //                                                                            get_charge_state_defect(7, eight, c1))
+                                                        //                                                                        {
+                                                        //                                                                            counter_unmatched_8 += 1;
+                                                        //                                                                        }
+                                                        //                                                                    }
+                                                        //                                                                });
+                                                        //                                                        }
+                                                        //                                                        if
+                                                        //                                                        (counter_unmatched_8
+                                                        //                                                        != 0)
+                                                        //                                                        {
+                                                        //                                                            continue;
+                                                        //                                                        }
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+                                                            //                                                            uint64_t counter_unmatched_eleven = 0;
+                                                            //                                                            for (const auto& neighbor_cell : all_defect_cells[10])
+                                                            //                                                            {
+                                                            //                                                                lyts_13.foreach_cell(
+                                                            //                                                                    [&counter_unmatched_eleven, &neighbor_cell,
+                                                            //                                                                     &lyts_13, &l, this](const auto& c1)
+                                                            //                                                                    {
+                                                            //                                                                        if (c1 == neighbor_cell)
+                                                            //                                                                        {
+                                                            //                                                                            if (charge_state_to_sign(
+                                                            //                                                                                    lyts_13.get_charge_state(c1)) !=
+                                                            //                                                                                get_charge_state_defect(10, l, c1))
+                                                            //                                                                            {
+                                                            //                                                                                counter_unmatched_eleven += 1;
+                                                            //                                                                            }
+                                                            //                                                                        }
+                                                            //                                                                    });
+                                                            //                                                            }
+                                                            //                                                            if (counter_unmatched_eleven != 0)
+                                                            //                                                            {
+                                                            //                                                                continue;
+                                                            //                                                            }
+                                                            //
+                                                            //                                                            uint64_t counter_unmatched_13 = 0;
+                                                            //                                                            for (const auto& neighbor_cell : all_defect_cells[9])
+                                                            //                                                            {
+                                                            //                                                                lyts_13.foreach_cell(
+                                                            //                                                                    [&counter_unmatched_13, &neighbor_cell, &lyts_13,
+                                                            //                                                                     &t, this](const auto& c1)
+                                                            //                                                                    {
+                                                            //                                                                        if (c1 == neighbor_cell)
+                                                            //                                                                        {
+                                                            //                                                                            if (charge_state_to_sign(
+                                                            //                                                                                    lyts_13.get_charge_state(c1)) !=
+                                                            //                                                                                get_charge_state_defect(9, t, c1))
+                                                            //                                                                            {
+                                                            //                                                                                counter_unmatched_13 += 1;
+                                                            //                                                                            }
+                                                            //                                                                        }
+                                                            //                                                                    });
+                                                            //                                                            }
+                                                            //                                                            if (counter_unmatched_13 != 0)
+                                                            //                                                            {
+                                                            //                                                                continue;
+                                                            //                                                            }
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                lyt_one[i].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_one,
+                                                                                     &i](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_one[i].get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_two[j].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_two,
+                                                                                     &j](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_two[j].get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_three[three].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_three,
+                                                                                     &three](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_three[three]
+                                                                                                .get_charge_state(c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_four[four].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_four,
+                                                                                     &four](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_four[four]
+                                                                                                .get_charge_state(c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_five[five].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_five,
+                                                                                     &five](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_five[five]
+                                                                                                .get_charge_state(c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_six.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_six](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_six.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_seven.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_seven](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_seven.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_eight[eight].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_eight,
+                                                                                     &eight](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_eight[eight]
+                                                                                                .get_charge_state(c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_nine[nine].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_nine,
+                                                                                     &nine](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_nine[nine]
+                                                                                                .get_charge_state(c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_ten[t].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_ten,
+                                                                                     &t](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_ten[t].get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyt_11[l].foreach_cell(
+                                                                                    [this, &charge_lyt, &lyt_11,
+                                                                                     &l](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyt_11[l].get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_12.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_12](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_12.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_13.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_13](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_13.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_14.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_14](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_14.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_15.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_15](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_15.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_16.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_16](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_16.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_17.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_17](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_17.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                lyts_18.foreach_cell(
+                                                                                    [this, &charge_lyt,
+                                                                                     &lyts_18](const auto& c1) {
+                                                                                        charge_lyt.assign_charge_state(
+                                                                                            c1,
+                                                                                            lyts_18.get_charge_state(
+                                                                                                c1),
+                                                                                            false);
+                                                                                    });
+                                                                                charge_lyt.update_after_charge_change();
+                                                                                if (charge_lyt.is_physically_valid())
+                                                                                {
+                                                                                    if (charge_lyt.get_system_energy() <
+                                                                                        energy_threas)
+                                                                                    {
+                                                                                        std::vector<
+                                                                                            charge_distribution_surface<
+                                                                                                Lyt>>
+                                                                                            lyts{};
+                                                                                        std::cout
+                                                                                            << charge_lyt
+                                                                                                   .get_system_energy()
+                                                                                            << std::endl;
+
+                                                                                        sidb_simulation_result<Lyt>
+                                                                                            sim_result{};
+                                                                                        sim_result.algorithm_name =
+                                                                                            "ExGS";
+                                                                                        charge_distribution_surface<Lyt>
+                                                                                            charge_lyt_copy{charge_lyt};
+                                                                                        lyts.emplace_back(
+                                                                                            charge_lyt_copy);
+                                                                                        sim_result
+                                                                                            .charge_distributions =
+                                                                                            lyts;
+                                                                                        energy_threas =
+                                                                                            charge_lyt
+                                                                                                .get_system_energy();
+                                                                                        write_sqd_sim_result<Lyt>(
+                                                                                            sim_result,
+                                                                                            "/Users/jandrewniok/"
+                                                                                            "CLionProjects/"
+                                                                                            "fiction_fork/"
+                                                                                            "experiments/"
+                                                                                            "result.xml");
+                                                                                    }
+                                                                                }
+                                                                                counter += 1;
+                                                                                if (counter % 100000 == 0)
+                                                                                {
+                                                                                    std::cout << counter << std::endl;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_16_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
 
         std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
         std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
@@ -3173,7 +3915,7 @@ class layout_simulation_impl
         std::vector<charge_distribution_surface<Lyt>> lyt_15s(
             lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
         std::vector<charge_distribution_surface<Lyt>> lyt_16s(
-            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
 
         charge_distribution_surface<Lyt> charge_lyt{layout};
         uint64_t                         counter = 0;
@@ -3191,218 +3933,304 @@ class layout_simulation_impl
                         {
                             for (const auto& lyts_six : lyt_six)
                             {
-                                uint64_t counter_unmatched_one = 0;
-                                for (const auto& neighbor_cell : all_defect_cells[0])
-                                {
-                                    lyts_six.foreach_cell(
-                                        [&counter_unmatched_one, &neighbor_cell, &lyts_six, &i, this](const auto& c1)
-                                        {
-                                            if (c1 == neighbor_cell)
-                                            {
-                                                if (charge_state_to_sign(lyts_six.get_charge_state(c1)) !=
-                                                    get_charge_state_defect(0, i, c1))
-                                                {
-                                                    counter_unmatched_one += 1;
-                                                }
-                                            }
-                                        });
-                                }
-                                if (counter_unmatched_one != 0)
-                                {
-                                    continue;
-                                }
-
-                                uint64_t counter_unmatched = 0;
-                                for (const auto& neighbor_cell : all_defect_cells[1])
-                                {
-                                    lyts_six.foreach_cell(
-                                        [&counter_unmatched, &neighbor_cell, &lyts_six, &j, this](const auto& c1)
-                                        {
-                                            if (c1 == neighbor_cell)
-                                            {
-                                                if (charge_state_to_sign(lyts_six.get_charge_state(c1)) !=
-                                                    get_charge_state_defect(1, j, c1))
-                                                {
-                                                    counter_unmatched += 1;
-                                                }
-                                            }
-                                        });
-                                }
-                                if (counter_unmatched != 0)
-                                {
-                                    continue;
-                                }
+                                //                                uint64_t counter_unmatched_one = 0;
+                                //                                for (const auto& neighbor_cell : all_defect_cells[0])
+                                //                                {
+                                //                                    lyts_six.foreach_cell(
+                                //                                        [&counter_unmatched_one, &neighbor_cell,
+                                //                                        &lyts_six, &i, this](const auto& c1)
+                                //                                        {
+                                //                                            if (c1 == neighbor_cell)
+                                //                                            {
+                                //                                                if
+                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
+                                //                                                !=
+                                //                                                    get_charge_state_defect(0, i, c1))
+                                //                                                {
+                                //                                                    counter_unmatched_one += 1;
+                                //                                                }
+                                //                                            }
+                                //                                        });
+                                //                                }
+                                //                                if (counter_unmatched_one != 0)
+                                //                                {
+                                //                                    continue;
+                                //                                }
+                                //
+                                //                                uint64_t counter_unmatched = 0;
+                                //                                for (const auto& neighbor_cell : all_defect_cells[1])
+                                //                                {
+                                //                                    lyts_six.foreach_cell(
+                                //                                        [&counter_unmatched, &neighbor_cell,
+                                //                                        &lyts_six, &j, this](const auto& c1)
+                                //                                        {
+                                //                                            if (c1 == neighbor_cell)
+                                //                                            {
+                                //                                                if
+                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
+                                //                                                !=
+                                //                                                    get_charge_state_defect(1, j, c1))
+                                //                                                {
+                                //                                                    counter_unmatched += 1;
+                                //                                                }
+                                //                                            }
+                                //                                        });
+                                //                                }
+                                //                                if (counter_unmatched != 0)
+                                //                                {
+                                //                                    continue;
+                                //                                }
 
                                 for (const auto& lyts_seven : lyt_seven)
                                 {
-                                    uint64_t counter_three = 0;
-                                    for (const auto& neighbor_cell : all_defect_cells[2])
-                                    {
-                                        lyts_seven.foreach_cell(
-                                            [&counter_three, &neighbor_cell, &lyts_seven, &three, this](const auto& c1)
-                                            {
-                                                if (c1 == neighbor_cell)
-                                                {
-                                                    if (charge_state_to_sign(lyts_seven.get_charge_state(c1)) !=
-                                                        get_charge_state_defect(2, three, c1))
-                                                    {
-                                                        counter_three += 1;
-                                                    }
-                                                }
-                                            });
-                                    }
-                                    if (counter_three != 0)
-                                    {
-                                        continue;
-                                    }
+                                    //                                    uint64_t counter_three = 0;
+                                    //                                    for (const auto& neighbor_cell :
+                                    //                                    all_defect_cells[2])
+                                    //                                    {
+                                    //                                        lyts_seven.foreach_cell(
+                                    //                                            [&counter_three, &neighbor_cell,
+                                    //                                            &lyts_seven, &three, this](const auto&
+                                    //                                            c1)
+                                    //                                            {
+                                    //                                                if (c1 == neighbor_cell)
+                                    //                                                {
+                                    //                                                    if
+                                    //                                                    (charge_state_to_sign(lyts_seven.get_charge_state(c1))
+                                    //                                                    !=
+                                    //                                                        get_charge_state_defect(2,
+                                    //                                                        three, c1))
+                                    //                                                    {
+                                    //                                                        counter_three += 1;
+                                    //                                                    }
+                                    //                                                }
+                                    //                                            });
+                                    //                                    }
+                                    //                                    if (counter_three != 0)
+                                    //                                    {
+                                    //                                        continue;
+                                    //                                    }
 
                                     for (auto eight = 0u; eight < lyt_eight.size(); eight++)
                                     {
-                                        uint64_t counter_unmatched_4 = 0;
-                                        for (const auto& neighbor_cell_four : all_defect_cells[3])
-                                        {
-                                            lyt_eight[eight].foreach_cell(
-                                                [&counter_unmatched_4, &neighbor_cell_four, &lyt_eight, &four, &eight,
-                                                 this](const auto& c1)
-                                                {
-                                                    if (c1 == neighbor_cell_four)
-                                                    {
-                                                        if (charge_state_to_sign(lyt_eight[eight].get_charge_state(
-                                                                c1)) != get_charge_state_defect(3, four, c1))
-                                                        {
-                                                            counter_unmatched_4 += 1;
-                                                        }
-                                                    }
-                                                });
-                                        }
-                                        if (counter_unmatched_4 != 0)
-                                        {
-                                            continue;
-                                        }
+                                        //                                        uint64_t counter_unmatched_4 = 0;
+                                        //                                        for (const auto& neighbor_cell_four :
+                                        //                                        all_defect_cells[3])
+                                        //                                        {
+                                        //                                            lyt_eight[eight].foreach_cell(
+                                        //                                                [&counter_unmatched_4,
+                                        //                                                &neighbor_cell_four,
+                                        //                                                &lyt_eight, &four, &eight,
+                                        //                                                 this](const auto& c1)
+                                        //                                                {
+                                        //                                                    if (c1 ==
+                                        //                                                    neighbor_cell_four)
+                                        //                                                    {
+                                        //                                                        if
+                                        //                                                        (charge_state_to_sign(lyt_eight[eight].get_charge_state(
+                                        //                                                                c1)) !=
+                                        //                                                                get_charge_state_defect(3,
+                                        //                                                                four, c1))
+                                        //                                                        {
+                                        //                                                            counter_unmatched_4
+                                        //                                                            += 1;
+                                        //                                                        }
+                                        //                                                    }
+                                        //                                                });
+                                        //                                        }
+                                        //                                        if (counter_unmatched_4 != 0)
+                                        //                                        {
+                                        //                                            continue;
+                                        //                                        }
 
                                         for (auto nine = 0u; nine < lyt_nine.size(); nine++)
                                         {
-                                            uint64_t counter_unmatched_five = 0;
-                                            for (const auto& neighbor_cell_five : all_defect_cells[4])
-                                            {
-                                                lyt_nine[nine].foreach_cell(
-                                                    [&counter_unmatched_five, &neighbor_cell_five, &lyt_nine, &five,
-                                                     &nine, this](const auto& c1)
-                                                    {
-                                                        if (c1 == neighbor_cell_five)
-                                                        {
-                                                            if (charge_state_to_sign(lyt_nine[nine].get_charge_state(
-                                                                    c1)) != get_charge_state_defect(4, five, c1))
-                                                            {
-                                                                counter_unmatched_five += 1;
-                                                            }
-                                                        }
-                                                    });
-                                            }
-                                            if (counter_unmatched_five != 0)
-                                            {
-                                                continue;
-                                            }
+                                            //                                            uint64_t
+                                            //                                            counter_unmatched_five = 0;
+                                            //                                            for (const auto&
+                                            //                                            neighbor_cell_five :
+                                            //                                            all_defect_cells[4])
+                                            //                                            {
+                                            //                                                lyt_nine[nine].foreach_cell(
+                                            //                                                    [&counter_unmatched_five,
+                                            //                                                    &neighbor_cell_five,
+                                            //                                                    &lyt_nine, &five,
+                                            //                                                     &nine, this](const
+                                            //                                                     auto& c1)
+                                            //                                                    {
+                                            //                                                        if (c1 ==
+                                            //                                                        neighbor_cell_five)
+                                            //                                                        {
+                                            //                                                            if
+                                            //                                                            (charge_state_to_sign(lyt_nine[nine].get_charge_state(
+                                            //                                                                    c1))
+                                            //                                                                    !=
+                                            //                                                                    get_charge_state_defect(4,
+                                            //                                                                    five,
+                                            //                                                                    c1))
+                                            //                                                            {
+                                            //                                                                counter_unmatched_five
+                                            //                                                                += 1;
+                                            //                                                            }
+                                            //                                                        }
+                                            //                                                    });
+                                            //                                            }
+                                            //                                            if (counter_unmatched_five !=
+                                            //                                            0)
+                                            //                                            {
+                                            //                                                continue;
+                                            //                                            }
 
                                             for (auto t = 0u; t < lyt_ten.size(); t++)
                                             {
+                                                //                                                uint64_t
+                                                //                                                counter_unmatched_7 =
+                                                //                                                0; for (const auto&
+                                                //                                                neighbor_cell_seven :
+                                                //                                                all_defect_cells[6])
+                                                //                                                {
+                                                //                                                    lyt_ten[t].foreach_cell(
+                                                //                                                        [&counter_unmatched_7,
+                                                //                                                        &neighbor_cell_seven,
+                                                //                                                        &lyt_ten, &t,
+                                                //                                                         this](const
+                                                //                                                         auto& c1)
+                                                //                                                        {
+                                                //                                                            if (c1 ==
+                                                //                                                            neighbor_cell_seven)
+                                                //                                                            {
+                                                //                                                                if
+                                                //                                                                (charge_state_to_sign(lyt_ten[t].get_charge_state(
+                                                //                                                                        c1)) != get_charge_state_defect(6, t, c1))
+                                                //                                                                {
+                                                //                                                                    counter_unmatched_7
+                                                //                                                                    +=
+                                                //                                                                    1;
+                                                //                                                                }
+                                                //                                                            }
+                                                //                                                        });
+                                                //                                                }
+                                                //                                                if
+                                                //                                                (counter_unmatched_7
+                                                //                                                != 0)
+                                                //                                                {
+                                                //                                                    continue;
+                                                //                                                }
+
                                                 for (auto l = 0u; l < lyt_11.size(); l++)
                                                 {
                                                     for (const auto& lyts_12 : lyt_12)
                                                     {
-                                                        uint64_t counter_unmatched_9 = 0;
-                                                        for (const auto& neighbor_cell_nine : all_defect_cells[8])
-                                                        {
-                                                            lyts_12.foreach_cell(
-                                                                [&counter_unmatched_9, &neighbor_cell_nine, &lyts_12,
-                                                                 &nine, this](const auto& c1)
-                                                                {
-                                                                    if (c1 == neighbor_cell_nine)
-                                                                    {
-                                                                        if (charge_state_to_sign(
-                                                                                lyts_12.get_charge_state(c1)) !=
-                                                                            get_charge_state_defect(8, nine, c1))
-                                                                        {
-                                                                            counter_unmatched_9 += 1;
-                                                                        }
-                                                                    }
-                                                                });
-                                                        }
-                                                        if (counter_unmatched_9 != 0)
-                                                        {
-                                                            continue;
-                                                        }
+                                                        //                                                        uint64_t
+                                                        //                                                        counter_unmatched_9
+                                                        //                                                        = 0;
+                                                        //                                                        for
+                                                        //                                                        (const
+                                                        //                                                        auto&
+                                                        //                                                        neighbor_cell_nine
+                                                        //                                                        :
+                                                        //                                                        all_defect_cells[8])
+                                                        //                                                        {
+                                                        //                                                            lyts_12.foreach_cell(
+                                                        //                                                                [&counter_unmatched_9, &neighbor_cell_nine, &lyts_12,
+                                                        //                                                                 &nine, this](const auto& c1)
+                                                        //                                                                {
+                                                        //                                                                    if (c1 == neighbor_cell_nine)
+                                                        //                                                                    {
+                                                        //                                                                        if (charge_state_to_sign(
+                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
+                                                        //                                                                            get_charge_state_defect(8, nine, c1))
+                                                        //                                                                        {
+                                                        //                                                                            counter_unmatched_9 += 1;
+                                                        //                                                                        }
+                                                        //                                                                    }
+                                                        //                                                                });
+                                                        //                                                        }
+                                                        //                                                        if
+                                                        //                                                        (counter_unmatched_9
+                                                        //                                                        != 0)
+                                                        //                                                        {
+                                                        //                                                            continue;
+                                                        //                                                        }
 
-                                                        uint64_t counter_unmatched_8 = 0;
-                                                        for (const auto& neighbor_cell_eight : all_defect_cells[7])
-                                                        {
-                                                            lyts_12.foreach_cell(
-                                                                [&counter_unmatched_8, &neighbor_cell_eight, &lyts_12,
-                                                                 &eight, this](const auto& c1)
-                                                                {
-                                                                    if (c1 == neighbor_cell_eight)
-                                                                    {
-                                                                        if (charge_state_to_sign(
-                                                                                lyts_12.get_charge_state(c1)) !=
-                                                                            get_charge_state_defect(7, eight, c1))
-                                                                        {
-                                                                            counter_unmatched_8 += 1;
-                                                                        }
-                                                                    }
-                                                                });
-                                                        }
-                                                        if (counter_unmatched_8 != 0)
-                                                        {
-                                                            continue;
-                                                        }
+                                                        //                                                        uint64_t
+                                                        //                                                        counter_unmatched_8
+                                                        //                                                        = 0;
+                                                        //                                                        for
+                                                        //                                                        (const
+                                                        //                                                        auto&
+                                                        //                                                        neighbor_cell_eight
+                                                        //                                                        :
+                                                        //                                                        all_defect_cells[7])
+                                                        //                                                        {
+                                                        //                                                            lyts_12.foreach_cell(
+                                                        //                                                                [&counter_unmatched_8, &neighbor_cell_eight, &lyts_12,
+                                                        //                                                                 &eight, this](const auto& c1)
+                                                        //                                                                {
+                                                        //                                                                    if (c1 == neighbor_cell_eight)
+                                                        //                                                                    {
+                                                        //                                                                        if (charge_state_to_sign(
+                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
+                                                        //                                                                            get_charge_state_defect(7, eight, c1))
+                                                        //                                                                        {
+                                                        //                                                                            counter_unmatched_8 += 1;
+                                                        //                                                                        }
+                                                        //                                                                    }
+                                                        //                                                                });
+                                                        //                                                        }
+                                                        //                                                        if
+                                                        //                                                        (counter_unmatched_8
+                                                        //                                                        != 0)
+                                                        //                                                        {
+                                                        //                                                            continue;
+                                                        //                                                        }
 
                                                         for (const auto& lyts_13 : lyt_13)
                                                         {
-                                                            uint64_t counter_unmatched_eleven = 0;
-                                                            for (const auto& neighbor_cell : all_defect_cells[10])
-                                                            {
-                                                                lyts_13.foreach_cell(
-                                                                    [&counter_unmatched_eleven, &neighbor_cell,
-                                                                     &lyts_13, &l, this](const auto& c1)
-                                                                    {
-                                                                        if (c1 == neighbor_cell)
-                                                                        {
-                                                                            if (charge_state_to_sign(
-                                                                                    lyts_13.get_charge_state(c1)) !=
-                                                                                get_charge_state_defect(10, l, c1))
-                                                                            {
-                                                                                counter_unmatched_eleven += 1;
-                                                                            }
-                                                                        }
-                                                                    });
-                                                            }
-                                                            if (counter_unmatched_eleven != 0)
-                                                            {
-                                                                continue;
-                                                            }
-
-                                                            uint64_t counter_unmatched_13 = 0;
-                                                            for (const auto& neighbor_cell : all_defect_cells[9])
-                                                            {
-                                                                lyts_13.foreach_cell(
-                                                                    [&counter_unmatched_13, &neighbor_cell, &lyts_13,
-                                                                     &t, this](const auto& c1)
-                                                                    {
-                                                                        if (c1 == neighbor_cell)
-                                                                        {
-                                                                            if (charge_state_to_sign(
-                                                                                    lyts_13.get_charge_state(c1)) !=
-                                                                                get_charge_state_defect(9, t, c1))
-                                                                            {
-                                                                                counter_unmatched_13 += 1;
-                                                                            }
-                                                                        }
-                                                                    });
-                                                            }
-                                                            if (counter_unmatched_13 != 0)
-                                                            {
-                                                                continue;
-                                                            }
+                                                            //                                                            uint64_t counter_unmatched_eleven = 0;
+                                                            //                                                            for (const auto& neighbor_cell : all_defect_cells[10])
+                                                            //                                                            {
+                                                            //                                                                lyts_13.foreach_cell(
+                                                            //                                                                    [&counter_unmatched_eleven, &neighbor_cell,
+                                                            //                                                                     &lyts_13, &l, this](const auto& c1)
+                                                            //                                                                    {
+                                                            //                                                                        if (c1 == neighbor_cell)
+                                                            //                                                                        {
+                                                            //                                                                            if (charge_state_to_sign(
+                                                            //                                                                                    lyts_13.get_charge_state(c1)) !=
+                                                            //                                                                                get_charge_state_defect(10, l, c1))
+                                                            //                                                                            {
+                                                            //                                                                                counter_unmatched_eleven += 1;
+                                                            //                                                                            }
+                                                            //                                                                        }
+                                                            //                                                                    });
+                                                            //                                                            }
+                                                            //                                                            if (counter_unmatched_eleven != 0)
+                                                            //                                                            {
+                                                            //                                                                continue;
+                                                            //                                                            }
+                                                            //
+                                                            //                                                            uint64_t counter_unmatched_13 = 0;
+                                                            //                                                            for (const auto& neighbor_cell : all_defect_cells[9])
+                                                            //                                                            {
+                                                            //                                                                lyts_13.foreach_cell(
+                                                            //                                                                    [&counter_unmatched_13, &neighbor_cell, &lyts_13,
+                                                            //                                                                     &t, this](const auto& c1)
+                                                            //                                                                    {
+                                                            //                                                                        if (c1 == neighbor_cell)
+                                                            //                                                                        {
+                                                            //                                                                            if (charge_state_to_sign(
+                                                            //                                                                                    lyts_13.get_charge_state(c1)) !=
+                                                            //                                                                                get_charge_state_defect(9, t, c1))
+                                                            //                                                                            {
+                                                            //                                                                                counter_unmatched_13 += 1;
+                                                            //                                                                            }
+                                                            //                                                                        }
+                                                            //                                                                    });
+                                                            //                                                            }
+                                                            //                                                            if (counter_unmatched_13 != 0)
+                                                            //                                                            {
+                                                            //                                                                continue;
+                                                            //                                                            }
 
                                                             for (const auto& lyts_14 : lyt_14)
                                                             {
@@ -3552,11 +4380,11 @@ class layout_simulation_impl
                                                                                 energy_threas =
                                                                                     charge_lyt.get_system_energy();
                                                                                 write_sqd_sim_result<Lyt>(
-                                                                                    sim_result,
-                                                                                    "/Users/jandrewniok/"
-                                                                                    "CLionProjects/"
-                                                                                    "fiction_fork/experiments/"
-                                                                                    "result.xml");
+                                                                                    sim_result, "/Users/jandrewniok/"
+                                                                                                "CLionProjects/"
+                                                                                                "fiction_fork/"
+                                                                                                "experiments/"
+                                                                                                "result.xml");
                                                                             }
                                                                         }
                                                                         counter += 1;
@@ -3579,6 +4407,4931 @@ class layout_simulation_impl
                     }
                 }
             }
+        }
+    }
+
+    void combining_all_22_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+        auto lyt_20    = lyts_of_regions[19];
+        auto lyt_21    = lyts_of_regions[20];
+        auto lyt_22    = lyts_of_regions[21];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+        std::sort(lyt_20.begin(), lyt_20.end(), compareFunc);
+        std::sort(lyt_21.begin(), lyt_21.end(), compareFunc);
+        std::sort(lyt_22.begin(), lyt_22.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_20s(
+            lyt_20.begin(), lyt_20.begin() + std::min(number, static_cast<int>(lyt_20.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_21s(
+            lyt_21.begin(), lyt_21.begin() + std::min(number, static_cast<int>(lyt_21.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_22s(
+            lyt_22.begin(), lyt_22.begin() + std::min(number, static_cast<int>(lyt_22.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    for (const auto& lyts_20 : lyt_20)
+                                                                                    {
+                                                                                        for (const auto& lyts_21 :
+                                                                                             lyt_21)
+                                                                                        {
+                                                                                            for (const auto& lyts_22 :
+                                                                                                 lyt_22)
+                                                                                            {
+                                                                                                lyt_one[i].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_one,
+                                                                                                     &i](const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_one[i]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_two[j].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_two,
+                                                                                                     &j](const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_two[j]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_three[three].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_three,
+                                                                                                     &three](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_three[three]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_four[four].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_four, &four](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_four[four]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_five[five].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_five, &five](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_five[five]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_six.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_six](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_six
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_seven.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_seven](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_seven
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_eight[eight].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_eight,
+                                                                                                     &eight](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_eight[eight]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_nine[nine].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_nine, &nine](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_nine[nine]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_ten[t].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_ten,
+                                                                                                     &t](const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_ten[t]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyt_11[l].foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyt_11,
+                                                                                                     &l](const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_11[l]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_12.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_12](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_12
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_13.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_13](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_13
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_14.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_14](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_14
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_15.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_15](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_15
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_16.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_16](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_16
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_17.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_17](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_17
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_18.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_18](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_18
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_19.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_19](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_19
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_20.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_20](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_20
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_21.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_21](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_21
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                lyts_22.foreach_cell(
+                                                                                                    [this, &charge_lyt,
+                                                                                                     &lyts_22](
+                                                                                                        const auto& c1)
+                                                                                                    {
+                                                                                                        charge_lyt.assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_22
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                    });
+                                                                                                charge_lyt
+                                                                                                    .update_after_charge_change();
+                                                                                                if (charge_lyt
+                                                                                                        .is_physically_valid())
+                                                                                                {
+                                                                                                    if (charge_lyt
+                                                                                                            .get_system_energy() <
+                                                                                                        energy_threas)
+                                                                                                    {
+                                                                                                        std::vector<
+                                                                                                            charge_distribution_surface<
+                                                                                                                Lyt>>
+                                                                                                            lyts{};
+                                                                                                        std::cout
+                                                                                                            << charge_lyt
+                                                                                                                   .get_system_energy()
+                                                                                                            << std::
+                                                                                                                   endl;
+
+                                                                                                        sidb_simulation_result<
+                                                                                                            Lyt>
+                                                                                                            sim_result{};
+                                                                                                        sim_result
+                                                                                                            .algorithm_name =
+                                                                                                            "ExGS";
+                                                                                                        charge_distribution_surface<
+                                                                                                            Lyt>
+                                                                                                            charge_lyt_copy{
+                                                                                                                charge_lyt};
+                                                                                                        lyts.emplace_back(
+                                                                                                            charge_lyt_copy);
+                                                                                                        sim_result
+                                                                                                            .charge_distributions =
+                                                                                                            lyts;
+                                                                                                        energy_threas =
+                                                                                                            charge_lyt
+                                                                                                                .get_system_energy();
+                                                                                                        write_sqd_sim_result<
+                                                                                                            Lyt>(
+                                                                                                            sim_result,
+                                                                                                            "/Users/"
+                                                                                                            "jandrewnio"
+                                                                                                            "k/"
+                                                                                                            "CLionProje"
+                                                                                                            "cts/"
+                                                                                                            "fiction_"
+                                                                                                            "fork/"
+                                                                                                            "experiment"
+                                                                                                            "s/"
+                                                                                                            "result."
+                                                                                                            "xml");
+                                                                                                    }
+                                                                                                }
+                                                                                                counter += 1;
+                                                                                                if (counter % 100000 ==
+                                                                                                    0)
+                                                                                                {
+                                                                                                    std::cout
+                                                                                                        << counter
+                                                                                                        << std::endl;
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_20_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+        auto lyt_20    = lyts_of_regions[19];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+        std::sort(lyt_20.begin(), lyt_20.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_20s(
+            lyt_20.begin(), lyt_20.begin() + std::min(number, static_cast<int>(lyt_20.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    for (const auto& lyts_20 : lyt_20)
+                                                                                    {
+                                                                                        lyt_one[i].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_one,
+                                                                                             &i](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_one[i]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_two[j].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_two,
+                                                                                             &j](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_two[j]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_three[three].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_three,
+                                                                                             &three](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_three[three]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_four[four].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_four,
+                                                                                             &four](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_four[four]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_five[five].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_five,
+                                                                                             &five](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_five[five]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_six.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_six](const auto& c1)
+                                                                                            {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_six
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_seven.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_seven](
+                                                                                                const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_seven
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_eight[eight].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_eight,
+                                                                                             &eight](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_eight[eight]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_nine[nine].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_nine,
+                                                                                             &nine](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_nine[nine]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_ten[t].foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyt_ten,
+                                                                                             &t](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_ten[t]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyt_11[l].foreach_cell(
+                                                                                            [this, &charge_lyt, &lyt_11,
+                                                                                             &l](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_11[l]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_12.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_12](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_12
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_13.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_13](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_13
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_14.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_14](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_14
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_15.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_15](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_15
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_16.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_16](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_16
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_17.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_17](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_17
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_18.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_18](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_18
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_19.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_19](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_19
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        lyts_20.foreach_cell(
+                                                                                            [this, &charge_lyt,
+                                                                                             &lyts_20](const auto& c1) {
+                                                                                                charge_lyt
+                                                                                                    .assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyts_20
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                            });
+                                                                                        charge_lyt
+                                                                                            .update_after_charge_change();
+                                                                                        if (charge_lyt
+                                                                                                .is_physically_valid())
+                                                                                        {
+                                                                                            if (charge_lyt
+                                                                                                    .get_system_energy() <
+                                                                                                energy_threas)
+                                                                                            {
+                                                                                                std::vector<
+                                                                                                    charge_distribution_surface<
+                                                                                                        Lyt>>
+                                                                                                    lyts{};
+                                                                                                std::cout
+                                                                                                    << charge_lyt
+                                                                                                           .get_system_energy()
+                                                                                                    << std::endl;
+
+                                                                                                sidb_simulation_result<
+                                                                                                    Lyt>
+                                                                                                    sim_result{};
+                                                                                                sim_result
+                                                                                                    .algorithm_name =
+                                                                                                    "ExGS";
+                                                                                                charge_distribution_surface<
+                                                                                                    Lyt>
+                                                                                                    charge_lyt_copy{
+                                                                                                        charge_lyt};
+                                                                                                lyts.emplace_back(
+                                                                                                    charge_lyt_copy);
+                                                                                                sim_result
+                                                                                                    .charge_distributions =
+                                                                                                    lyts;
+                                                                                                energy_threas =
+                                                                                                    charge_lyt
+                                                                                                        .get_system_energy();
+                                                                                                write_sqd_sim_result<
+                                                                                                    Lyt>(
+                                                                                                    sim_result,
+                                                                                                    "/Users/"
+                                                                                                    "jandrewniok/"
+                                                                                                    "CLionProjects/"
+                                                                                                    "fiction_fork/"
+                                                                                                    "experiments/"
+                                                                                                    "result.xml");
+                                                                                            }
+                                                                                        }
+                                                                                        counter += 1;
+                                                                                        if (counter % 100000 == 0)
+                                                                                        {
+                                                                                            std::cout << counter
+                                                                                                      << std::endl;
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_21_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+        auto lyt_20    = lyts_of_regions[19];
+        auto lyt_21    = lyts_of_regions[20];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+        std::sort(lyt_20.begin(), lyt_20.end(), compareFunc);
+        std::sort(lyt_21.begin(), lyt_21.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_20s(
+            lyt_20.begin(), lyt_20.begin() + std::min(number, static_cast<int>(lyt_20.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_21s(
+            lyt_21.begin(), lyt_21.begin() + std::min(number, static_cast<int>(lyt_21.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    for (const auto& lyts_20 : lyt_20)
+                                                                                    {
+                                                                                        for (const auto& lyts_21 :
+                                                                                             lyt_21)
+                                                                                        {
+                                                                                            lyt_one[i].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_one,
+                                                                                                 &i](const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_one[i]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyt_two[j].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_two,
+                                                                                                 &j](const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_two[j]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyt_three[three].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_three, &three](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt.assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_three[three]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                                });
+                                                                                            lyt_four[four].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_four, &four](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_four[four]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyt_five[five].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_five, &five](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_five[five]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_six.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_six](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_six
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_seven.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_seven](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_seven
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyt_eight[eight].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_eight, &eight](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt.assign_charge_state(
+                                                                                                        c1,
+                                                                                                        lyt_eight[eight]
+                                                                                                            .get_charge_state(
+                                                                                                                c1),
+                                                                                                        false);
+                                                                                                });
+                                                                                            lyt_nine[nine].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_nine, &nine](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_nine[nine]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyt_ten[t].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_ten,
+                                                                                                 &t](const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_ten[t]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyt_11[l].foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyt_11,
+                                                                                                 &l](const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyt_11[l]
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_12.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_12](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_12
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_13.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_13](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_13
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_14.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_14](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_14
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_15.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_15](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_15
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_16.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_16](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_16
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_17.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_17](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_17
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_18.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_18](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_18
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_19.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_19](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_19
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_20.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_20](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_20
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            lyts_21.foreach_cell(
+                                                                                                [this, &charge_lyt,
+                                                                                                 &lyts_21](
+                                                                                                    const auto& c1) {
+                                                                                                    charge_lyt
+                                                                                                        .assign_charge_state(
+                                                                                                            c1,
+                                                                                                            lyts_21
+                                                                                                                .get_charge_state(
+                                                                                                                    c1),
+                                                                                                            false);
+                                                                                                });
+                                                                                            charge_lyt
+                                                                                                .update_after_charge_change();
+                                                                                            if (charge_lyt
+                                                                                                    .is_physically_valid())
+                                                                                            {
+                                                                                                if (charge_lyt
+                                                                                                        .get_system_energy() <
+                                                                                                    energy_threas)
+                                                                                                {
+                                                                                                    std::vector<
+                                                                                                        charge_distribution_surface<
+                                                                                                            Lyt>>
+                                                                                                        lyts{};
+                                                                                                    std::cout
+                                                                                                        << charge_lyt
+                                                                                                               .get_system_energy()
+                                                                                                        << std::endl;
+
+                                                                                                    sidb_simulation_result<
+                                                                                                        Lyt>
+                                                                                                        sim_result{};
+                                                                                                    sim_result
+                                                                                                        .algorithm_name =
+                                                                                                        "ExGS";
+                                                                                                    charge_distribution_surface<
+                                                                                                        Lyt>
+                                                                                                        charge_lyt_copy{
+                                                                                                            charge_lyt};
+                                                                                                    lyts.emplace_back(
+                                                                                                        charge_lyt_copy);
+                                                                                                    sim_result
+                                                                                                        .charge_distributions =
+                                                                                                        lyts;
+                                                                                                    energy_threas =
+                                                                                                        charge_lyt
+                                                                                                            .get_system_energy();
+                                                                                                    write_sqd_sim_result<
+                                                                                                        Lyt>(
+                                                                                                        sim_result,
+                                                                                                        "/Users/"
+                                                                                                        "jandrewniok/"
+                                                                                                        "CLionProjects/"
+                                                                                                        "fiction_fork/"
+                                                                                                        "experiments/"
+                                                                                                        "result.xml");
+                                                                                                }
+                                                                                            }
+                                                                                            counter += 1;
+                                                                                            if (counter % 100000 == 0)
+                                                                                            {
+                                                                                                std::cout << counter
+                                                                                                          << std::endl;
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_19_real_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    lyt_one[i].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_one,
+                                                                                         &i](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_one[i]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_two[j].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_two,
+                                                                                         &j](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_two[j]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_three[three].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_three,
+                                                                                         &three](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_three[three]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_four[four].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_four,
+                                                                                         &four](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_four[four]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_five[five].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_five,
+                                                                                         &five](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_five[five]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_six.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_six](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_six
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_seven.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_seven](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_seven
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_eight[eight].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_eight,
+                                                                                         &eight](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_eight[eight]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_nine[nine].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_nine,
+                                                                                         &nine](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_nine[nine]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_ten[t].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_ten,
+                                                                                         &t](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_ten[t]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_11[l].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_11,
+                                                                                         &l](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_11[l]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_12.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_12](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_12
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_13.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_13](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_13
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_14.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_14](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_14
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_15.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_15](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_15
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_16.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_16](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_16
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_17.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_17](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_17
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_18.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_18](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_18
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_19.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_19](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_19
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    charge_lyt
+                                                                                        .update_after_charge_change();
+                                                                                    if (charge_lyt
+                                                                                            .is_physically_valid())
+                                                                                    {
+                                                                                        if (charge_lyt
+                                                                                                .get_system_energy() <
+                                                                                            energy_threas)
+                                                                                        {
+                                                                                            std::vector<
+                                                                                                charge_distribution_surface<
+                                                                                                    Lyt>>
+                                                                                                lyts{};
+                                                                                            std::cout
+                                                                                                << charge_lyt
+                                                                                                       .get_system_energy()
+                                                                                                << std::endl;
+
+                                                                                            sidb_simulation_result<Lyt>
+                                                                                                sim_result{};
+                                                                                            sim_result.algorithm_name =
+                                                                                                "ExGS";
+                                                                                            charge_distribution_surface<
+                                                                                                Lyt>
+                                                                                                charge_lyt_copy{
+                                                                                                    charge_lyt};
+                                                                                            lyts.emplace_back(
+                                                                                                charge_lyt_copy);
+                                                                                            sim_result
+                                                                                                .charge_distributions =
+                                                                                                lyts;
+                                                                                            energy_threas =
+                                                                                                charge_lyt
+                                                                                                    .get_system_energy();
+                                                                                            write_sqd_sim_result<Lyt>(
+                                                                                                sim_result,
+                                                                                                "/Users/jandrewniok/"
+                                                                                                "CLionProjects/"
+                                                                                                "fiction_fork/"
+                                                                                                "experiments/"
+                                                                                                "result.xml");
+                                                                                        }
+                                                                                    }
+                                                                                    counter += 1;
+                                                                                    if (counter % 100000 == 0)
+                                                                                    {
+                                                                                        std::cout << counter
+                                                                                                  << std::endl;
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_25_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+        auto lyt_20    = lyts_of_regions[19];
+        auto lyt_21    = lyts_of_regions[20];
+        auto lyt_22    = lyts_of_regions[21];
+        auto lyt_23    = lyts_of_regions[22];
+        auto lyt_24    = lyts_of_regions[23];
+        auto lyt_25    = lyts_of_regions[24];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+        std::sort(lyt_20.begin(), lyt_20.end(), compareFunc);
+        std::sort(lyt_21.begin(), lyt_21.end(), compareFunc);
+        std::sort(lyt_22.begin(), lyt_22.end(), compareFunc);
+        std::sort(lyt_23.begin(), lyt_23.end(), compareFunc);
+        std::sort(lyt_24.begin(), lyt_24.end(), compareFunc);
+        std::sort(lyt_25.begin(), lyt_25.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_20s(
+            lyt_20.begin(), lyt_20.begin() + std::min(number, static_cast<int>(lyt_20.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_21s(
+            lyt_21.begin(), lyt_21.begin() + std::min(number, static_cast<int>(lyt_21.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_22s(
+            lyt_22.begin(), lyt_22.begin() + std::min(number, static_cast<int>(lyt_22.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_23s(
+            lyt_23.begin(), lyt_23.begin() + std::min(number, static_cast<int>(lyt_23.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_24s(
+            lyt_24.begin(), lyt_24.begin() + std::min(number, static_cast<int>(lyt_24.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_25s(
+            lyt_25.begin(), lyt_25.begin() + std::min(number, static_cast<int>(lyt_25.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    for (const auto& lyts_20 : lyt_20)
+                                                                                    {
+                                                                                        for (const auto& lyts_21 :
+                                                                                             lyt_21)
+                                                                                        {
+                                                                                            for (const auto& lyts_22 :
+                                                                                                 lyt_22)
+                                                                                            {
+                                                                                                for (const auto&
+                                                                                                         lyts_23 :
+                                                                                                     lyt_23)
+                                                                                                {
+                                                                                                    for (const auto&
+                                                                                                             lyts_24 :
+                                                                                                         lyt_24)
+                                                                                                    {
+                                                                                                        for (
+                                                                                                            const auto&
+                                                                                                                lyts_25 :
+                                                                                                            lyt_25)
+                                                                                                        {
+                                                                                                            lyt_one[i].foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyt_one,
+                                                                                                                 &i](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyt_one[i]
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyt_two[j].foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyt_two,
+                                                                                                                 &j](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyt_two[j]
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyt_three[three]
+                                                                                                                .foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyt_three,
+                                                                                                                     &three](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyt_three[three]
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                            lyt_four[four]
+                                                                                                                .foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyt_four,
+                                                                                                                     &four](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyt_four[four]
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                            lyt_five[five]
+                                                                                                                .foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyt_five,
+                                                                                                                     &five](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyt_five[five]
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                            lyts_six.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_six](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_six
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_seven.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_seven](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_seven
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyt_eight[eight]
+                                                                                                                .foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyt_eight,
+                                                                                                                     &eight](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyt_eight[eight]
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                            lyt_nine[nine]
+                                                                                                                .foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyt_nine,
+                                                                                                                     &nine](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyt_nine[nine]
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                            lyt_ten[t].foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyt_ten,
+                                                                                                                 &t](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyt_ten[t]
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyt_11[l].foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyt_11,
+                                                                                                                 &l](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyt_11[l]
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_12.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_12](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_12
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_13.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_13](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_13
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_14.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_14](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_14
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_15.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_15](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_15
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_16.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_16](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_16
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_17.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_17](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_17
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_18.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_18](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_18
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_19.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_19](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_19
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_20.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_20](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_20
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_21.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_21](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_21
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_22.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_22](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_22
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_23.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_23](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_23
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_24.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_24](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_24
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            lyts_25.foreach_cell(
+                                                                                                                [this,
+                                                                                                                 &charge_lyt,
+                                                                                                                 &lyts_25](
+                                                                                                                    const auto&
+                                                                                                                        c1)
+                                                                                                                {
+                                                                                                                    charge_lyt
+                                                                                                                        .assign_charge_state(
+                                                                                                                            c1,
+                                                                                                                            lyts_25
+                                                                                                                                .get_charge_state(
+                                                                                                                                    c1),
+                                                                                                                            false);
+                                                                                                                });
+                                                                                                            charge_lyt
+                                                                                                                .update_after_charge_change();
+                                                                                                            if (charge_lyt
+                                                                                                                    .is_physically_valid())
+                                                                                                            {
+                                                                                                                if (charge_lyt
+                                                                                                                        .get_system_energy() <
+                                                                                                                    energy_threas)
+                                                                                                                {
+                                                                                                                    std::vector<
+                                                                                                                        charge_distribution_surface<
+                                                                                                                            Lyt>>
+                                                                                                                        lyts{};
+                                                                                                                    std::cout
+                                                                                                                        << charge_lyt
+                                                                                                                               .get_system_energy()
+                                                                                                                        << std::
+                                                                                                                               endl;
+
+                                                                                                                    sidb_simulation_result<
+                                                                                                                        Lyt>
+                                                                                                                        sim_result{};
+                                                                                                                    sim_result
+                                                                                                                        .algorithm_name =
+                                                                                                                        "ExGS";
+                                                                                                                    charge_distribution_surface<
+                                                                                                                        Lyt>
+                                                                                                                        charge_lyt_copy{
+                                                                                                                            charge_lyt};
+                                                                                                                    lyts.emplace_back(
+                                                                                                                        charge_lyt_copy);
+                                                                                                                    sim_result
+                                                                                                                        .charge_distributions =
+                                                                                                                        lyts;
+                                                                                                                    energy_threas =
+                                                                                                                        charge_lyt
+                                                                                                                            .get_system_energy();
+                                                                                                                    write_sqd_sim_result<
+                                                                                                                        Lyt>(
+                                                                                                                        sim_result,
+                                                                                                                        "/Users/jandrewniok/"
+                                                                                                                        "CLionProjects/"
+                                                                                                                        "fiction_fork/"
+                                                                                                                        "experiments/"
+                                                                                                                        "result.xml");
+                                                                                                                }
+                                                                                                            }
+                                                                                                            counter +=
+                                                                                                                1;
+                                                                                                            if (counter %
+                                                                                                                    100000 ==
+                                                                                                                0)
+                                                                                                            {
+                                                                                                                std::cout
+                                                                                                                    << counter
+                                                                                                                    << std::
+                                                                                                                           endl;
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_26_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+
+        auto lyt_20 = lyts_of_regions[19];
+        auto lyt_21 = lyts_of_regions[20];
+        auto lyt_22 = lyts_of_regions[21];
+        auto lyt_23 = lyts_of_regions[22];
+        auto lyt_24 = lyts_of_regions[23];
+        auto lyt_25 = lyts_of_regions[24];
+        auto lyt_26 = lyts_of_regions[25];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+        std::sort(lyt_20.begin(), lyt_20.end(), compareFunc);
+        std::sort(lyt_21.begin(), lyt_21.end(), compareFunc);
+        std::sort(lyt_22.begin(), lyt_22.end(), compareFunc);
+        std::sort(lyt_23.begin(), lyt_23.end(), compareFunc);
+        std::sort(lyt_24.begin(), lyt_24.end(), compareFunc);
+        std::sort(lyt_25.begin(), lyt_25.end(), compareFunc);
+        std::sort(lyt_26.begin(), lyt_26.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_20s(
+            lyt_20.begin(), lyt_20.begin() + std::min(number, static_cast<int>(lyt_20.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_21s(
+            lyt_21.begin(), lyt_21.begin() + std::min(number, static_cast<int>(lyt_21.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_22s(
+            lyt_22.begin(), lyt_22.begin() + std::min(number, static_cast<int>(lyt_22.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_23s(
+            lyt_23.begin(), lyt_23.begin() + std::min(number, static_cast<int>(lyt_23.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_24s(
+            lyt_24.begin(), lyt_24.begin() + std::min(number, static_cast<int>(lyt_24.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_25s(
+            lyt_25.begin(), lyt_25.begin() + std::min(number, static_cast<int>(lyt_25.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_26s(
+            lyt_26.begin(), lyt_26.begin() + std::min(number, static_cast<int>(lyt_26.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    for (const auto& lyts_20 : lyt_20)
+                                                                                    {
+                                                                                        for (const auto& lyts_21 :
+                                                                                             lyt_21)
+                                                                                        {
+                                                                                            for (const auto& lyts_22 :
+                                                                                                 lyt_22)
+                                                                                            {
+                                                                                                for (const auto&
+                                                                                                         lyts_23 :
+                                                                                                     lyt_23)
+                                                                                                {
+                                                                                                    for (const auto&
+                                                                                                             lyts_24 :
+                                                                                                         lyt_24)
+                                                                                                    {
+                                                                                                        for (
+                                                                                                            const auto&
+                                                                                                                lyts_25 :
+                                                                                                            lyt_25)
+                                                                                                        {
+                                                                                                            for (
+                                                                                                                const auto&
+                                                                                                                    lyts_26 :
+                                                                                                                lyt_26)
+                                                                                                            {
+                                                                                                                lyt_one[i]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_one,
+                                                                                                                         &i](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_one[i]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_two[j]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_two,
+                                                                                                                         &j](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_two[j]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_three[three]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_three,
+                                                                                                                         &three](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_three[three]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_four[four]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_four,
+                                                                                                                         &four](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_four[four]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_five[five]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_five,
+                                                                                                                         &five](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_five[five]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyts_six.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_six](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_six
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_seven
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyts_seven](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyts_seven
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_eight[eight]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_eight,
+                                                                                                                         &eight](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_eight[eight]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_nine[nine]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_nine,
+                                                                                                                         &nine](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_nine[nine]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_ten[t]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_ten,
+                                                                                                                         &t](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_ten[t]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyt_11[l]
+                                                                                                                    .foreach_cell(
+                                                                                                                        [this,
+                                                                                                                         &charge_lyt,
+                                                                                                                         &lyt_11,
+                                                                                                                         &l](
+                                                                                                                            const auto&
+                                                                                                                                c1)
+                                                                                                                        {
+                                                                                                                            charge_lyt
+                                                                                                                                .assign_charge_state(
+                                                                                                                                    c1,
+                                                                                                                                    lyt_11[l]
+                                                                                                                                        .get_charge_state(
+                                                                                                                                            c1),
+                                                                                                                                    false);
+                                                                                                                        });
+                                                                                                                lyts_12.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_12](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_12
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_13.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_13](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_13
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_14.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_14](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_14
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_15.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_15](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_15
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_16.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_16](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_16
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_17.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_17](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_17
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_18.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_18](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_18
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_19.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_19](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_19
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_20.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_20](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_20
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_21.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_21](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_21
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_22.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_22](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_22
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_23.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_23](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_23
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_24.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_24](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_24
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_25.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_25](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_25
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                lyts_26.foreach_cell(
+                                                                                                                    [this,
+                                                                                                                     &charge_lyt,
+                                                                                                                     &lyts_26](
+                                                                                                                        const auto&
+                                                                                                                            c1)
+                                                                                                                    {
+                                                                                                                        charge_lyt
+                                                                                                                            .assign_charge_state(
+                                                                                                                                c1,
+                                                                                                                                lyts_26
+                                                                                                                                    .get_charge_state(
+                                                                                                                                        c1),
+                                                                                                                                false);
+                                                                                                                    });
+                                                                                                                charge_lyt
+                                                                                                                    .update_after_charge_change();
+                                                                                                                if (charge_lyt
+                                                                                                                        .is_physically_valid())
+                                                                                                                {
+                                                                                                                    if (charge_lyt
+                                                                                                                            .get_system_energy() <
+                                                                                                                        energy_threas)
+                                                                                                                    {
+                                                                                                                        std::vector<
+                                                                                                                            charge_distribution_surface<
+                                                                                                                                Lyt>>
+                                                                                                                            lyts{};
+                                                                                                                        std::cout
+                                                                                                                            << charge_lyt
+                                                                                                                                   .get_system_energy()
+                                                                                                                            << std::
+                                                                                                                                   endl;
+
+                                                                                                                        sidb_simulation_result<
+                                                                                                                            Lyt>
+                                                                                                                            sim_result{};
+                                                                                                                        sim_result
+                                                                                                                            .algorithm_name =
+                                                                                                                            "ExGS";
+                                                                                                                        charge_distribution_surface<
+                                                                                                                            Lyt>
+                                                                                                                            charge_lyt_copy{
+                                                                                                                                charge_lyt};
+                                                                                                                        lyts.emplace_back(
+                                                                                                                            charge_lyt_copy);
+                                                                                                                        sim_result
+                                                                                                                            .charge_distributions =
+                                                                                                                            lyts;
+                                                                                                                        energy_threas =
+                                                                                                                            charge_lyt
+                                                                                                                                .get_system_energy();
+                                                                                                                        write_sqd_sim_result<
+                                                                                                                            Lyt>(
+                                                                                                                            sim_result,
+                                                                                                                            "/Users/jandrewniok/"
+                                                                                                                            "CLionProjects/"
+                                                                                                                            "fiction_fork/"
+                                                                                                                            "experiments/"
+                                                                                                                            "result.xml");
+                                                                                                                    }
+                                                                                                                }
+                                                                                                                counter +=
+                                                                                                                    1;
+                                                                                                                if (counter %
+                                                                                                                        100000 ==
+                                                                                                                    0)
+                                                                                                                {
+                                                                                                                    std::cout
+                                                                                                                        << counter
+                                                                                                                        << std::
+                                                                                                                               endl;
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_19_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    lyt_one[i].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_one,
+                                                                                         &i](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_one[i]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_two[j].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_two,
+                                                                                         &j](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_two[j]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_three[three].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_three,
+                                                                                         &three](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_three[three]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_four[four].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_four,
+                                                                                         &four](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_four[four]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_five[five].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_five,
+                                                                                         &five](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_five[five]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_six.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_six](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_six
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_seven.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_seven](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_seven
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_eight[eight].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_eight,
+                                                                                         &eight](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_eight[eight]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_nine[nine].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_nine,
+                                                                                         &nine](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_nine[nine]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_ten[t].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_ten,
+                                                                                         &t](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_ten[t]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyt_11[l].foreach_cell(
+                                                                                        [this, &charge_lyt, &lyt_11,
+                                                                                         &l](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyt_11[l]
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_12.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_12](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_12
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_13.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_13](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_13
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_14.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_14](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_14
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_15.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_15](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_15
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_16.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_16](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_16
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_17.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_17](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_17
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_18.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_18](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_18
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    lyts_19.foreach_cell(
+                                                                                        [this, &charge_lyt,
+                                                                                         &lyts_19](const auto& c1) {
+                                                                                            charge_lyt
+                                                                                                .assign_charge_state(
+                                                                                                    c1,
+                                                                                                    lyts_19
+                                                                                                        .get_charge_state(
+                                                                                                            c1),
+                                                                                                    false);
+                                                                                        });
+                                                                                    charge_lyt
+                                                                                        .update_after_charge_change();
+                                                                                    if (charge_lyt
+                                                                                            .is_physically_valid())
+                                                                                    {
+                                                                                        if (charge_lyt
+                                                                                                .get_system_energy() <
+                                                                                            energy_threas)
+                                                                                        {
+                                                                                            std::vector<
+                                                                                                charge_distribution_surface<
+                                                                                                    Lyt>>
+                                                                                                lyts{};
+                                                                                            std::cout
+                                                                                                << charge_lyt
+                                                                                                       .get_system_energy()
+                                                                                                << std::endl;
+
+                                                                                            sidb_simulation_result<Lyt>
+                                                                                                sim_result{};
+                                                                                            sim_result.algorithm_name =
+                                                                                                "ExGS";
+                                                                                            charge_distribution_surface<
+                                                                                                Lyt>
+                                                                                                charge_lyt_copy{
+                                                                                                    charge_lyt};
+                                                                                            lyts.emplace_back(
+                                                                                                charge_lyt_copy);
+                                                                                            sim_result
+                                                                                                .charge_distributions =
+                                                                                                lyts;
+                                                                                            energy_threas =
+                                                                                                charge_lyt
+                                                                                                    .get_system_energy();
+                                                                                            write_sqd_sim_result<Lyt>(
+                                                                                                sim_result, "/Users/"
+                                                                                                            "jandrewnio"
+                                                                                                            "k/"
+                                                                                                            "CLionProje"
+                                                                                                            "cts/"
+                                                                                                            "fiction_"
+                                                                                                            "fork/"
+                                                                                                            "experiment"
+                                                                                                            "s/"
+                                                                                                            "result."
+                                                                                                            "xml");
+                                                                                        }
+                                                                                    }
+                                                                                    counter += 1;
+                                                                                    if (counter % 100000 == 0)
+                                                                                    {
+                                                                                        std::cout << counter
+                                                                                                  << std::endl;
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_29_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+        auto lyt_17    = lyts_of_regions[16];
+        auto lyt_18    = lyts_of_regions[17];
+        auto lyt_19    = lyts_of_regions[18];
+
+        auto lyt_20 = lyts_of_regions[19];
+        auto lyt_21 = lyts_of_regions[20];
+        auto lyt_22 = lyts_of_regions[21];
+        auto lyt_23 = lyts_of_regions[22];
+        auto lyt_24 = lyts_of_regions[23];
+        auto lyt_25 = lyts_of_regions[24];
+
+        auto lyt_26 = lyts_of_regions[25];
+        auto lyt_27 = lyts_of_regions[26];
+        auto lyt_28 = lyts_of_regions[27];
+        auto lyt_29 = lyts_of_regions[28];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+        std::sort(lyt_17.begin(), lyt_17.end(), compareFunc);
+        std::sort(lyt_18.begin(), lyt_18.end(), compareFunc);
+
+        std::sort(lyt_19.begin(), lyt_19.end(), compareFunc);
+        std::sort(lyt_20.begin(), lyt_20.end(), compareFunc);
+        std::sort(lyt_21.begin(), lyt_21.end(), compareFunc);
+        std::sort(lyt_22.begin(), lyt_22.end(), compareFunc);
+        std::sort(lyt_23.begin(), lyt_23.end(), compareFunc);
+        std::sort(lyt_24.begin(), lyt_24.end(), compareFunc);
+        std::sort(lyt_25.begin(), lyt_25.end(), compareFunc);
+
+        std::sort(lyt_26.begin(), lyt_26.end(), compareFunc);
+        std::sort(lyt_27.begin(), lyt_27.end(), compareFunc);
+        std::sort(lyt_28.begin(), lyt_28.end(), compareFunc);
+        std::sort(lyt_29.begin(), lyt_29.end(), compareFunc);
+
+        int                                           number = 5;
+        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_17s(
+            lyt_17.begin(), lyt_17.begin() + std::min(number, static_cast<int>(lyt_17.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_18s(
+            lyt_18.begin(), lyt_18.begin() + std::min(number, static_cast<int>(lyt_18.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_19s(
+            lyt_19.begin(), lyt_19.begin() + std::min(number, static_cast<int>(lyt_19.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_20s(
+            lyt_20.begin(), lyt_20.begin() + std::min(number, static_cast<int>(lyt_20.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_21s(
+            lyt_21.begin(), lyt_21.begin() + std::min(number, static_cast<int>(lyt_21.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_22s(
+            lyt_22.begin(), lyt_22.begin() + std::min(number, static_cast<int>(lyt_22.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_23s(
+            lyt_23.begin(), lyt_23.begin() + std::min(number, static_cast<int>(lyt_23.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_24s(
+            lyt_24.begin(), lyt_24.begin() + std::min(number, static_cast<int>(lyt_24.size())));
+        std::vector<charge_distribution_surface<Lyt>> lyt_25s(
+            lyt_25.begin(), lyt_25.begin() + std::min(number, static_cast<int>(lyt_25.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_26s(
+            lyt_26.begin(), lyt_26.begin() + std::min(number, static_cast<int>(lyt_26.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_27s(
+            lyt_27.begin(), lyt_27.begin() + std::min(number, static_cast<int>(lyt_27.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_28s(
+            lyt_28.begin(), lyt_28.begin() + std::min(number, static_cast<int>(lyt_28.size())));
+
+        std::vector<charge_distribution_surface<Lyt>> lyt_29s(
+            lyt_29.begin(), lyt_29.begin() + std::min(number, static_cast<int>(lyt_29.size())));
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (const auto& lyts_six : lyt_six)
+                            {
+                                for (const auto& lyts_seven : lyt_seven)
+                                {
+
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+
+                                            for (auto t = 0u; t < lyt_ten.size(); t++)
+                                            {
+                                                for (auto l = 0u; l < lyt_11.size(); l++)
+                                                {
+                                                    for (const auto& lyts_12 : lyt_12)
+                                                    {
+
+                                                        for (const auto& lyts_13 : lyt_13)
+                                                        {
+
+                                                            for (const auto& lyts_14 : lyt_14)
+                                                            {
+                                                                for (const auto& lyts_15 : lyt_15)
+                                                                {
+                                                                    for (const auto& lyts_16 : lyt_16)
+                                                                    {
+                                                                        for (const auto& lyts_17 : lyt_17)
+                                                                        {
+                                                                            for (const auto& lyts_18 : lyt_18)
+                                                                            {
+                                                                                for (const auto& lyts_19 : lyt_19)
+                                                                                {
+                                                                                    for (const auto& lyts_20 : lyt_20)
+                                                                                    {
+                                                                                        for (const auto& lyts_21 :
+                                                                                             lyt_21)
+                                                                                        {
+                                                                                            for (const auto& lyts_22 :
+                                                                                                 lyt_22)
+                                                                                            {
+                                                                                                for (const auto&
+                                                                                                         lyts_23 :
+                                                                                                     lyt_23)
+                                                                                                {
+                                                                                                    for (const auto&
+                                                                                                             lyts_24 :
+                                                                                                         lyt_24)
+                                                                                                    {
+                                                                                                        for (
+                                                                                                            const auto&
+                                                                                                                lyts_25 :
+                                                                                                            lyt_25)
+                                                                                                        {
+                                                                                                            for (
+                                                                                                                const auto&
+                                                                                                                    lyts_26 :
+                                                                                                                lyt_26)
+                                                                                                            {
+                                                                                                                for (
+                                                                                                                    const auto&
+                                                                                                                        lyts_27 :
+                                                                                                                    lyt_27)
+                                                                                                                {
+                                                                                                                    for (
+                                                                                                                        const auto&
+                                                                                                                            lyts_28 :
+                                                                                                                        lyt_28)
+                                                                                                                    {
+                                                                                                                        for (
+                                                                                                                            const auto&
+                                                                                                                                lyts_29 :
+                                                                                                                            lyt_29)
+                                                                                                                        {
+
+                                                                                                                            lyt_one[i]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_one,
+                                                                                                                                     &i](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_one[i]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_two[j]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_two,
+                                                                                                                                     &j](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_two[j]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_three[three]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_three,
+                                                                                                                                     &three](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_three[three]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_four[four]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_four,
+                                                                                                                                     &four](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_four[four]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_five[five]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_five,
+                                                                                                                                     &five](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_five[five]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_six
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_six](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_six
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_seven
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_seven](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_seven
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_eight[eight]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_eight,
+                                                                                                                                     &eight](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_eight[eight]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_nine[nine]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_nine,
+                                                                                                                                     &nine](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_nine[nine]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_ten[t]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_ten,
+                                                                                                                                     &t](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_ten[t]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyt_11[l]
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyt_11,
+                                                                                                                                     &l](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyt_11[l]
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_12
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_12](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_12
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_13
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_13](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_13
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_14
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_14](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_14
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_15
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_15](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_15
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_16
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_16](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_16
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_17
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_17](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_17
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_18
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_18](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_18
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_19
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_19](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_19
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_20
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_20](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_20
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_21
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_21](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_21
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_22
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_22](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_22
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_23
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_23](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_23
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_24
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_24](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_24
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_25
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_25](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_25
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_26
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_26](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_26
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_27
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_27](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_27
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_28
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_28](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_28
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            lyts_29
+                                                                                                                                .foreach_cell(
+                                                                                                                                    [this,
+                                                                                                                                     &charge_lyt,
+                                                                                                                                     &lyts_29](
+                                                                                                                                        const auto&
+                                                                                                                                            c1)
+                                                                                                                                    {
+                                                                                                                                        charge_lyt
+                                                                                                                                            .assign_charge_state(
+                                                                                                                                                c1,
+                                                                                                                                                lyts_29
+                                                                                                                                                    .get_charge_state(
+                                                                                                                                                        c1),
+                                                                                                                                                false);
+                                                                                                                                    });
+                                                                                                                            charge_lyt
+                                                                                                                                .update_after_charge_change();
+                                                                                                                            if (charge_lyt
+                                                                                                                                    .is_physically_valid())
+                                                                                                                            {
+                                                                                                                                if (charge_lyt
+                                                                                                                                        .get_system_energy() <
+                                                                                                                                    energy_threas)
+                                                                                                                                {
+                                                                                                                                    std::vector<
+                                                                                                                                        charge_distribution_surface<
+                                                                                                                                            Lyt>>
+                                                                                                                                        lyts{};
+                                                                                                                                    std::cout
+                                                                                                                                        << charge_lyt
+                                                                                                                                               .get_system_energy()
+                                                                                                                                        << std::
+                                                                                                                                               endl;
+
+                                                                                                                                    sidb_simulation_result<
+                                                                                                                                        Lyt>
+                                                                                                                                        sim_result{};
+                                                                                                                                    sim_result
+                                                                                                                                        .algorithm_name =
+                                                                                                                                        "ExGS";
+                                                                                                                                    charge_distribution_surface<
+                                                                                                                                        Lyt>
+                                                                                                                                        charge_lyt_copy{
+                                                                                                                                            charge_lyt};
+                                                                                                                                    lyts.emplace_back(
+                                                                                                                                        charge_lyt_copy);
+                                                                                                                                    sim_result
+                                                                                                                                        .charge_distributions =
+                                                                                                                                        lyts;
+                                                                                                                                    energy_threas =
+                                                                                                                                        charge_lyt
+                                                                                                                                            .get_system_energy();
+                                                                                                                                    write_sqd_sim_result<
+                                                                                                                                        Lyt>(
+                                                                                                                                        sim_result,
+                                                                                                                                        "/Users/jandrewniok/"
+                                                                                                                                        "CLionProjects/"
+                                                                                                                                        "fiction_fork/"
+                                                                                                                                        "experiments/"
+                                                                                                                                        "result.xml");
+                                                                                                                                }
+                                                                                                                            }
+                                                                                                                            counter +=
+                                                                                                                                1;
+                                                                                                                            if (counter %
+                                                                                                                                    100000 ==
+                                                                                                                                0)
+                                                                                                                            {
+                                                                                                                                std::cout
+                                                                                                                                    << counter
+                                                                                                                                    << std::
+                                                                                                                                           endl;
+                                                                                                                            }
+                                                                                                                        }
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                }
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void combining_all_16_new()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+        auto lyt_five  = lyts_of_regions[4];
+        auto lyt_six   = lyts_of_regions[5];
+        auto lyt_seven = lyts_of_regions[6];
+        auto lyt_eight = lyts_of_regions[7];
+        auto lyt_nine  = lyts_of_regions[8];
+        auto lyt_ten   = lyts_of_regions[9];
+        auto lyt_11    = lyts_of_regions[10];
+        auto lyt_12    = lyts_of_regions[11];
+        auto lyt_13    = lyts_of_regions[12];
+        auto lyt_14    = lyts_of_regions[13];
+        auto lyt_15    = lyts_of_regions[14];
+        auto lyt_16    = lyts_of_regions[15];
+
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_14.begin(), lyt_14.end(), compareFunc);
+        std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
+        std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
+
+        std::cout << "defect_cells: " << std::to_string(all_defect_cells.size()) << std::endl;
+        for (const auto& defects : all_defect_cells)
+        {
+            std::cout << "number of defects: " << std::to_string(defects.size()) << std::endl;
+        }
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+
+        for (auto one = 0u; one < lyt_one.size(); one++)
+        {
+            for (auto two = 0u; two < lyt_two.size(); two++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        for (auto five = 0u; five < lyt_five.size(); five++)
+                        {
+                            for (auto six = 0u; six < lyt_six.size(); six++)
+                            {
+                                uint64_t counter_unmatched_one = 0;
+                                for (const auto& neighbor_cell : all_defect_cells[0])
+                                {
+                                    lyt_six[six].foreach_cell(
+                                        [&counter_unmatched_one, &neighbor_cell, &lyt_six, &six, &one,
+                                         this](const auto& c1)
+                                        {
+                                            if (c1 == neighbor_cell)
+                                            {
+                                                if (charge_state_to_sign(lyt_six[one].get_charge_state(c1)) !=
+                                                    get_charge_state_defect(0, one, c1))
+                                                {
+                                                    counter_unmatched_one += 1;
+                                                }
+                                            }
+                                        });
+                                }
+                                if (counter_unmatched_one != 0)
+                                {
+                                    continue;
+                                }
+
+                                uint64_t counter_unmatched_second = 0;
+                                for (const auto& neighbor_cell : all_defect_cells[1])
+                                {
+                                    lyt_six[six].foreach_cell(
+                                        [&counter_unmatched_second, &neighbor_cell, &lyt_six, &six, &two,
+                                         this](const auto& c1)
+                                        {
+                                            if (c1 == neighbor_cell)
+                                            {
+                                                if (charge_state_to_sign(lyt_six[six].get_charge_state(c1)) !=
+                                                    get_charge_state_defect(1, two, c1))
+                                                {
+                                                    counter_unmatched_second += 1;
+                                                }
+                                            }
+                                        });
+                                }
+                                if (counter_unmatched_second != 0)
+                                {
+                                    continue;
+                                }
+                                for (auto seven = 0u; seven < lyt_seven.size(); seven++)
+                                {
+                                    //                                    uint64_t
+                                    //                                    counter_unmatched_third
+                                    //                                    = 0; for (const auto&
+                                    //                                    neighbor_cell :
+                                    //                                    all_defect_cells[2])
+                                    //                                    {
+                                    //                                        lyt_seven[seven].foreach_cell(
+                                    //                                            [&counter_unmatched_third,
+                                    //                                            &neighbor_cell,
+                                    //                                            &lyt_seven,
+                                    //                                            &seven,
+                                    //                                            &three,
+                                    //                                             this](const
+                                    //                                             auto& c1)
+                                    //                                            {
+                                    //                                                if (c1 ==
+                                    //                                                neighbor_cell)
+                                    //                                                {
+                                    //                                                    if
+                                    //                                                    (charge_state_to_sign(lyt_seven[seven].get_charge_state(c1))
+                                    //                                                    !=
+                                    //                                                        get_charge_state_defect(2,
+                                    //                                                        three,
+                                    //                                                        c1))
+                                    //                                                    {
+                                    //                                                        counter_unmatched_third
+                                    //                                                        +=
+                                    //                                                        1;
+                                    //                                                    }
+                                    //                                                }
+                                    //                                            });
+                                    //                                    }
+                                    //                                    if
+                                    //                                    (counter_unmatched_third
+                                    //                                    != 0)
+                                    //                                    {
+                                    //                                        continue;
+                                    //                                    }
+                                    for (auto eight = 0u; eight < lyt_eight.size(); eight++)
+                                    {
+                                        //                                                uint64_t
+                                        //                                                counter_unmatched_four
+                                        //                                                = 0;
+                                        //                                                for
+                                        //                                                (const
+                                        //                                                auto&
+                                        //                                                neighbor_cell
+                                        //                                                :
+                                        //                                                all_defect_cells[3])
+                                        //                                                {
+                                        //                                                    lyt_eight[eight].foreach_cell(
+                                        //                                                        [&counter_unmatched_four,
+                                        //                                                        &neighbor_cell,
+                                        //                                                        &lyt_eight,
+                                        //                                                        &eight,
+                                        //                                                         &four,
+                                        //                                                         this](const
+                                        //                                                         auto&
+                                        //                                                         c1)
+                                        //                                                        {
+                                        //                                                            if
+                                        //                                                            (c1
+                                        //                                                            ==
+                                        //                                                            neighbor_cell)
+                                        //                                                            {
+                                        //                                                                if
+                                        //                                                                (charge_state_to_sign(
+                                        //                                                                        lyt_eight[eight].get_charge_state(c1))
+                                        //                                                                        !=
+                                        //                                                                    get_charge_state_defect(3,
+                                        //                                                                    four,
+                                        //                                                                    c1))
+                                        //                                                                {
+                                        //                                                                    counter_unmatched_four
+                                        //                                                                    += 1;
+                                        //                                                                }
+                                        //                                                            }
+                                        //                                                        });
+                                        //                                                }
+                                        //                                                if
+                                        //                                                (counter_unmatched_four
+                                        //                                                != 0)
+                                        //                                                {
+                                        //                                                    continue;
+                                        //                                                }
+                                        for (auto nine = 0u; nine < lyt_nine.size(); nine++)
+                                        {
+                                            uint64_t counter_unmatched_five = 0;
+                                            for (const auto& neighbor_cell : all_defect_cells[4])
+                                            {
+                                                lyt_eight[eight].foreach_cell(
+                                                    [&counter_unmatched_five, &neighbor_cell, &lyt_nine, &nine, &five,
+                                                     this](const auto& c1)
+                                                    {
+                                                        if (c1 == neighbor_cell)
+                                                        {
+                                                            if (charge_state_to_sign(lyt_nine[nine].get_charge_state(
+                                                                    c1)) != get_charge_state_defect(4, five, c1))
+                                                            {
+                                                                counter_unmatched_five += 1;
+                                                            }
+                                                        }
+                                                    });
+                                            }
+                                            if (counter_unmatched_five != 0)
+                                            {
+                                                continue;
+                                            }
+                                            for (auto ten = 0u; ten < lyt_ten.size(); ten++)
+                                            {
+                                                uint64_t counter_unmatched_six = 0;
+                                                for (const auto& neighbor_cell : all_defect_cells[5])
+                                                {
+                                                    lyt_ten[ten].foreach_cell(
+                                                        [&counter_unmatched_six, &neighbor_cell, &lyt_ten, &ten, &six,
+                                                         this](const auto& c1)
+                                                        {
+                                                            if (c1 == neighbor_cell)
+                                                            {
+                                                                if (charge_state_to_sign(lyt_ten[ten].get_charge_state(
+                                                                        c1)) != get_charge_state_defect(5, six, c1))
+                                                                {
+                                                                    counter_unmatched_six += 1;
+                                                                }
+                                                            }
+                                                        });
+                                                }
+                                                if (counter_unmatched_six != 0)
+                                                {
+                                                    continue;
+                                                }
+                                                for (auto eleven = 0u; eleven < lyt_11.size(); eleven++)
+                                                {
+                                                    for (auto twelve = 0u; twelve < lyt_12.size(); twelve++)
+                                                    {
+                                                        for (auto thirdteen = 0u; thirdteen < lyt_13.size();
+                                                             thirdteen++)
+                                                        {
+                                                            for (auto fourteen = 0u; fourteen < lyt_14.size();
+                                                                 fourteen++)
+                                                            {
+                                                                for (auto fiveteen = 0u; fiveteen < lyt_15.size();
+                                                                     fiveteen++)
+                                                                {
+                                                                    for (auto sixteen = 0u; sixteen < lyt_16.size();
+                                                                         sixteen++)
+                                                                    {
+                                                                        lyt_one[one].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_one,
+                                                                             &one](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_one[one].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_two[two].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_two,
+                                                                             &two](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_two[two].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_three[three].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_three,
+                                                                             &three](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_three[three].get_charge_state(
+                                                                                        c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_four[four].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_four,
+                                                                             &four](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_four[four].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_five[five].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_five,
+                                                                             &five](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_five[five].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_six[six].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_six,
+                                                                             &six](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_six[six].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_seven[seven].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_seven,
+                                                                             &seven](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_seven[seven].get_charge_state(
+                                                                                        c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_eight[eight].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_eight,
+                                                                             &eight](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_eight[eight].get_charge_state(
+                                                                                        c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_nine[nine].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_nine,
+                                                                             &nine](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_nine[nine].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_ten[ten].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_ten,
+                                                                             &ten](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_ten[ten].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_11[eleven].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_11,
+                                                                             &eleven](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_11[eleven].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_12[twelve].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_12,
+                                                                             &twelve](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_12[twelve].get_charge_state(c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_13[thirdteen].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_13,
+                                                                             &thirdteen](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_13[thirdteen].get_charge_state(
+                                                                                        c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_14[fourteen].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_14,
+                                                                             &fourteen](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_14[fourteen].get_charge_state(
+                                                                                        c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_15[fiveteen].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_15,
+                                                                             &fiveteen](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_15[fiveteen].get_charge_state(
+                                                                                        c1),
+                                                                                    false);
+                                                                            });
+                                                                        lyt_16[sixteen].foreach_cell(
+                                                                            [this, &charge_lyt, &lyt_16,
+                                                                             &sixteen](const auto& c1) {
+                                                                                charge_lyt.assign_charge_state(
+                                                                                    c1,
+                                                                                    lyt_16[sixteen].get_charge_state(
+                                                                                        c1),
+                                                                                    false);
+                                                                            });
+                                                                        charge_lyt.update_after_charge_change();
+                                                                        if (charge_lyt.is_physically_valid())
+                                                                        {
+                                                                            if (charge_lyt.get_system_energy() <
+                                                                                energy_threas)
+                                                                            {
+                                                                                std::vector<
+                                                                                    charge_distribution_surface<Lyt>>
+                                                                                    lyts{};
+                                                                                std::cout
+                                                                                    << charge_lyt.get_system_energy()
+                                                                                    << std::endl;
+
+                                                                                sidb_simulation_result<Lyt>
+                                                                                    sim_result{};
+                                                                                sim_result.algorithm_name = "ExGS";
+                                                                                charge_distribution_surface<Lyt>
+                                                                                    charge_lyt_copy{charge_lyt};
+                                                                                lyts.emplace_back(charge_lyt_copy);
+                                                                                sim_result.charge_distributions = lyts;
+                                                                                energy_threas =
+                                                                                    charge_lyt.get_system_energy();
+                                                                                write_sqd_sim_result<Lyt>(sim_result,
+                                                                                                          "/Users/"
+                                                                                                          "jandrewnio"
+                                                                                                          "k/"
+                                                                                                          "CLionProje"
+                                                                                                          "cts/"
+                                                                                                          "fiction_"
+                                                                                                          "fork/"
+                                                                                                          "experiment"
+                                                                                                          "s/"
+                                                                                                          "result."
+                                                                                                          "xml");
+                                                                            }
+                                                                        }
+                                                                        counter += 1;
+                                                                        if (counter % 100000 == 0)
+                                                                        {
+                                                                            std::cout << counter << std::endl;
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (counter == 0)
+        {
+            std::cout << "no path found" << std::endl;
         }
     }
 
@@ -4018,11 +9771,13 @@ class layout_simulation_impl
                                                                             sim_result.charge_distributions = lyts;
                                                                             energy_threas =
                                                                                 charge_lyt.get_system_energy();
-                                                                            write_sqd_sim_result<Lyt>(
-                                                                                sim_result, "/Users/jandrewniok/"
-                                                                                            "CLionProjects/"
-                                                                                            "fiction_fork/experiments/"
-                                                                                            "result.xml");
+                                                                            write_sqd_sim_result<Lyt>(sim_result,
+                                                                                                      "/Users/"
+                                                                                                      "jandrewniok/"
+                                                                                                      "CLionProjects/"
+                                                                                                      "fiction_fork/"
+                                                                                                      "experiments/"
+                                                                                                      "result.xml");
                                                                         }
                                                                     }
                                                                     counter += 1;
@@ -4148,49 +9903,60 @@ class layout_simulation_impl
                         {
                             for (const auto& lyts_six : lyt_six)
                             {
-                                //                                uint64_t counter_unmatched_one = 0;
-                                //                                for (const auto& neighbor_cell :
+                                //                                uint64_t counter_unmatched_one
+                                //                                = 0; for (const auto&
+                                //                                neighbor_cell :
                                 //                                all_defect_cells[0])
                                 //                                {
                                 //                                    lyts_six.foreach_cell(
-                                //                                        [&counter_unmatched_one, &neighbor_cell,
-                                //                                        &lyts_six, &i, this](const auto& c1)
+                                //                                        [&counter_unmatched_one,
+                                //                                        &neighbor_cell,
+                                //                                        &lyts_six, &i,
+                                //                                        this](const auto& c1)
                                 //                                        {
-                                //                                            if (c1 == neighbor_cell)
+                                //                                            if (c1 ==
+                                //                                            neighbor_cell)
                                 //                                            {
                                 //                                                if
                                 //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
                                 //                                                !=
-                                //                                                    get_charge_state_defect(0, i,
-                                //                                                    c1))
+                                //                                                    get_charge_state_defect(0,
+                                //                                                    i, c1))
                                 //                                                {
-                                //                                                    counter_unmatched_one += 1;
+                                //                                                    counter_unmatched_one
+                                //                                                    += 1;
                                 //                                                }
                                 //                                            }
                                 //                                        });
                                 //                                }
-                                //                                if (counter_unmatched_one != 0)
+                                //                                if (counter_unmatched_one !=
+                                //                                0)
                                 //                                {
                                 //                                    continue;
                                 //                                }
 
-                                //                                uint64_t counter_unmatched = 0;
-                                //                                for (const auto& neighbor_cell :
+                                //                                uint64_t counter_unmatched =
+                                //                                0; for (const auto&
+                                //                                neighbor_cell :
                                 //                                all_defect_cells[1])
                                 //                                {
                                 //                                    lyts_six.foreach_cell(
-                                //                                        [&counter_unmatched, &neighbor_cell,
-                                //                                        &lyts_six, &j, this](const auto& c1)
+                                //                                        [&counter_unmatched,
+                                //                                        &neighbor_cell,
+                                //                                        &lyts_six, &j,
+                                //                                        this](const auto& c1)
                                 //                                        {
-                                //                                            if (c1 == neighbor_cell)
+                                //                                            if (c1 ==
+                                //                                            neighbor_cell)
                                 //                                            {
                                 //                                                if
                                 //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
                                 //                                                !=
-                                //                                                    get_charge_state_defect(1, j,
-                                //                                                    c1))
+                                //                                                    get_charge_state_defect(1,
+                                //                                                    j, c1))
                                 //                                                {
-                                //                                                    counter_unmatched += 1;
+                                //                                                    counter_unmatched
+                                //                                                    += 1;
                                 //                                                }
                                 //                                            }
                                 //                                        });
@@ -4202,62 +9968,85 @@ class layout_simulation_impl
 
                                 for (const auto& lyts_seven : lyt_seven)
                                 {
-                                    //                                    uint64_t counter_three = 0;
-                                    //                                    for (const auto& neighbor_cell :
+                                    //                                    uint64_t counter_three
+                                    //                                    = 0; for (const auto&
+                                    //                                    neighbor_cell :
                                     //                                    all_defect_cells[2])
                                     //                                    {
                                     //                                        lyts_seven.foreach_cell(
-                                    //                                            [&counter_three, &neighbor_cell,
-                                    //                                            &lyts_seven, &three, this](const
+                                    //                                            [&counter_three,
+                                    //                                            &neighbor_cell,
+                                    //                                            &lyts_seven,
+                                    //                                            &three,
+                                    //                                            this](const
                                     //                                            auto& c1)
                                     //                                            {
-                                    //                                                if (c1 == neighbor_cell)
+                                    //                                                if (c1 ==
+                                    //                                                neighbor_cell)
                                     //                                                {
                                     //                                                    if
                                     //                                                    (charge_state_to_sign(lyts_seven.get_charge_state(c1))
                                     //                                                    !=
                                     //                                                        get_charge_state_defect(2,
-                                    //                                                        three, c1))
+                                    //                                                        three,
+                                    //                                                        c1))
                                     //                                                    {
-                                    //                                                        counter_three += 1;
+                                    //                                                        counter_three
+                                    //                                                        +=
+                                    //                                                        1;
                                     //                                                    }
                                     //                                                }
                                     //                                            });
                                     //                                    }
-                                    //                                    if (counter_three != 0)
+                                    //                                    if (counter_three !=
+                                    //                                    0)
                                     //                                    {
                                     //                                        continue;
                                     //                                    }
 
                                     for (auto eight = 0u; eight < lyt_eight.size(); eight++)
                                     {
-                                        //                                        uint64_t counter_unmatched_4 = 0;
-                                        //                                        for (const auto&
-                                        //                                        neighbor_cell_four :
+                                        //                                        uint64_t
+                                        //                                        counter_unmatched_4
+                                        //                                        = 0; for
+                                        //                                        (const auto&
+                                        //                                        neighbor_cell_four
+                                        //                                        :
                                         //                                        all_defect_cells[3])
                                         //                                        {
                                         //                                            lyt_eight[eight].foreach_cell(
                                         //                                                [&counter_unmatched_4,
                                         //                                                &neighbor_cell_four,
-                                        //                                                &lyt_eight, &four, &eight,
-                                        //                                                 this](const auto& c1)
+                                        //                                                &lyt_eight,
+                                        //                                                &four,
+                                        //                                                &eight,
+                                        //                                                 this](const
+                                        //                                                 auto&
+                                        //                                                 c1)
                                         //                                                {
-                                        //                                                    if (c1 ==
+                                        //                                                    if
+                                        //                                                    (c1
+                                        //                                                    ==
                                         //                                                    neighbor_cell_four)
                                         //                                                    {
                                         //                                                        if
                                         //                                                        (charge_state_to_sign(lyt_eight[eight].get_charge_state(
-                                        //                                                                c1)) !=
+                                        //                                                                c1))
+                                        //                                                                !=
                                         //                                                                get_charge_state_defect(3,
-                                        //                                                                four, c1))
+                                        //                                                                four,
+                                        //                                                                c1))
                                         //                                                        {
                                         //                                                            counter_unmatched_4
-                                        //                                                            += 1;
+                                        //                                                            +=
+                                        //                                                            1;
                                         //                                                        }
                                         //                                                    }
                                         //                                                });
                                         //                                        }
-                                        //                                        if (counter_unmatched_4 != 0)
+                                        //                                        if
+                                        //                                        (counter_unmatched_4
+                                        //                                        != 0)
                                         //                                        {
                                         //                                            continue;
                                         //                                        }
@@ -4304,7 +10093,9 @@ class layout_simulation_impl
                                                         //                                                        all_defect_cells[8])
                                                         //                                                        {
                                                         //                                                            lyts_12.foreach_cell(
-                                                        //                                                                [&counter_unmatched_9, &neighbor_cell_nine, &lyts_12,
+                                                        //                                                                [&counter_unmatched_9,
+                                                        //                                                                &neighbor_cell_nine,
+                                                        //                                                                &lyts_12,
                                                         //                                                                 &nine, this](const auto& c1)
                                                         //                                                                {
                                                         //                                                                    if (c1 == neighbor_cell_nine)
@@ -4338,7 +10129,9 @@ class layout_simulation_impl
                                                         //                                                        all_defect_cells[7])
                                                         //                                                        {
                                                         //                                                            lyts_12.foreach_cell(
-                                                        //                                                                [&counter_unmatched_8, &neighbor_cell_eight, &lyts_12,
+                                                        //                                                                [&counter_unmatched_8,
+                                                        //                                                                &neighbor_cell_eight,
+                                                        //                                                                &lyts_12,
                                                         //                                                                 &eight, this](const auto& c1)
                                                         //                                                                {
                                                         //                                                                    if (c1 == neighbor_cell_eight)
@@ -4556,12 +10349,18 @@ class layout_simulation_impl
                                                                                 sim_result.charge_distributions = lyts;
                                                                                 energy_threas =
                                                                                     charge_lyt.get_system_energy();
-                                                                                write_sqd_sim_result<Lyt>(
-                                                                                    sim_result,
-                                                                                    "/Users/jandrewniok/"
-                                                                                    "CLionProjects/"
-                                                                                    "fiction_fork/experiments/"
-                                                                                    "result.xml");
+                                                                                write_sqd_sim_result<Lyt>(sim_result,
+                                                                                                          "/Users/"
+                                                                                                          "jandrewnio"
+                                                                                                          "k/"
+                                                                                                          "CLionProje"
+                                                                                                          "cts/"
+                                                                                                          "fiction_"
+                                                                                                          "fork/"
+                                                                                                          "experiment"
+                                                                                                          "s/"
+                                                                                                          "result."
+                                                                                                          "xml");
                                                                             }
                                                                         }
                                                                         counter += 1;
@@ -4641,7 +10440,7 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
 
     auto result = p.run_simulation_hexagon();
     p.finding_nn();
-    p.combining_all_14();
+    p.combining_all_13_test();
 
     if (ps)
     {
@@ -4652,5 +10451,6 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
 }
 
 }  // namespace detail
+
 }  // namespace fiction
 #endif  // FICTION_LAYOUT_SIMULATION_HPP
