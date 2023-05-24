@@ -874,6 +874,38 @@ class layout_simulation_impl
                 //                            std::to_string(total_cells.size()));
                 //                        }
 
+                // ------------- collecting all neighbor configurations
+
+                std::vector<std::vector<int8_t>> all_defect_configurations_indices_one_gate{};
+                for (const auto& index : charge_index)
+                {
+                    std::vector<int8_t> indices_for_one_gate_layout_index{};
+                    for (auto i = 0u; i < exgs_stats.valid_lyts.size(); i++)
+                    {
+                        if (exgs_stats.valid_lyts[i].get_charge_index().first == index)
+                        {
+                            indices_for_one_gate_layout_index.push_back(
+                                exgs_stats.defect_iter_num_valid_lyts[i].second);
+                        }
+                    }
+                    all_defect_configurations_indices_one_gate.push_back(indices_for_one_gate_layout_index);
+                }
+
+                std::vector<std::vector<std::vector<int8_t>>> all_defect_configurations_one_gate{};
+                for (const auto& state : all_defect_configurations_indices_one_gate)
+                {
+                    std::vector<std::vector<int8_t>> defect_confs_one_state{};
+                    defect_confs_one_state.reserve(state.size());
+                    for (const auto& defect_index : state)
+                    {
+                        defect_confs_one_state.push_back(all_charge_confs[defect_index]);
+                    }
+                    all_defect_configurations_one_gate.push_back(defect_confs_one_state);
+                }
+
+                all_defect_configrations_all_layouts.push_back(all_defect_configurations_one_gate);
+                // ----------------------------------
+
                 if (border_cell_max_charge_index == 0 && lyt.num_cells() != 0)
                 {
                     fiction::exgs_stats<Lyt> exgs_stats_second{};
@@ -1154,19 +1186,19 @@ class layout_simulation_impl
         auto lyt_15    = lyts_of_regions[14];
         auto lyt_16    = lyts_of_regions[15];
 
-        //        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
-        //        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
-        //        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
-        //        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
-        //        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
-        //        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
-        //        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
-        //        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
-        //        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
-        //        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
-        //        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
-        //        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
-        //        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
+        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+        std::sort(lyt_five.begin(), lyt_five.end(), compareFunc);
+        std::sort(lyt_six.begin(), lyt_six.end(), compareFunc);
+        std::sort(lyt_seven.begin(), lyt_seven.end(), compareFunc);
+        std::sort(lyt_eight.begin(), lyt_eight.end(), compareFunc);
+        std::sort(lyt_nine.begin(), lyt_nine.end(), compareFunc);
+        std::sort(lyt_ten.begin(), lyt_ten.end(), compareFunc);
+        std::sort(lyt_11.begin(), lyt_11.end(), compareFunc);
+        std::sort(lyt_12.begin(), lyt_12.end(), compareFunc);
+        std::sort(lyt_13.begin(), lyt_13.end(), compareFunc);
         //
         //        int                                           number = 1000;
         //        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
@@ -2952,6 +2984,106 @@ class layout_simulation_impl
         }
     }
 
+    void combining_all_3_small_layout_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one   = lyts_of_regions[0];
+        auto lyt_two   = lyts_of_regions[1];
+        auto lyt_three = lyts_of_regions[2];
+        auto lyt_four  = lyts_of_regions[3];
+
+        //        std::sort(lyt_one.begin(), lyt_one.end(), compareFunc);
+        //        std::sort(lyt_two.begin(), lyt_two.end(), compareFunc);
+        //        std::sort(lyt_three.begin(), lyt_three.end(), compareFunc);
+        //        std::sort(lyt_four.begin(), lyt_four.end(), compareFunc);
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                for (auto three = 0u; three < lyt_three.size(); three++)
+                {
+                    if (!layout_fullfilling_constraint(lyt_three[three], 0, i))
+                    {
+                        continue;
+                    }
+
+                    if (!layout_fullfilling_constraint(lyt_three[three], 1, j))
+                    {
+                        continue;
+                    }
+
+                    for (auto four = 0u; four < lyt_four.size(); four++)
+                    {
+                        if (!layout_fullfilling_constraint(lyt_four[four], 2, three))
+                        {
+                            continue;
+                        }
+
+                        lyt_one[i].foreach_cell(
+                            [this, &charge_lyt, &lyt_one, &i](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyt_one[i].get_charge_state(c1), false); });
+                        lyt_two[j].foreach_cell(
+                            [this, &charge_lyt, &lyt_two, &j](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyt_two[j].get_charge_state(c1), false); });
+                        lyt_three[three].foreach_cell(
+                            [this, &charge_lyt, &lyt_three, &three](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyt_three[three].get_charge_state(c1), false); });
+                        lyt_four[four].foreach_cell(
+                            [this, &charge_lyt, &lyt_four, &four](const auto& c1)
+                            { charge_lyt.assign_charge_state(c1, lyt_four[four].get_charge_state(c1), false); });
+                        charge_lyt.update_after_charge_change();
+                        if (charge_lyt.is_physically_valid())
+                        {
+                            if (charge_lyt.get_system_energy() < energy_threas)
+                            {
+                                std::cout << "lyt_one: " << std::to_string(i) << std::endl;
+                                std::cout << "lyt_two: " << std::to_string(j) << std::endl;
+                                std::cout << "lyt_three: " << std::to_string(three) << std::endl;
+                                std::cout << "lyt_four: " << std::to_string(four) << std::endl;
+
+                                std::vector<charge_distribution_surface<Lyt>> lyts{};
+                                std::cout << charge_lyt.get_system_energy() << std::endl;
+
+                                sidb_simulation_result<Lyt> sim_result{};
+                                sim_result.algorithm_name = "ExGS";
+                                charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+                                lyts.emplace_back(charge_lyt_copy);
+                                sim_result.charge_distributions = lyts;
+                                energy_threas                   = charge_lyt.get_system_energy();
+                                write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/"
+                                                                      "CLionProjects/"
+                                                                      "fiction_fork/"
+                                                                      "experiments/"
+                                                                      "result.xml");
+                            }
+                        }
+                        counter += 1;
+                        if (counter % 1 == 0)
+                        {
+                            std::cout << counter << std::endl;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void combining_all_13_test()
     {
         auto compareFunc =
@@ -3037,26 +3169,29 @@ class layout_simulation_impl
                 {
                     for (auto four = 0u; four < lyt_four.size(); four++)
                     {
-                        uint64_t counter_unmatched_one = 0;
-                        for (const auto& neighbor_cell : all_defect_cells[0])
-                        {
-                            lyt_four[four].foreach_cell(
-                                [&counter_unmatched_one, &neighbor_cell, &lyt_four, &i, &four, this](const auto& c1)
-                                {
-                                    if (c1 == neighbor_cell)
-                                    {
-                                        if (charge_state_to_sign(lyt_four[four].get_charge_state(c1)) !=
-                                            get_charge_state_defect(0, i, c1))
-                                        {
-                                            counter_unmatched_one += 1;
-                                        }
-                                    }
-                                });
-                        }
-                        if (counter_unmatched_one != 0)
-                        {
-                            continue;
-                        }
+                        //                        uint64_t counter_unmatched_one = 0;
+                        //                        for (const auto& neighbor_cell : all_defect_cells[0])
+                        //                        {
+                        //                            lyt_four[four].foreach_cell(
+                        //                                [&counter_unmatched_one, &neighbor_cell, &lyt_four, &i, &four,
+                        //                                this](const auto& c1)
+                        //                                {
+                        //                                    if (c1 == neighbor_cell)
+                        //                                    {
+                        //                                        if
+                        //                                        (charge_state_to_sign(lyt_four[four].get_charge_state(c1))
+                        //                                        !=
+                        //                                            get_charge_state_defect(0, i, c1))
+                        //                                        {
+                        //                                            counter_unmatched_one += 1;
+                        //                                        }
+                        //                                    }
+                        //                                });
+                        //                        }
+                        //                        if (counter_unmatched_one != 0)
+                        //                        {
+                        //                            continue;
+                        //                        }
                         for (auto five = 0u; five < lyt_five.size(); five++)
                         {
                             for (const auto& lyts_six : lyt_six)
@@ -3299,7 +3434,8 @@ class layout_simulation_impl
                             for (const auto& lyts_six : lyt_six)
                             {
                                 //                                uint64_t counter_unmatched_one = 0;
-                                //                                for (const auto& neighbor_cell : all_defect_cells[0])
+                                //                                for (const auto& neighbor_cell :
+                                //                                all_defect_cells[0])
                                 //                                {
                                 //                                    lyts_six.foreach_cell(
                                 //                                        [&counter_unmatched_one, &neighbor_cell,
@@ -3310,7 +3446,8 @@ class layout_simulation_impl
                                 //                                                if
                                 //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
                                 //                                                !=
-                                //                                                    get_charge_state_defect(0, i, c1))
+                                //                                                    get_charge_state_defect(0, i,
+                                //                                                    c1))
                                 //                                                {
                                 //                                                    counter_unmatched_one += 1;
                                 //                                                }
@@ -3323,7 +3460,8 @@ class layout_simulation_impl
                                 //                                }
                                 //
                                 //                                uint64_t counter_unmatched = 0;
-                                //                                for (const auto& neighbor_cell : all_defect_cells[1])
+                                //                                for (const auto& neighbor_cell :
+                                //                                all_defect_cells[1])
                                 //                                {
                                 //                                    lyts_six.foreach_cell(
                                 //                                        [&counter_unmatched, &neighbor_cell,
@@ -3334,7 +3472,8 @@ class layout_simulation_impl
                                 //                                                if
                                 //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
                                 //                                                !=
-                                //                                                    get_charge_state_defect(1, j, c1))
+                                //                                                    get_charge_state_defect(1, j,
+                                //                                                    c1))
                                 //                                                {
                                 //                                                    counter_unmatched += 1;
                                 //                                                }
@@ -3354,8 +3493,8 @@ class layout_simulation_impl
                                     //                                    {
                                     //                                        lyts_seven.foreach_cell(
                                     //                                            [&counter_three, &neighbor_cell,
-                                    //                                            &lyts_seven, &three, this](const auto&
-                                    //                                            c1)
+                                    //                                            &lyts_seven, &three, this](const
+                                    //                                            auto& c1)
                                     //                                            {
                                     //                                                if (c1 == neighbor_cell)
                                     //                                                {
@@ -3378,7 +3517,8 @@ class layout_simulation_impl
                                     for (auto eight = 0u; eight < lyt_eight.size(); eight++)
                                     {
                                         //                                        uint64_t counter_unmatched_4 = 0;
-                                        //                                        for (const auto& neighbor_cell_four :
+                                        //                                        for (const auto&
+                                        //                                        neighbor_cell_four :
                                         //                                        all_defect_cells[3])
                                         //                                        {
                                         //                                            lyt_eight[eight].foreach_cell(
@@ -3410,8 +3550,8 @@ class layout_simulation_impl
                                         for (auto nine = 0u; nine < lyt_nine.size(); nine++)
                                         {
                                             //                                            uint64_t
-                                            //                                            counter_unmatched_five = 0;
-                                            //                                            for (const auto&
+                                            //                                            counter_unmatched_five =
+                                            //                                            0; for (const auto&
                                             //                                            neighbor_cell_five :
                                             //                                            all_defect_cells[4])
                                             //                                            {
@@ -3419,8 +3559,9 @@ class layout_simulation_impl
                                             //                                                    [&counter_unmatched_five,
                                             //                                                    &neighbor_cell_five,
                                             //                                                    &lyt_nine, &five,
-                                            //                                                     &nine, this](const
-                                            //                                                     auto& c1)
+                                            //                                                     &nine,
+                                            //                                                     this](const auto&
+                                            //                                                     c1)
                                             //                                                    {
                                             //                                                        if (c1 ==
                                             //                                                        neighbor_cell_five)
@@ -3439,8 +3580,8 @@ class layout_simulation_impl
                                             //                                                        }
                                             //                                                    });
                                             //                                            }
-                                            //                                            if (counter_unmatched_five !=
-                                            //                                            0)
+                                            //                                            if (counter_unmatched_five
+                                            //                                            != 0)
                                             //                                            {
                                             //                                                continue;
                                             //                                            }
@@ -3448,19 +3589,23 @@ class layout_simulation_impl
                                             for (auto t = 0u; t < lyt_ten.size(); t++)
                                             {
                                                 //                                                uint64_t
-                                                //                                                counter_unmatched_7 =
-                                                //                                                0; for (const auto&
-                                                //                                                neighbor_cell_seven :
+                                                //                                                counter_unmatched_7
+                                                //                                                = 0; for (const
+                                                //                                                auto&
+                                                //                                                neighbor_cell_seven
+                                                //                                                :
                                                 //                                                all_defect_cells[6])
                                                 //                                                {
                                                 //                                                    lyt_ten[t].foreach_cell(
                                                 //                                                        [&counter_unmatched_7,
                                                 //                                                        &neighbor_cell_seven,
-                                                //                                                        &lyt_ten, &t,
+                                                //                                                        &lyt_ten,
+                                                //                                                        &t,
                                                 //                                                         this](const
                                                 //                                                         auto& c1)
                                                 //                                                        {
-                                                //                                                            if (c1 ==
+                                                //                                                            if (c1
+                                                //                                                            ==
                                                 //                                                            neighbor_cell_seven)
                                                 //                                                            {
                                                 //                                                                if
@@ -3487,7 +3632,8 @@ class layout_simulation_impl
                                                     {
                                                         //                                                        uint64_t
                                                         //                                                        counter_unmatched_9
-                                                        //                                                        = 0;
+                                                        //                                                        =
+                                                        //                                                        0;
                                                         //                                                        for
                                                         //                                                        (const
                                                         //                                                        auto&
@@ -3512,14 +3658,16 @@ class layout_simulation_impl
                                                         //                                                        }
                                                         //                                                        if
                                                         //                                                        (counter_unmatched_9
-                                                        //                                                        != 0)
+                                                        //                                                        !=
+                                                        //                                                        0)
                                                         //                                                        {
                                                         //                                                            continue;
                                                         //                                                        }
 
                                                         //                                                        uint64_t
                                                         //                                                        counter_unmatched_8
-                                                        //                                                        = 0;
+                                                        //                                                        =
+                                                        //                                                        0;
                                                         //                                                        for
                                                         //                                                        (const
                                                         //                                                        auto&
@@ -3544,7 +3692,8 @@ class layout_simulation_impl
                                                         //                                                        }
                                                         //                                                        if
                                                         //                                                        (counter_unmatched_8
-                                                        //                                                        != 0)
+                                                        //                                                        !=
+                                                        //                                                        0)
                                                         //                                                        {
                                                         //                                                            continue;
                                                         //                                                        }
@@ -3933,304 +4082,219 @@ class layout_simulation_impl
                         {
                             for (const auto& lyts_six : lyt_six)
                             {
-                                //                                uint64_t counter_unmatched_one = 0;
-                                //                                for (const auto& neighbor_cell : all_defect_cells[0])
-                                //                                {
-                                //                                    lyts_six.foreach_cell(
-                                //                                        [&counter_unmatched_one, &neighbor_cell,
-                                //                                        &lyts_six, &i, this](const auto& c1)
-                                //                                        {
-                                //                                            if (c1 == neighbor_cell)
-                                //                                            {
-                                //                                                if
-                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
-                                //                                                !=
-                                //                                                    get_charge_state_defect(0, i, c1))
-                                //                                                {
-                                //                                                    counter_unmatched_one += 1;
-                                //                                                }
-                                //                                            }
-                                //                                        });
-                                //                                }
-                                //                                if (counter_unmatched_one != 0)
-                                //                                {
-                                //                                    continue;
-                                //                                }
-                                //
-                                //                                uint64_t counter_unmatched = 0;
-                                //                                for (const auto& neighbor_cell : all_defect_cells[1])
-                                //                                {
-                                //                                    lyts_six.foreach_cell(
-                                //                                        [&counter_unmatched, &neighbor_cell,
-                                //                                        &lyts_six, &j, this](const auto& c1)
-                                //                                        {
-                                //                                            if (c1 == neighbor_cell)
-                                //                                            {
-                                //                                                if
-                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
-                                //                                                !=
-                                //                                                    get_charge_state_defect(1, j, c1))
-                                //                                                {
-                                //                                                    counter_unmatched += 1;
-                                //                                                }
-                                //                                            }
-                                //                                        });
-                                //                                }
-                                //                                if (counter_unmatched != 0)
-                                //                                {
-                                //                                    continue;
-                                //                                }
+                                uint64_t counter_unmatched_one = 0;
+                                for (const auto& neighbor_cell : all_defect_cells[0])
+                                {
+                                    lyts_six.foreach_cell(
+                                        [&counter_unmatched_one, &neighbor_cell, &lyts_six, &i, this](const auto& c1)
+                                        {
+                                            if (c1 == neighbor_cell)
+                                            {
+                                                if (charge_state_to_sign(lyts_six.get_charge_state(c1)) !=
+                                                    get_charge_state_defect(0, i, c1))
+                                                {
+                                                    counter_unmatched_one += 1;
+                                                }
+                                            }
+                                        });
+                                }
+                                if (counter_unmatched_one != 0)
+                                {
+                                    continue;
+                                }
+
+                                uint64_t counter_unmatched = 0;
+                                for (const auto& neighbor_cell : all_defect_cells[1])
+                                {
+                                    lyts_six.foreach_cell(
+                                        [&counter_unmatched, &neighbor_cell, &lyts_six, &j, this](const auto& c1)
+                                        {
+                                            if (c1 == neighbor_cell)
+                                            {
+                                                if (charge_state_to_sign(lyts_six.get_charge_state(c1)) !=
+                                                    get_charge_state_defect(1, j, c1))
+                                                {
+                                                    counter_unmatched += 1;
+                                                }
+                                            }
+                                        });
+                                }
+                                if (counter_unmatched != 0)
+                                {
+                                    continue;
+                                }
 
                                 for (const auto& lyts_seven : lyt_seven)
                                 {
-                                    //                                    uint64_t counter_three = 0;
-                                    //                                    for (const auto& neighbor_cell :
-                                    //                                    all_defect_cells[2])
-                                    //                                    {
-                                    //                                        lyts_seven.foreach_cell(
-                                    //                                            [&counter_three, &neighbor_cell,
-                                    //                                            &lyts_seven, &three, this](const auto&
-                                    //                                            c1)
-                                    //                                            {
-                                    //                                                if (c1 == neighbor_cell)
-                                    //                                                {
-                                    //                                                    if
-                                    //                                                    (charge_state_to_sign(lyts_seven.get_charge_state(c1))
-                                    //                                                    !=
-                                    //                                                        get_charge_state_defect(2,
-                                    //                                                        three, c1))
-                                    //                                                    {
-                                    //                                                        counter_three += 1;
-                                    //                                                    }
-                                    //                                                }
-                                    //                                            });
-                                    //                                    }
-                                    //                                    if (counter_three != 0)
-                                    //                                    {
-                                    //                                        continue;
-                                    //                                    }
+                                    uint64_t counter_three = 0;
+                                    for (const auto& neighbor_cell : all_defect_cells[2])
+                                    {
+                                        lyts_seven.foreach_cell(
+                                            [&counter_three, &neighbor_cell, &lyts_seven, &three, this](const auto& c1)
+                                            {
+                                                if (c1 == neighbor_cell)
+                                                {
+                                                    if (charge_state_to_sign(lyts_seven.get_charge_state(c1)) !=
+                                                        get_charge_state_defect(2, three, c1))
+                                                    {
+                                                        counter_three += 1;
+                                                    }
+                                                }
+                                            });
+                                    }
+                                    if (counter_three != 0)
+                                    {
+                                        continue;
+                                    }
 
                                     for (auto eight = 0u; eight < lyt_eight.size(); eight++)
                                     {
-                                        //                                        uint64_t counter_unmatched_4 = 0;
-                                        //                                        for (const auto& neighbor_cell_four :
-                                        //                                        all_defect_cells[3])
-                                        //                                        {
-                                        //                                            lyt_eight[eight].foreach_cell(
-                                        //                                                [&counter_unmatched_4,
-                                        //                                                &neighbor_cell_four,
-                                        //                                                &lyt_eight, &four, &eight,
-                                        //                                                 this](const auto& c1)
-                                        //                                                {
-                                        //                                                    if (c1 ==
-                                        //                                                    neighbor_cell_four)
-                                        //                                                    {
-                                        //                                                        if
-                                        //                                                        (charge_state_to_sign(lyt_eight[eight].get_charge_state(
-                                        //                                                                c1)) !=
-                                        //                                                                get_charge_state_defect(3,
-                                        //                                                                four, c1))
-                                        //                                                        {
-                                        //                                                            counter_unmatched_4
-                                        //                                                            += 1;
-                                        //                                                        }
-                                        //                                                    }
-                                        //                                                });
-                                        //                                        }
-                                        //                                        if (counter_unmatched_4 != 0)
-                                        //                                        {
-                                        //                                            continue;
-                                        //                                        }
+                                        uint64_t counter_unmatched_4 = 0;
+                                        for (const auto& neighbor_cell_four : all_defect_cells[3])
+                                        {
+                                            lyt_eight[eight].foreach_cell(
+                                                [&counter_unmatched_4, &neighbor_cell_four, &lyt_eight, &four, &eight,
+                                                 this](const auto& c1)
+                                                {
+                                                    if (c1 == neighbor_cell_four)
+                                                    {
+                                                        if (charge_state_to_sign(lyt_eight[eight].get_charge_state(
+                                                                c1)) != get_charge_state_defect(3, four, c1))
+                                                        {
+                                                            counter_unmatched_4 += 1;
+                                                        }
+                                                    }
+                                                });
+                                        }
+                                        if (counter_unmatched_4 != 0)
+                                        {
+                                            continue;
+                                        }
 
                                         for (auto nine = 0u; nine < lyt_nine.size(); nine++)
                                         {
-                                            //                                            uint64_t
-                                            //                                            counter_unmatched_five = 0;
-                                            //                                            for (const auto&
-                                            //                                            neighbor_cell_five :
-                                            //                                            all_defect_cells[4])
-                                            //                                            {
-                                            //                                                lyt_nine[nine].foreach_cell(
-                                            //                                                    [&counter_unmatched_five,
-                                            //                                                    &neighbor_cell_five,
-                                            //                                                    &lyt_nine, &five,
-                                            //                                                     &nine, this](const
-                                            //                                                     auto& c1)
-                                            //                                                    {
-                                            //                                                        if (c1 ==
-                                            //                                                        neighbor_cell_five)
-                                            //                                                        {
-                                            //                                                            if
-                                            //                                                            (charge_state_to_sign(lyt_nine[nine].get_charge_state(
-                                            //                                                                    c1))
-                                            //                                                                    !=
-                                            //                                                                    get_charge_state_defect(4,
-                                            //                                                                    five,
-                                            //                                                                    c1))
-                                            //                                                            {
-                                            //                                                                counter_unmatched_five
-                                            //                                                                += 1;
-                                            //                                                            }
-                                            //                                                        }
-                                            //                                                    });
-                                            //                                            }
-                                            //                                            if (counter_unmatched_five !=
-                                            //                                            0)
-                                            //                                            {
-                                            //                                                continue;
-                                            //                                            }
+                                            uint64_t counter_unmatched_five = 0;
+                                            for (const auto& neighbor_cell_five : all_defect_cells[4])
+                                            {
+                                                lyt_nine[nine].foreach_cell(
+                                                    [&counter_unmatched_five, &neighbor_cell_five, &lyt_nine, &five,
+                                                     &nine, this](const auto& c1)
+                                                    {
+                                                        if (c1 == neighbor_cell_five)
+                                                        {
+                                                            if (charge_state_to_sign(lyt_nine[nine].get_charge_state(
+                                                                    c1)) != get_charge_state_defect(4, five, c1))
+                                                            {
+                                                                counter_unmatched_five += 1;
+                                                            }
+                                                        }
+                                                    });
+                                            }
+                                            if (counter_unmatched_five != 0)
+                                            {
+                                                continue;
+                                            }
 
                                             for (auto t = 0u; t < lyt_ten.size(); t++)
                                             {
-                                                //                                                uint64_t
-                                                //                                                counter_unmatched_7 =
-                                                //                                                0; for (const auto&
-                                                //                                                neighbor_cell_seven :
-                                                //                                                all_defect_cells[6])
-                                                //                                                {
-                                                //                                                    lyt_ten[t].foreach_cell(
-                                                //                                                        [&counter_unmatched_7,
-                                                //                                                        &neighbor_cell_seven,
-                                                //                                                        &lyt_ten, &t,
-                                                //                                                         this](const
-                                                //                                                         auto& c1)
-                                                //                                                        {
-                                                //                                                            if (c1 ==
-                                                //                                                            neighbor_cell_seven)
-                                                //                                                            {
-                                                //                                                                if
-                                                //                                                                (charge_state_to_sign(lyt_ten[t].get_charge_state(
-                                                //                                                                        c1)) != get_charge_state_defect(6, t, c1))
-                                                //                                                                {
-                                                //                                                                    counter_unmatched_7
-                                                //                                                                    +=
-                                                //                                                                    1;
-                                                //                                                                }
-                                                //                                                            }
-                                                //                                                        });
-                                                //                                                }
-                                                //                                                if
-                                                //                                                (counter_unmatched_7
-                                                //                                                != 0)
-                                                //                                                {
-                                                //                                                    continue;
-                                                //                                                }
 
                                                 for (auto l = 0u; l < lyt_11.size(); l++)
                                                 {
                                                     for (const auto& lyts_12 : lyt_12)
                                                     {
-                                                        //                                                        uint64_t
-                                                        //                                                        counter_unmatched_9
-                                                        //                                                        = 0;
-                                                        //                                                        for
-                                                        //                                                        (const
-                                                        //                                                        auto&
-                                                        //                                                        neighbor_cell_nine
-                                                        //                                                        :
-                                                        //                                                        all_defect_cells[8])
-                                                        //                                                        {
-                                                        //                                                            lyts_12.foreach_cell(
-                                                        //                                                                [&counter_unmatched_9, &neighbor_cell_nine, &lyts_12,
-                                                        //                                                                 &nine, this](const auto& c1)
-                                                        //                                                                {
-                                                        //                                                                    if (c1 == neighbor_cell_nine)
-                                                        //                                                                    {
-                                                        //                                                                        if (charge_state_to_sign(
-                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
-                                                        //                                                                            get_charge_state_defect(8, nine, c1))
-                                                        //                                                                        {
-                                                        //                                                                            counter_unmatched_9 += 1;
-                                                        //                                                                        }
-                                                        //                                                                    }
-                                                        //                                                                });
-                                                        //                                                        }
-                                                        //                                                        if
-                                                        //                                                        (counter_unmatched_9
-                                                        //                                                        != 0)
-                                                        //                                                        {
-                                                        //                                                            continue;
-                                                        //                                                        }
+                                                        uint64_t counter_unmatched_9 = 0;
+                                                        for (const auto& neighbor_cell_nine : all_defect_cells[8])
+                                                        {
+                                                            lyts_12.foreach_cell(
+                                                                [&counter_unmatched_9, &neighbor_cell_nine, &lyts_12,
+                                                                 &nine, this](const auto& c1)
+                                                                {
+                                                                    if (c1 == neighbor_cell_nine)
+                                                                    {
+                                                                        if (charge_state_to_sign(
+                                                                                lyts_12.get_charge_state(c1)) !=
+                                                                            get_charge_state_defect(8, nine, c1))
+                                                                        {
+                                                                            counter_unmatched_9 += 1;
+                                                                        }
+                                                                    }
+                                                                });
+                                                        }
+                                                        if (counter_unmatched_9 != 0)
+                                                        {
+                                                            continue;
+                                                        }
 
-                                                        //                                                        uint64_t
-                                                        //                                                        counter_unmatched_8
-                                                        //                                                        = 0;
-                                                        //                                                        for
-                                                        //                                                        (const
-                                                        //                                                        auto&
-                                                        //                                                        neighbor_cell_eight
-                                                        //                                                        :
-                                                        //                                                        all_defect_cells[7])
-                                                        //                                                        {
-                                                        //                                                            lyts_12.foreach_cell(
-                                                        //                                                                [&counter_unmatched_8, &neighbor_cell_eight, &lyts_12,
-                                                        //                                                                 &eight, this](const auto& c1)
-                                                        //                                                                {
-                                                        //                                                                    if (c1 == neighbor_cell_eight)
-                                                        //                                                                    {
-                                                        //                                                                        if (charge_state_to_sign(
-                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
-                                                        //                                                                            get_charge_state_defect(7, eight, c1))
-                                                        //                                                                        {
-                                                        //                                                                            counter_unmatched_8 += 1;
-                                                        //                                                                        }
-                                                        //                                                                    }
-                                                        //                                                                });
-                                                        //                                                        }
-                                                        //                                                        if
-                                                        //                                                        (counter_unmatched_8
-                                                        //                                                        != 0)
-                                                        //                                                        {
-                                                        //                                                            continue;
-                                                        //                                                        }
+                                                        uint64_t counter_unmatched_8 = 0;
+                                                        for (const auto& neighbor_cell_eight : all_defect_cells[7])
+                                                        {
+                                                            lyts_12.foreach_cell(
+                                                                [&counter_unmatched_8, &neighbor_cell_eight, &lyts_12,
+                                                                 &eight, this](const auto& c1)
+                                                                {
+                                                                    if (c1 == neighbor_cell_eight)
+                                                                    {
+                                                                        if (charge_state_to_sign(
+                                                                                lyts_12.get_charge_state(c1)) !=
+                                                                            get_charge_state_defect(7, eight, c1))
+                                                                        {
+                                                                            counter_unmatched_8 += 1;
+                                                                        }
+                                                                    }
+                                                                });
+                                                        }
+                                                        if (counter_unmatched_8 != 0)
+                                                        {
+                                                            continue;
+                                                        }
 
                                                         for (const auto& lyts_13 : lyt_13)
                                                         {
-                                                            //                                                            uint64_t counter_unmatched_eleven = 0;
-                                                            //                                                            for (const auto& neighbor_cell : all_defect_cells[10])
-                                                            //                                                            {
-                                                            //                                                                lyts_13.foreach_cell(
-                                                            //                                                                    [&counter_unmatched_eleven, &neighbor_cell,
-                                                            //                                                                     &lyts_13, &l, this](const auto& c1)
-                                                            //                                                                    {
-                                                            //                                                                        if (c1 == neighbor_cell)
-                                                            //                                                                        {
-                                                            //                                                                            if (charge_state_to_sign(
-                                                            //                                                                                    lyts_13.get_charge_state(c1)) !=
-                                                            //                                                                                get_charge_state_defect(10, l, c1))
-                                                            //                                                                            {
-                                                            //                                                                                counter_unmatched_eleven += 1;
-                                                            //                                                                            }
-                                                            //                                                                        }
-                                                            //                                                                    });
-                                                            //                                                            }
-                                                            //                                                            if (counter_unmatched_eleven != 0)
-                                                            //                                                            {
-                                                            //                                                                continue;
-                                                            //                                                            }
-                                                            //
-                                                            //                                                            uint64_t counter_unmatched_13 = 0;
-                                                            //                                                            for (const auto& neighbor_cell : all_defect_cells[9])
-                                                            //                                                            {
-                                                            //                                                                lyts_13.foreach_cell(
-                                                            //                                                                    [&counter_unmatched_13, &neighbor_cell, &lyts_13,
-                                                            //                                                                     &t, this](const auto& c1)
-                                                            //                                                                    {
-                                                            //                                                                        if (c1 == neighbor_cell)
-                                                            //                                                                        {
-                                                            //                                                                            if (charge_state_to_sign(
-                                                            //                                                                                    lyts_13.get_charge_state(c1)) !=
-                                                            //                                                                                get_charge_state_defect(9, t, c1))
-                                                            //                                                                            {
-                                                            //                                                                                counter_unmatched_13 += 1;
-                                                            //                                                                            }
-                                                            //                                                                        }
-                                                            //                                                                    });
-                                                            //                                                            }
-                                                            //                                                            if (counter_unmatched_13 != 0)
-                                                            //                                                            {
-                                                            //                                                                continue;
-                                                            //                                                            }
+                                                            uint64_t counter_unmatched_eleven = 0;
+                                                            for (const auto& neighbor_cell : all_defect_cells[10])
+                                                            {
+                                                                lyts_13.foreach_cell(
+                                                                    [&counter_unmatched_eleven, &neighbor_cell,
+                                                                     &lyts_13, &l, this](const auto& c1)
+                                                                    {
+                                                                        if (c1 == neighbor_cell)
+                                                                        {
+                                                                            if (charge_state_to_sign(
+                                                                                    lyts_13.get_charge_state(c1)) !=
+                                                                                get_charge_state_defect(10, l, c1))
+                                                                            {
+                                                                                counter_unmatched_eleven += 1;
+                                                                            }
+                                                                        }
+                                                                    });
+                                                            }
+                                                            if (counter_unmatched_eleven != 0)
+                                                            {
+                                                                continue;
+                                                            }
+
+                                                            uint64_t counter_unmatched_13 = 0;
+                                                            for (const auto& neighbor_cell : all_defect_cells[9])
+                                                            {
+                                                                lyts_13.foreach_cell(
+                                                                    [&counter_unmatched_13, &neighbor_cell, &lyts_13,
+                                                                     &t, this](const auto& c1)
+                                                                    {
+                                                                        if (c1 == neighbor_cell)
+                                                                        {
+                                                                            if (charge_state_to_sign(
+                                                                                    lyts_13.get_charge_state(c1)) !=
+                                                                                get_charge_state_defect(9, t, c1))
+                                                                            {
+                                                                                counter_unmatched_13 += 1;
+                                                                            }
+                                                                        }
+                                                                    });
+                                                            }
+                                                            if (counter_unmatched_13 != 0)
+                                                            {
+                                                                continue;
+                                                            }
 
                                                             for (const auto& lyts_14 : lyt_14)
                                                             {
@@ -4881,16 +4945,22 @@ class layout_simulation_impl
                                                                                                         write_sqd_sim_result<
                                                                                                             Lyt>(
                                                                                                             sim_result,
-                                                                                                            "/Users/"
-                                                                                                            "jandrewnio"
+                                                                                                            "/Users"
+                                                                                                            "/"
+                                                                                                            "jandre"
+                                                                                                            "wnio"
                                                                                                             "k/"
-                                                                                                            "CLionProje"
+                                                                                                            "CLionP"
+                                                                                                            "roje"
                                                                                                             "cts/"
-                                                                                                            "fiction_"
+                                                                                                            "fictio"
+                                                                                                            "n_"
                                                                                                             "fork/"
-                                                                                                            "experiment"
+                                                                                                            "experi"
+                                                                                                            "ment"
                                                                                                             "s/"
-                                                                                                            "result."
+                                                                                                            "result"
+                                                                                                            "."
                                                                                                             "xml");
                                                                                                     }
                                                                                                 }
@@ -5830,11 +5900,16 @@ class layout_simulation_impl
                                                                                                         Lyt>(
                                                                                                         sim_result,
                                                                                                         "/Users/"
-                                                                                                        "jandrewniok/"
-                                                                                                        "CLionProjects/"
-                                                                                                        "fiction_fork/"
-                                                                                                        "experiments/"
-                                                                                                        "result.xml");
+                                                                                                        "jandrewnio"
+                                                                                                        "k/"
+                                                                                                        "CLionProje"
+                                                                                                        "cts/"
+                                                                                                        "fiction_"
+                                                                                                        "fork/"
+                                                                                                        "experiment"
+                                                                                                        "s/"
+                                                                                                        "result."
+                                                                                                        "xml");
                                                                                                 }
                                                                                             }
                                                                                             counter += 1;
@@ -6256,7 +6331,8 @@ class layout_simulation_impl
                                                                                                     .get_system_energy();
                                                                                             write_sqd_sim_result<Lyt>(
                                                                                                 sim_result,
-                                                                                                "/Users/jandrewniok/"
+                                                                                                "/Users/"
+                                                                                                "jandrewniok/"
                                                                                                 "CLionProjects/"
                                                                                                 "fiction_fork/"
                                                                                                 "experiments/"
@@ -8990,97 +9066,56 @@ class layout_simulation_impl
                                 }
                                 for (auto seven = 0u; seven < lyt_seven.size(); seven++)
                                 {
-                                    //                                    uint64_t
-                                    //                                    counter_unmatched_third
-                                    //                                    = 0; for (const auto&
-                                    //                                    neighbor_cell :
-                                    //                                    all_defect_cells[2])
-                                    //                                    {
-                                    //                                        lyt_seven[seven].foreach_cell(
-                                    //                                            [&counter_unmatched_third,
-                                    //                                            &neighbor_cell,
-                                    //                                            &lyt_seven,
-                                    //                                            &seven,
-                                    //                                            &three,
-                                    //                                             this](const
-                                    //                                             auto& c1)
-                                    //                                            {
-                                    //                                                if (c1 ==
-                                    //                                                neighbor_cell)
-                                    //                                                {
-                                    //                                                    if
-                                    //                                                    (charge_state_to_sign(lyt_seven[seven].get_charge_state(c1))
-                                    //                                                    !=
-                                    //                                                        get_charge_state_defect(2,
-                                    //                                                        three,
-                                    //                                                        c1))
-                                    //                                                    {
-                                    //                                                        counter_unmatched_third
-                                    //                                                        +=
-                                    //                                                        1;
-                                    //                                                    }
-                                    //                                                }
-                                    //                                            });
-                                    //                                    }
-                                    //                                    if
-                                    //                                    (counter_unmatched_third
-                                    //                                    != 0)
-                                    //                                    {
-                                    //                                        continue;
-                                    //                                    }
+                                    uint64_t counter_unmatched_third = 0;
+                                    for (const auto& neighbor_cell : all_defect_cells[2])
+                                    {
+                                        lyt_seven[seven].foreach_cell(
+                                            [&counter_unmatched_third, &neighbor_cell, &lyt_seven, &seven, &three,
+                                             this](const auto& c1)
+                                            {
+                                                if (c1 == neighbor_cell)
+                                                {
+                                                    if (charge_state_to_sign(lyt_seven[seven].get_charge_state(c1)) !=
+                                                        get_charge_state_defect(2, three, c1))
+                                                    {
+                                                        counter_unmatched_third += 1;
+                                                    }
+                                                }
+                                            });
+                                    }
+                                    if (counter_unmatched_third != 0)
+                                    {
+                                        continue;
+                                    }
                                     for (auto eight = 0u; eight < lyt_eight.size(); eight++)
                                     {
-                                        //                                                uint64_t
-                                        //                                                counter_unmatched_four
-                                        //                                                = 0;
-                                        //                                                for
-                                        //                                                (const
-                                        //                                                auto&
-                                        //                                                neighbor_cell
-                                        //                                                :
-                                        //                                                all_defect_cells[3])
-                                        //                                                {
-                                        //                                                    lyt_eight[eight].foreach_cell(
-                                        //                                                        [&counter_unmatched_four,
-                                        //                                                        &neighbor_cell,
-                                        //                                                        &lyt_eight,
-                                        //                                                        &eight,
-                                        //                                                         &four,
-                                        //                                                         this](const
-                                        //                                                         auto&
-                                        //                                                         c1)
-                                        //                                                        {
-                                        //                                                            if
-                                        //                                                            (c1
-                                        //                                                            ==
-                                        //                                                            neighbor_cell)
-                                        //                                                            {
-                                        //                                                                if
-                                        //                                                                (charge_state_to_sign(
-                                        //                                                                        lyt_eight[eight].get_charge_state(c1))
-                                        //                                                                        !=
-                                        //                                                                    get_charge_state_defect(3,
-                                        //                                                                    four,
-                                        //                                                                    c1))
-                                        //                                                                {
-                                        //                                                                    counter_unmatched_four
-                                        //                                                                    += 1;
-                                        //                                                                }
-                                        //                                                            }
-                                        //                                                        });
-                                        //                                                }
-                                        //                                                if
-                                        //                                                (counter_unmatched_four
-                                        //                                                != 0)
-                                        //                                                {
-                                        //                                                    continue;
-                                        //                                                }
+                                        uint64_t counter_unmatched_four = 0;
+                                        for (const auto& neighbor_cell : all_defect_cells[3])
+                                        {
+                                            lyt_eight[eight].foreach_cell(
+                                                [&counter_unmatched_four, &neighbor_cell, &lyt_eight, &eight, &four,
+                                                 this](const auto& c1)
+                                                {
+                                                    if (c1 == neighbor_cell)
+                                                    {
+                                                        if (charge_state_to_sign(lyt_eight[eight].get_charge_state(
+                                                                c1)) != get_charge_state_defect(3, four, c1))
+                                                        {
+                                                            counter_unmatched_four += 1;
+                                                        }
+                                                    }
+                                                });
+                                        }
+                                        if (counter_unmatched_four != 0)
+                                        {
+                                            continue;
+                                        }
                                         for (auto nine = 0u; nine < lyt_nine.size(); nine++)
                                         {
                                             uint64_t counter_unmatched_five = 0;
                                             for (const auto& neighbor_cell : all_defect_cells[4])
                                             {
-                                                lyt_eight[eight].foreach_cell(
+                                                lyt_nine[nine].foreach_cell(
                                                     [&counter_unmatched_five, &neighbor_cell, &lyt_nine, &nine, &five,
                                                      this](const auto& c1)
                                                     {
@@ -9098,6 +9133,8 @@ class layout_simulation_impl
                                             {
                                                 continue;
                                             }
+                                            //                                            std::cout << "nine" <<
+                                            //                                            std::endl;
                                             for (auto ten = 0u; ten < lyt_ten.size(); ten++)
                                             {
                                                 uint64_t counter_unmatched_six = 0;
@@ -9123,20 +9160,245 @@ class layout_simulation_impl
                                                 }
                                                 for (auto eleven = 0u; eleven < lyt_11.size(); eleven++)
                                                 {
+                                                    uint64_t counter_unmatched_seven = 0;
+                                                    for (const auto& neighbor_cell : all_defect_cells[6])
+                                                    {
+                                                        lyt_11[eleven].foreach_cell(
+                                                            [&counter_unmatched_seven, &neighbor_cell, &lyt_11, &eleven,
+                                                             &seven, this](const auto& c1)
+                                                            {
+                                                                if (c1 == neighbor_cell)
+                                                                {
+                                                                    if (charge_state_to_sign(
+                                                                            lyt_11[eleven].get_charge_state(c1)) !=
+                                                                        get_charge_state_defect(6, seven, c1))
+                                                                    {
+                                                                        counter_unmatched_seven += 1;
+                                                                    }
+                                                                }
+                                                            });
+                                                    }
+                                                    if (counter_unmatched_seven != 0)
+                                                    {
+                                                        continue;
+                                                    }
                                                     for (auto twelve = 0u; twelve < lyt_12.size(); twelve++)
                                                     {
+                                                        uint64_t counter_unmatched_eight = 0;
+                                                        for (const auto& neighbor_cell : all_defect_cells[7])
+                                                        {
+                                                            lyt_12[twelve].foreach_cell(
+                                                                [&counter_unmatched_eight, &neighbor_cell, &lyt_12,
+                                                                 &twelve, &eight, this](const auto& c1)
+                                                                {
+                                                                    if (c1 == neighbor_cell)
+                                                                    {
+                                                                        if (charge_state_to_sign(
+                                                                                lyt_12[twelve].get_charge_state(c1)) !=
+                                                                            get_charge_state_defect(7, eight, c1))
+                                                                        {
+                                                                            counter_unmatched_eight += 1;
+                                                                        }
+                                                                    }
+                                                                });
+                                                        }
+                                                        if (counter_unmatched_eight != 0)
+                                                        {
+                                                            continue;
+                                                        }
+
+                                                        uint64_t counter_unmatched_nine = 0;
+                                                        for (const auto& neighbor_cell : all_defect_cells[8])
+                                                        {
+                                                            lyt_12[twelve].foreach_cell(
+                                                                [&counter_unmatched_nine, &neighbor_cell, &lyt_12,
+                                                                 &twelve, &nine, this](const auto& c1)
+                                                                {
+                                                                    if (c1 == neighbor_cell)
+                                                                    {
+                                                                        if (charge_state_to_sign(
+                                                                                lyt_12[twelve].get_charge_state(c1)) !=
+                                                                            get_charge_state_defect(8, nine, c1))
+                                                                        {
+                                                                            counter_unmatched_nine += 1;
+                                                                        }
+                                                                    }
+                                                                });
+                                                        }
+                                                        if (counter_unmatched_nine != 0)
+                                                        {
+                                                            continue;
+                                                        }
                                                         for (auto thirdteen = 0u; thirdteen < lyt_13.size();
                                                              thirdteen++)
                                                         {
+                                                            uint64_t counter_unmatched_ten = 0;
+                                                            for (const auto& neighbor_cell : all_defect_cells[9])
+                                                            {
+                                                                lyt_13[thirdteen].foreach_cell(
+                                                                    [&counter_unmatched_ten, &neighbor_cell, &lyt_13,
+                                                                     &thirdteen, &ten, this](const auto& c1)
+                                                                    {
+                                                                        if (c1 == neighbor_cell)
+                                                                        {
+                                                                            if (charge_state_to_sign(
+                                                                                    lyt_13[thirdteen].get_charge_state(
+                                                                                        c1)) !=
+                                                                                get_charge_state_defect(9, ten, c1))
+                                                                            {
+                                                                                counter_unmatched_ten += 1;
+                                                                            }
+                                                                        }
+                                                                    });
+                                                            }
+                                                            if (counter_unmatched_ten != 0)
+                                                            {
+                                                                continue;
+                                                            }
+
+                                                            uint64_t counter_unmatched_eleven = 0;
+                                                            for (const auto& neighbor_cell : all_defect_cells[10])
+                                                            {
+                                                                lyt_13[thirdteen].foreach_cell(
+                                                                    [&counter_unmatched_eleven, &neighbor_cell, &lyt_13,
+                                                                     &thirdteen, &eleven, this](const auto& c1)
+                                                                    {
+                                                                        if (c1 == neighbor_cell)
+                                                                        {
+                                                                            if (charge_state_to_sign(
+                                                                                    lyt_13[thirdteen].get_charge_state(
+                                                                                        c1)) !=
+                                                                                get_charge_state_defect(10, eleven, c1))
+                                                                            {
+                                                                                counter_unmatched_eleven += 1;
+                                                                            }
+                                                                        }
+                                                                    });
+                                                            }
+                                                            if (counter_unmatched_eleven != 0)
+                                                            {
+                                                                continue;
+                                                            }
+
                                                             for (auto fourteen = 0u; fourteen < lyt_14.size();
                                                                  fourteen++)
                                                             {
+                                                                uint64_t counter_unmatched_twelve = 0;
+                                                                for (const auto& neighbor_cell : all_defect_cells[11])
+                                                                {
+                                                                    lyt_14[fourteen].foreach_cell(
+                                                                        [&counter_unmatched_twelve, &neighbor_cell,
+                                                                         &lyt_14, &fourteen, &twelve,
+                                                                         this](const auto& c1)
+                                                                        {
+                                                                            if (c1 == neighbor_cell)
+                                                                            {
+                                                                                if (charge_state_to_sign(
+                                                                                        lyt_14[fourteen]
+                                                                                            .get_charge_state(c1)) !=
+                                                                                    get_charge_state_defect(11, twelve,
+                                                                                                            c1))
+                                                                                {
+                                                                                    counter_unmatched_twelve += 1;
+                                                                                }
+                                                                            }
+                                                                        });
+                                                                }
+                                                                if (counter_unmatched_twelve != 0)
+                                                                {
+                                                                    continue;
+                                                                }
                                                                 for (auto fiveteen = 0u; fiveteen < lyt_15.size();
                                                                      fiveteen++)
                                                                 {
+                                                                    uint64_t counter_unmatched_thirdteen = 0;
+                                                                    for (const auto& neighbor_cell :
+                                                                         all_defect_cells[12])
+                                                                    {
+                                                                        lyt_15[fiveteen].foreach_cell(
+                                                                            [&counter_unmatched_thirdteen,
+                                                                             &neighbor_cell, &lyt_15, &fiveteen,
+                                                                             &thirdteen, this](const auto& c1)
+                                                                            {
+                                                                                if (c1 == neighbor_cell)
+                                                                                {
+                                                                                    if (charge_state_to_sign(
+                                                                                            lyt_15[fiveteen]
+                                                                                                .get_charge_state(
+                                                                                                    c1)) !=
+                                                                                        get_charge_state_defect(
+                                                                                            12, thirdteen, c1))
+                                                                                    {
+                                                                                        counter_unmatched_thirdteen +=
+                                                                                            1;
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                    }
+                                                                    if (counter_unmatched_thirdteen != 0)
+                                                                    {
+                                                                        continue;
+                                                                    }
+
+                                                                    uint64_t counter_unmatched_fourteen = 0;
+                                                                    for (const auto& neighbor_cell :
+                                                                         all_defect_cells[13])
+                                                                    {
+                                                                        lyt_15[fiveteen].foreach_cell(
+                                                                            [&counter_unmatched_fourteen,
+                                                                             &neighbor_cell, &lyt_15, &fiveteen,
+                                                                             &fourteen, this](const auto& c1)
+                                                                            {
+                                                                                if (c1 == neighbor_cell)
+                                                                                {
+                                                                                    if (charge_state_to_sign(
+                                                                                            lyt_15[fiveteen]
+                                                                                                .get_charge_state(
+                                                                                                    c1)) !=
+                                                                                        get_charge_state_defect(
+                                                                                            13, fourteen, c1))
+                                                                                    {
+                                                                                        counter_unmatched_fourteen += 1;
+                                                                                    }
+                                                                                }
+                                                                            });
+                                                                    }
+                                                                    if (counter_unmatched_fourteen != 0)
+                                                                    {
+                                                                        continue;
+                                                                    }
                                                                     for (auto sixteen = 0u; sixteen < lyt_16.size();
                                                                          sixteen++)
                                                                     {
+                                                                        uint64_t counter_unmatched_fiveteen = 0;
+                                                                        for (const auto& neighbor_cell :
+                                                                             all_defect_cells[14])
+                                                                        {
+                                                                            lyt_16[sixteen].foreach_cell(
+                                                                                [&counter_unmatched_fiveteen,
+                                                                                 &neighbor_cell, &lyt_16, &sixteen,
+                                                                                 &fiveteen, this](const auto& c1)
+                                                                                {
+                                                                                    if (c1 == neighbor_cell)
+                                                                                    {
+                                                                                        if (charge_state_to_sign(
+                                                                                                lyt_16[sixteen]
+                                                                                                    .get_charge_state(
+                                                                                                        c1)) !=
+                                                                                            get_charge_state_defect(
+                                                                                                14, fiveteen, c1))
+                                                                                        {
+                                                                                            counter_unmatched_fiveteen +=
+                                                                                                1;
+                                                                                        }
+                                                                                    }
+                                                                                });
+                                                                        }
+                                                                        if (counter_unmatched_fiveteen != 0)
+                                                                        {
+                                                                            continue;
+                                                                        }
+
                                                                         lyt_one[one].foreach_cell(
                                                                             [this, &charge_lyt, &lyt_one,
                                                                              &one](const auto& c1) {
@@ -9850,42 +10112,42 @@ class layout_simulation_impl
         std::sort(lyt_15.begin(), lyt_15.end(), compareFunc);
         std::sort(lyt_16.begin(), lyt_16.end(), compareFunc);
 
-        int                                           number = 5;
-        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
-            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
-            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
-            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
-            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
-
-        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
-            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
-            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
-            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
-            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
-
-        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
-            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
-            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
-            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
-
-        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
-            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
-            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
-            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
-            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
-        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
-            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
+        //        int                                           number = 5;
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_ones(
+        //            lyt_one.begin(), lyt_one.begin() + std::min(number, static_cast<int>(lyt_one.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_twos(
+        //            lyt_two.begin(), lyt_two.begin() + std::min(number, static_cast<int>(lyt_two.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_threes(
+        //            lyt_three.begin(), lyt_three.begin() + std::min(number, static_cast<int>(lyt_three.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_fours(
+        //            lyt_four.begin(), lyt_four.begin() + std::min(number, static_cast<int>(lyt_four.size())));
+        //
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_fives(
+        //            lyt_five.begin(), lyt_five.begin() + std::min(number, static_cast<int>(lyt_five.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_sixs(
+        //            lyt_six.begin(), lyt_six.begin() + std::min(number, static_cast<int>(lyt_six.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_sevens(
+        //            lyt_seven.begin(), lyt_seven.begin() + std::min(number, static_cast<int>(lyt_seven.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_eights(
+        //            lyt_eight.begin(), lyt_eight.begin() + std::min(number, static_cast<int>(lyt_eight.size())));
+        //
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_nines(
+        //            lyt_nine.begin(), lyt_nine.begin() + std::min(number, static_cast<int>(lyt_nine.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_tens(
+        //            lyt_ten.begin(), lyt_ten.begin() + std::min(number, static_cast<int>(lyt_ten.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_11s(
+        //            lyt_11.begin(), lyt_11.begin() + std::min(number, static_cast<int>(lyt_11.size())));
+        //
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_12s(
+        //            lyt_12.begin(), lyt_12.begin() + std::min(number, static_cast<int>(lyt_12.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_13s(
+        //            lyt_13.begin(), lyt_13.begin() + std::min(number, static_cast<int>(lyt_13.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_14s(
+        //            lyt_14.begin(), lyt_14.begin() + std::min(number, static_cast<int>(lyt_14.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_15s(
+        //            lyt_15.begin(), lyt_15.begin() + std::min(number, static_cast<int>(lyt_15.size())));
+        //        std::vector<charge_distribution_surface<Lyt>> lyt_16s(
+        //            lyt_16.begin(), lyt_16.begin() + std::min(number, static_cast<int>(lyt_16.size())));
 
         charge_distribution_surface<Lyt> charge_lyt{layout};
         uint64_t                         counter = 0;
@@ -9903,153 +10165,94 @@ class layout_simulation_impl
                         {
                             for (const auto& lyts_six : lyt_six)
                             {
-                                //                                uint64_t counter_unmatched_one
-                                //                                = 0; for (const auto&
-                                //                                neighbor_cell :
-                                //                                all_defect_cells[0])
-                                //                                {
-                                //                                    lyts_six.foreach_cell(
-                                //                                        [&counter_unmatched_one,
-                                //                                        &neighbor_cell,
-                                //                                        &lyts_six, &i,
-                                //                                        this](const auto& c1)
-                                //                                        {
-                                //                                            if (c1 ==
-                                //                                            neighbor_cell)
-                                //                                            {
-                                //                                                if
-                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
-                                //                                                !=
-                                //                                                    get_charge_state_defect(0,
-                                //                                                    i, c1))
-                                //                                                {
-                                //                                                    counter_unmatched_one
-                                //                                                    += 1;
-                                //                                                }
-                                //                                            }
-                                //                                        });
-                                //                                }
-                                //                                if (counter_unmatched_one !=
-                                //                                0)
-                                //                                {
-                                //                                    continue;
-                                //                                }
+                                uint64_t counter_unmatched_one = 0;
+                                for (const auto& neighbor_cell : all_defect_cells[0])
+                                {
+                                    lyts_six.foreach_cell(
+                                        [&counter_unmatched_one, &neighbor_cell, &lyts_six, &i, this](const auto& c1)
+                                        {
+                                            if (c1 == neighbor_cell)
+                                            {
+                                                if (charge_state_to_sign(lyts_six.get_charge_state(c1)) !=
+                                                    get_charge_state_defect(0, i, c1))
+                                                {
+                                                    counter_unmatched_one += 1;
+                                                }
+                                            }
+                                        });
+                                }
+                                if (counter_unmatched_one != 0)
+                                {
+                                    continue;
+                                }
 
-                                //                                uint64_t counter_unmatched =
-                                //                                0; for (const auto&
-                                //                                neighbor_cell :
-                                //                                all_defect_cells[1])
-                                //                                {
-                                //                                    lyts_six.foreach_cell(
-                                //                                        [&counter_unmatched,
-                                //                                        &neighbor_cell,
-                                //                                        &lyts_six, &j,
-                                //                                        this](const auto& c1)
-                                //                                        {
-                                //                                            if (c1 ==
-                                //                                            neighbor_cell)
-                                //                                            {
-                                //                                                if
-                                //                                                (charge_state_to_sign(lyts_six.get_charge_state(c1))
-                                //                                                !=
-                                //                                                    get_charge_state_defect(1,
-                                //                                                    j, c1))
-                                //                                                {
-                                //                                                    counter_unmatched
-                                //                                                    += 1;
-                                //                                                }
-                                //                                            }
-                                //                                        });
-                                //                                }
-                                //                                if (counter_unmatched != 0)
-                                //                                {
-                                //                                    continue;
-                                //                                }
+                                uint64_t counter_unmatched = 0;
+                                for (const auto& neighbor_cell : all_defect_cells[1])
+                                {
+                                    lyts_six.foreach_cell(
+                                        [&counter_unmatched, &neighbor_cell, &lyts_six, &j, this](const auto& c1)
+                                        {
+                                            if (c1 == neighbor_cell)
+                                            {
+                                                if (charge_state_to_sign(lyts_six.get_charge_state(c1)) !=
+                                                    get_charge_state_defect(1, j, c1))
+                                                {
+                                                    counter_unmatched += 1;
+                                                }
+                                            }
+                                        });
+                                }
+                                if (counter_unmatched != 0)
+                                {
+                                    continue;
+                                }
 
                                 for (const auto& lyts_seven : lyt_seven)
                                 {
-                                    //                                    uint64_t counter_three
-                                    //                                    = 0; for (const auto&
-                                    //                                    neighbor_cell :
-                                    //                                    all_defect_cells[2])
-                                    //                                    {
-                                    //                                        lyts_seven.foreach_cell(
-                                    //                                            [&counter_three,
-                                    //                                            &neighbor_cell,
-                                    //                                            &lyts_seven,
-                                    //                                            &three,
-                                    //                                            this](const
-                                    //                                            auto& c1)
-                                    //                                            {
-                                    //                                                if (c1 ==
-                                    //                                                neighbor_cell)
-                                    //                                                {
-                                    //                                                    if
-                                    //                                                    (charge_state_to_sign(lyts_seven.get_charge_state(c1))
-                                    //                                                    !=
-                                    //                                                        get_charge_state_defect(2,
-                                    //                                                        three,
-                                    //                                                        c1))
-                                    //                                                    {
-                                    //                                                        counter_three
-                                    //                                                        +=
-                                    //                                                        1;
-                                    //                                                    }
-                                    //                                                }
-                                    //                                            });
-                                    //                                    }
-                                    //                                    if (counter_three !=
-                                    //                                    0)
-                                    //                                    {
-                                    //                                        continue;
-                                    //                                    }
+                                    uint64_t counter_three = 0;
+                                    for (const auto& neighbor_cell : all_defect_cells[2])
+                                    {
+                                        lyts_seven.foreach_cell(
+                                            [&counter_three, &neighbor_cell, &lyts_seven, &three, this](const auto& c1)
+                                            {
+                                                if (c1 == neighbor_cell)
+                                                {
+                                                    if (charge_state_to_sign(lyts_seven.get_charge_state(c1)) !=
+                                                        get_charge_state_defect(2, three, c1))
+                                                    {
+                                                        counter_three += 1;
+                                                    }
+                                                }
+                                            });
+                                    }
+                                    if (counter_three != 0)
+                                    {
+                                        continue;
+                                    }
 
                                     for (auto eight = 0u; eight < lyt_eight.size(); eight++)
                                     {
-                                        //                                        uint64_t
-                                        //                                        counter_unmatched_4
-                                        //                                        = 0; for
-                                        //                                        (const auto&
-                                        //                                        neighbor_cell_four
-                                        //                                        :
-                                        //                                        all_defect_cells[3])
-                                        //                                        {
-                                        //                                            lyt_eight[eight].foreach_cell(
-                                        //                                                [&counter_unmatched_4,
-                                        //                                                &neighbor_cell_four,
-                                        //                                                &lyt_eight,
-                                        //                                                &four,
-                                        //                                                &eight,
-                                        //                                                 this](const
-                                        //                                                 auto&
-                                        //                                                 c1)
-                                        //                                                {
-                                        //                                                    if
-                                        //                                                    (c1
-                                        //                                                    ==
-                                        //                                                    neighbor_cell_four)
-                                        //                                                    {
-                                        //                                                        if
-                                        //                                                        (charge_state_to_sign(lyt_eight[eight].get_charge_state(
-                                        //                                                                c1))
-                                        //                                                                !=
-                                        //                                                                get_charge_state_defect(3,
-                                        //                                                                four,
-                                        //                                                                c1))
-                                        //                                                        {
-                                        //                                                            counter_unmatched_4
-                                        //                                                            +=
-                                        //                                                            1;
-                                        //                                                        }
-                                        //                                                    }
-                                        //                                                });
-                                        //                                        }
-                                        //                                        if
-                                        //                                        (counter_unmatched_4
-                                        //                                        != 0)
-                                        //                                        {
-                                        //                                            continue;
-                                        //                                        }
+                                        uint64_t counter_unmatched_4 = 0;
+                                        for (const auto& neighbor_cell_four : all_defect_cells[3])
+                                        {
+                                            lyt_eight[eight].foreach_cell(
+                                                [&counter_unmatched_4, &neighbor_cell_four, &lyt_eight, &four, &eight,
+                                                 this](const auto& c1)
+                                                {
+                                                    if (c1 == neighbor_cell_four)
+                                                    {
+                                                        if (charge_state_to_sign(lyt_eight[eight].get_charge_state(
+                                                                c1)) != get_charge_state_defect(3, four, c1))
+                                                        {
+                                                            counter_unmatched_4 += 1;
+                                                        }
+                                                    }
+                                                });
+                                        }
+                                        if (counter_unmatched_4 != 0)
+                                        {
+                                            continue;
+                                        }
 
                                         for (auto nine = 0u; nine < lyt_nine.size(); nine++)
                                         {
@@ -10081,77 +10284,51 @@ class layout_simulation_impl
                                                 {
                                                     for (const auto& lyts_12 : lyt_12)
                                                     {
-                                                        //                                                        uint64_t
-                                                        //                                                        counter_unmatched_9
-                                                        //                                                        =
-                                                        //                                                        0;
-                                                        //                                                        for
-                                                        //                                                        (const
-                                                        //                                                        auto&
-                                                        //                                                        neighbor_cell_nine
-                                                        //                                                        :
-                                                        //                                                        all_defect_cells[8])
-                                                        //                                                        {
-                                                        //                                                            lyts_12.foreach_cell(
-                                                        //                                                                [&counter_unmatched_9,
-                                                        //                                                                &neighbor_cell_nine,
-                                                        //                                                                &lyts_12,
-                                                        //                                                                 &nine, this](const auto& c1)
-                                                        //                                                                {
-                                                        //                                                                    if (c1 == neighbor_cell_nine)
-                                                        //                                                                    {
-                                                        //                                                                        if (charge_state_to_sign(
-                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
-                                                        //                                                                            get_charge_state_defect(8, nine, c1))
-                                                        //                                                                        {
-                                                        //                                                                            counter_unmatched_9 += 1;
-                                                        //                                                                        }
-                                                        //                                                                    }
-                                                        //                                                                });
-                                                        //                                                        }
-                                                        //                                                        if
-                                                        //                                                        (counter_unmatched_9
-                                                        //                                                        !=
-                                                        //                                                        0)
-                                                        //                                                        {
-                                                        //                                                            continue;
-                                                        //                                                        }
-                                                        //
-                                                        //                                                        uint64_t
-                                                        //                                                        counter_unmatched_8
-                                                        //                                                        =
-                                                        //                                                        0;
-                                                        //                                                        for
-                                                        //                                                        (const
-                                                        //                                                        auto&
-                                                        //                                                        neighbor_cell_eight
-                                                        //                                                        :
-                                                        //                                                        all_defect_cells[7])
-                                                        //                                                        {
-                                                        //                                                            lyts_12.foreach_cell(
-                                                        //                                                                [&counter_unmatched_8,
-                                                        //                                                                &neighbor_cell_eight,
-                                                        //                                                                &lyts_12,
-                                                        //                                                                 &eight, this](const auto& c1)
-                                                        //                                                                {
-                                                        //                                                                    if (c1 == neighbor_cell_eight)
-                                                        //                                                                    {
-                                                        //                                                                        if (charge_state_to_sign(
-                                                        //                                                                                lyts_12.get_charge_state(c1)) !=
-                                                        //                                                                            get_charge_state_defect(7, eight, c1))
-                                                        //                                                                        {
-                                                        //                                                                            counter_unmatched_8 += 1;
-                                                        //                                                                        }
-                                                        //                                                                    }
-                                                        //                                                                });
-                                                        //                                                        }
-                                                        //                                                        if
-                                                        //                                                        (counter_unmatched_8
-                                                        //                                                        !=
-                                                        //                                                        0)
-                                                        //                                                        {
-                                                        //                                                            continue;
-                                                        //                                                        }
+                                                        uint64_t counter_unmatched_9 = 0;
+                                                        for (const auto& neighbor_cell_nine : all_defect_cells[8])
+                                                        {
+                                                            lyts_12.foreach_cell(
+                                                                [&counter_unmatched_9, &neighbor_cell_nine, &lyts_12,
+                                                                 &nine, this](const auto& c1)
+                                                                {
+                                                                    if (c1 == neighbor_cell_nine)
+                                                                    {
+                                                                        if (charge_state_to_sign(
+                                                                                lyts_12.get_charge_state(c1)) !=
+                                                                            get_charge_state_defect(8, nine, c1))
+                                                                        {
+                                                                            counter_unmatched_9 += 1;
+                                                                        }
+                                                                    }
+                                                                });
+                                                        }
+                                                        if (counter_unmatched_9 != 0)
+                                                        {
+                                                            continue;
+                                                        }
+
+                                                        uint64_t counter_unmatched_8 = 0;
+                                                        for (const auto& neighbor_cell_eight : all_defect_cells[7])
+                                                        {
+                                                            lyts_12.foreach_cell(
+                                                                [&counter_unmatched_8, &neighbor_cell_eight, &lyts_12,
+                                                                 &eight, this](const auto& c1)
+                                                                {
+                                                                    if (c1 == neighbor_cell_eight)
+                                                                    {
+                                                                        if (charge_state_to_sign(
+                                                                                lyts_12.get_charge_state(c1)) !=
+                                                                            get_charge_state_defect(7, eight, c1))
+                                                                        {
+                                                                            counter_unmatched_8 += 1;
+                                                                        }
+                                                                    }
+                                                                });
+                                                        }
+                                                        if (counter_unmatched_8 != 0)
+                                                        {
+                                                            continue;
+                                                        }
 
                                                         for (const auto& lyts_13 : lyt_13)
                                                         {
@@ -10364,7 +10541,7 @@ class layout_simulation_impl
                                                                             }
                                                                         }
                                                                         counter += 1;
-                                                                        if (counter % 100000 == 0)
+                                                                        if (counter % 100 == 0)
                                                                         {
                                                                             std::cout << counter << std::endl;
                                                                         }
@@ -10398,6 +10575,52 @@ class layout_simulation_impl
         }
     }
 
+    uint64_t get_index_of_cell(const typename Lyt::cell& cell, std::vector<typename Lyt::cell>& cell_vector) const
+    {
+        uint64_t counter = 0;
+        for (const auto& cell_in_vector : cell_vector)
+        {
+            if (cell_in_vector == cell)
+            {
+                counter += 1;
+                return counter - 1;
+            }
+            counter += 1;
+        }
+    }
+
+    bool layout_fullfilling_constraint(const charge_distribution_surface<Lyt>& lyt, const uint64_t depending_gate_index,
+                                       const uint64_t state_index)
+    {
+        auto defect_confs_of_given_index = all_defect_configrations_all_layouts[depending_gate_index][state_index];
+        bool layout_correct              = false;
+        for (const auto& conf : defect_confs_of_given_index)
+        {
+            uint64_t incorrect_counter = 0;
+            auto     neighbor_cell     = all_defect_cells[depending_gate_index];
+            lyt.foreach_cell(
+                [this, &neighbor_cell, &depending_gate_index, &lyt, &incorrect_counter, &conf](const auto& c1)
+                {
+                    for (const auto& cell : neighbor_cell)
+                    {
+                        auto cell_index = get_index_of_cell(cell, all_defect_cells[depending_gate_index]);
+                        if (cell == c1)
+                        {
+                            if (charge_state_to_sign(lyt.get_charge_state(c1)) != conf[cell_index])
+                            {
+                                incorrect_counter += 1;
+                            }
+                        }
+                    }
+                });
+            if (incorrect_counter == 0)
+            {
+                layout_correct = true;
+            }
+        }
+        return layout_correct;
+    }
+
   private:
     Lyt&                                                                     layout;
     sidb_simulation_parameters                                               parameter{};
@@ -10422,6 +10645,7 @@ class layout_simulation_impl
     std::vector<std::vector<uint64_t>>                                       charge_index_innen{};
     std::vector<std::vector<typename Lyt::cell>>                             all_defect_cells{};
     std::vector<std::vector<std::vector<int8_t>>>                            all_defect_charges{};
+    std::vector<std::vector<std::vector<std::vector<int8_t>>>>               all_defect_configrations_all_layouts{};
     std::vector<Lyt>                                                         all_layouts{};
     std::vector<uint64_t>                                                    region_num{};
     uint64_t                                                                 region_col_counter{0};
@@ -10440,7 +10664,7 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
 
     auto result = p.run_simulation_hexagon();
     p.finding_nn();
-    p.combining_all_13_test();
+    p.combining_all_3_small_layout_test();
 
     if (ps)
     {

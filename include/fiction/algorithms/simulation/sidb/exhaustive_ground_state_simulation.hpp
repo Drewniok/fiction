@@ -210,6 +210,10 @@ void exhaustive_ground_state_simulation(
                             //                            counter_conf));
                         }
                     }
+                    if (charge_lyt_coll.size() == 0)
+                    {
+                        std::cout << "no layout found!" << std::endl;
+                    }
 
                     auto min_energy = minimum_energy(charge_lyt_coll);
                     for (const auto& lyts : charge_lyt_coll)
@@ -245,6 +249,7 @@ void exhaustive_ground_state_simulation(
                 // if positively charged DBs can occur in the layout, 3-state simulation is conducted.
                 else
                 {
+                    std::cout << "three state sim required!!" << std::endl;
                     charge_lyt_new.set_all_charge_states(sidb_charge_state::NEGATIVE);
                     charge_lyt_new.update_after_charge_change();
                     const auto three_state_simulation_required_true = charge_lyt_new.three_state_sim_required();
