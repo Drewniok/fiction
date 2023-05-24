@@ -69,6 +69,10 @@ void exhaustive_ground_state_simulation(
     auto compareFunc = [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
     { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
 
+    auto compareFunc_1 = [](const std::pair<charge_distribution_surface<Lyt>, uint64_t>& lyt1,
+                            const std::pair<charge_distribution_surface<Lyt>, uint64_t>& lyt2)
+    { return lyt1.first.get_system_energy() < lyt2.first.get_system_energy(); };
+
     {
         exgs_stats<Lyt>       st_part{};
         mockturtle::stopwatch stop{st.time_total};
@@ -392,7 +396,8 @@ void exhaustive_ground_state_simulation(
         }
     }
 
-    // std::sort(st.valid_lyts.begin(), st.valid_lyts.end(),compareFunc);
+    //    std::sort(st.valid_lyts.begin(), st.valid_lyts.end(),compareFunc);
+    //    std::sort(st.defect_iter_num_valid_lyts.begin(), st.defect_iter_num_valid_lyts.end(),compareFunc_1);
     if (ps)
     {
         *ps = st;
