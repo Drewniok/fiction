@@ -396,8 +396,8 @@ void exhaustive_ground_state_simulation(
         }
     }
 
-    //    std::sort(st.valid_lyts.begin(), st.valid_lyts.end(),compareFunc);
-    //    std::sort(st.defect_iter_num_valid_lyts.begin(), st.defect_iter_num_valid_lyts.end(),compareFunc_1);
+    std::sort(st.valid_lyts.begin(), st.valid_lyts.end(), compareFunc);
+    std::sort(st.defect_iter_num_valid_lyts.begin(), st.defect_iter_num_valid_lyts.end(), compareFunc_1);
     if (ps)
     {
         *ps = st;

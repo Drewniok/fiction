@@ -66,7 +66,8 @@ class layout_simulation_impl
     layout_simulation_impl(Lyt& lyt, const sidb_simulation_parameters& params, layout_sim_stats<Lyt>& st) :
             layout{lyt},
             parameter{params},
-            statistic{st}
+            statistic{st},
+            charge_lyt{layout}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -11495,6 +11496,127 @@ class layout_simulation_impl
         }
     }
 
+    //    void assignChargeState(const typename Lyt::cell& c1, const charge_distribution_surface<Lyt>& lyt)
+    //    {
+    //        charge_lyt.assign_charge_state(c1, lyt.get_charge_state(c1), false);
+    //    }
+    //
+    //    void processCombination()
+    //    {
+    //        // Store the threads for synchronization
+    //        std::vector<std::thread> threads;
+    //
+    //        // Iterate over each lyt in combination
+    //        for (const auto& lyt : combination)
+    //        {
+    //            // Create a lambda function to be executed by each thread
+    //            auto threadFunc = [this, &lyt]() {
+    //                lyt.foreach_cell([this, &lyt](const auto& c1) {
+    //                                     assignChargeState(c1, lyt);});
+    //            };
+    //
+    //            // Start a new thread and store it
+    //            threads.emplace_back(threadFunc);
+    //        }
+    //
+    //        // Wait for all threads to finish
+    //        for (auto& thread : threads)
+    //        {
+    //            thread.join();
+    //        }
+    //    }
+
+    void processCombination()
+    {
+        for (const auto& lyt : combination)
+        {
+            lyt.foreach_cell([this, &lyt](const auto& c1)
+                             { charge_lyt.assign_charge_state(c1, lyt.get_charge_state(c1), false); });
+        }
+
+        charge_lyt.update_after_charge_change(true, false);
+        if (charge_lyt.is_physically_valid())
+        {
+            charge_lyt.recompute_system_energy();
+            if (charge_lyt.get_system_energy() < energy_threas)
+            {
+                std::vector<charge_distribution_surface<Lyt>> lyts{};
+                std::cout << charge_lyt.get_system_energy() << std::endl;
+
+                sidb_simulation_result<Lyt> sim_result{};
+                sim_result.algorithm_name = "ExGS";
+                charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+                lyts.emplace_back(charge_lyt_copy);
+                sim_result.charge_distributions = lyts;
+                energy_threas                   = charge_lyt.get_system_energy();
+                write_sqd_sim_result<Lyt>(sim_result, "/Users/"
+                                                      "jandrewnio"
+                                                      "k/"
+                                                      "CLionProje"
+                                                      "cts/"
+                                                      "fiction_"
+                                                      "fork/"
+                                                      "experiment"
+                                                      "s/"
+                                                      "result."
+                                                      "xml");
+            }
+        }
+    }
+
+    void init_size()
+    {
+        indices.reserve(lyts_of_regions.size());
+        combination.reserve(lyts_of_regions.size());
+    }
+
+    void generateCombinations(const uint64_t depth)
+    {
+        if (depth == lyts_of_regions.size())
+        {
+            processCombination();
+            return;
+        }
+
+        const std::vector<charge_distribution_surface<Lyt>>& currentVector = lyts_of_regions[depth];
+        for (auto i = 0u; i < currentVector.size(); i++)
+        {
+            if (depth < indices.size())
+            {
+                indices[depth]     = i;
+                combination[depth] = currentVector[i];
+            }
+            else
+            {
+                indices.push_back(i);
+                combination.push_back(currentVector[i]);
+            }
+
+            // Check the condition and continue if it's not fulfilled
+            uint64_t mismatch = 0;
+            for (const auto& lyt_index : all_neighbor_pairs[depth])
+            {
+                if (lyt_index < depth)
+                {
+                    if (!layout_fullfilling_constraint(currentVector[i], lyt_index, indices[lyt_index]))
+                    {
+                        mismatch += 1;
+                    }
+                }
+            }
+            if (mismatch > 0)
+            {
+                combination.pop_back();
+                indices.pop_back();
+                continue;
+            }
+
+            generateCombinations(depth + 1);
+            combination.pop_back();
+            indices.pop_back();
+        }
+    }
+
     void combining_all_26_feature()
     {
         auto compareFunc =
@@ -12370,8 +12492,9 @@ class layout_simulation_impl
     bool layout_fullfilling_constraint(const charge_distribution_surface<Lyt>& lyt, const uint64_t depending_gate_index,
                                        const uint64_t state_index)
     {
-        auto defect_confs_of_given_index = all_defect_configrations_all_layouts[depending_gate_index][state_index];
-        bool layout_correct              = false;
+        const auto defect_confs_of_given_index =
+            all_defect_configrations_all_layouts[depending_gate_index][state_index];
+        bool layout_correct = false;
         for (const auto& conf : defect_confs_of_given_index)
         {
             uint64_t incorrect_counter = 0;
@@ -12429,6 +12552,10 @@ class layout_simulation_impl
     uint64_t                                                                 region_col_counter{0};
     uint64_t                                                                 region_counter{0};
     std::unordered_map<uint64_t, std::vector<typename Lyt::cell>>            border_cell_region{};
+    double                                                                   energy_threas = 100;
+    std::vector<charge_distribution_surface<Lyt>>                            combination{};
+    std::vector<uint64_t>                                                    indices{};
+    charge_distribution_surface<Lyt>                                         charge_lyt{};
 };
 
 template <typename Lyt>
@@ -12442,7 +12569,8 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
 
     auto result = p.run_simulation_hexagon();
     p.finding_nn();
-    p.combining_all_11_feature();
+    p.init_size();
+    p.generateCombinations(0);
 
     if (ps)
     {
