@@ -741,6 +741,7 @@ class layout_simulation_impl
 
                 layout_num = lyt.num_cells();
 
+                std::cout << "current number of cells: " << std::to_string(lyt.num_cells()) << std::endl;
                 std::cout << "border cell max index: " << std::to_string(border_cell_max_charge_index) << std::endl;
                 std::cout << "border cells: " << std::to_string(border_cells.size()) << std::endl;
                 std::cout << "total cells: " << std::to_string(layout.num_cells()) << std::endl;
@@ -826,8 +827,18 @@ class layout_simulation_impl
                 }
 
                 std::cout << "defect confs:" << std::to_string(all_defect_confs.size()) << std::endl;
-                exgs_stats<Lyt> exgs_stats{};
-                exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, all_defect_confs);
+                exgs_stats<Lyt>       exgs_stats{};
+                quicksim_stats<Lyt>   quicksim_stats{};
+                const quicksim_params quicksim_params{sidb_simulation_parameters{2, -0.32}, 5000, 0.65, 1};
+                quicksim<Lyt>(lyt, quicksim_params, &quicksim_stats, all_defect_confs);
+
+                // exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, all_defect_confs);
+
+                std::cout << "ExGS size: " << std::to_string(exgs_stats.valid_lyts.size()) << std::endl;
+                std::cout << "quicksim size: " << std::to_string(quicksim_stats.valid_lyts.size()) << std::endl;
+
+                exgs_stats.valid_lyts                 = quicksim_stats.valid_lyts;
+                exgs_stats.defect_iter_num_valid_lyts = quicksim_stats.defect_iter_num_valid_lyts;
 
                 for (auto i = 0u; i < exgs_stats.valid_lyts.size(); i++)
                 {
@@ -11538,7 +11549,7 @@ class layout_simulation_impl
         if (charge_lyt.is_physically_valid())
         {
             charge_lyt.recompute_system_energy();
-            if (charge_lyt.get_system_energy() < energy_threas)
+            if (charge_lyt.get_system_energy() < 1000)
             {
                 std::vector<charge_distribution_surface<Lyt>> lyts{};
                 std::cout << charge_lyt.get_system_energy() << std::endl;
@@ -11570,17 +11581,35 @@ class layout_simulation_impl
         combination.reserve(lyts_of_regions.size());
     }
 
+    void count_combinations()
+    {
+        combination_iterator_counter = 0;
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+    }
+
     void generateCombinations(const uint64_t depth)
     {
         if (depth == lyts_of_regions.size())
         {
             processCombination();
+            // std::cout << "path found" << std::endl;
             return;
         }
 
         const std::vector<charge_distribution_surface<Lyt>>& currentVector = lyts_of_regions[depth];
         for (auto i = 0u; i < currentVector.size(); i++)
         {
+            combination_iterator_counter += 1;
+            if (combination_iterator_counter % 1000000 == 0)
+            {
+                std::cout << combination_iterator_counter << std::endl;
+            }
             if (depth < indices.size())
             {
                 indices[depth]     = i;
@@ -12556,6 +12585,7 @@ class layout_simulation_impl
     std::vector<charge_distribution_surface<Lyt>>                            combination{};
     std::vector<uint64_t>                                                    indices{};
     charge_distribution_surface<Lyt>                                         charge_lyt{};
+    uint64_t                                                                 combination_iterator_counter{};
 };
 
 template <typename Lyt>
@@ -12570,6 +12600,7 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
     auto result = p.run_simulation_hexagon();
     p.finding_nn();
     p.init_size();
+    p.count_combinations();
     p.generateCombinations(0);
 
     if (ps)

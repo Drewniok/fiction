@@ -64,6 +64,8 @@ struct quicksim_stats
      * Vector of all physically valid charge layouts.
      */
     std::vector<charge_distribution_surface<Lyt>> valid_lyts{};
+
+    std::vector<std::pair<charge_distribution_surface<Lyt>, uint64_t>> defect_iter_num_valid_lyts{};
     /**
      * Report the simulation statistics in a human-readable fashion.
      *
@@ -102,7 +104,8 @@ struct quicksim_stats
  * distribution layouts).
  */
 template <typename Lyt>
-void quicksim(const Lyt& lyt, const quicksim_params& ps = quicksim_params{}, quicksim_stats<Lyt>* pst = nullptr)
+void quicksim(Lyt& lyt, const quicksim_params& ps = quicksim_params{}, quicksim_stats<Lyt>* pst = nullptr,
+              std::vector<std::unordered_map<typename Lyt::cell, const sidb_defect>> defects = {})
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt must be an SiDB layout");
@@ -113,114 +116,208 @@ void quicksim(const Lyt& lyt, const quicksim_params& ps = quicksim_params{}, qui
     // measure run time (artificial scope)
     {
         mockturtle::stopwatch stop{st.time_total};
-
-        charge_distribution_surface charge_lyt{lyt};
-
-        // set the given physical parameters
-        charge_lyt.set_physical_parameters(ps.phys_params);
-        charge_lyt.set_base_num(2);
-        charge_lyt.set_all_charge_states(sidb_charge_state::NEGATIVE);
-        charge_lyt.update_after_charge_change(false);
-        const auto negative_sidb_indices = charge_lyt.negative_sidb_detection();
-
-        if (charge_lyt.is_physically_valid())
+        uint64_t              counter_conf = 0;
+        for (const auto& defect_conf : defects)
         {
-            st.valid_lyts.push_back(charge_distribution_surface<Lyt>{charge_lyt});
-        }
+            for (const auto& defect_cells : defects[0])
+            {
+                lyt.assign_cell_type(defect_cells.first, sidb_technology::cell_type::NORMAL);
+            }
+            charge_distribution_surface charge_lyt{lyt};
 
-        charge_lyt.set_all_charge_states(sidb_charge_state::NEUTRAL);
-        charge_lyt.update_after_charge_change();
+            // set the given physical parameters
+            charge_lyt.set_physical_parameters(ps.phys_params);
+            charge_lyt.set_base_num(2);
+            charge_lyt.set_all_charge_states(sidb_charge_state::NEGATIVE);
+            for (const auto& defect : defect_conf)
+            {
+                if (defect.second.charge == 0)
+                {
+                    charge_lyt.assign_charge_state(defect.first, sidb_charge_state::NEUTRAL);
+                }
+            }
+            charge_lyt.update_after_charge_change(false);
+            auto negative_sidb_indices = charge_lyt.negative_sidb_detection();
 
-        if (!negative_sidb_indices.empty())
-        {
+            for (const auto& defect : defect_conf)
+            {
+                if (defect.second.charge == -1)
+                {
+                    auto index = static_cast<uint64_t>(charge_lyt.cell_to_index(defect.first));
+                    if (std::find(negative_sidb_indices.begin(), negative_sidb_indices.end(), index) ==
+                        negative_sidb_indices.end())
+                    {
+                        negative_sidb_indices.push_back(charge_lyt.cell_to_index(defect.first));
+                    }
+                }
+            }
+
             if (charge_lyt.is_physically_valid())
             {
                 st.valid_lyts.push_back(charge_distribution_surface<Lyt>{charge_lyt});
             }
-        }
 
-        // If the number of threads is initially set to zero, the simulation is run with one thread.
-        const uint64_t num_threads = std::max(ps.number_threads, uint64_t{1});
+            charge_lyt.set_all_charge_states(sidb_charge_state::NEUTRAL);
+            charge_lyt.update_after_charge_change();
 
-        // split the iterations among threads
-        const auto iter_per_thread =
-            std::max(ps.interation_steps / num_threads,
-                     uint64_t{1});  // If the number of set threads is greater than the number of iterations, the
-                                    // number of threads defines how many times QuickSim is repeated
-
-        std::vector<std::thread> threads{};
-        threads.reserve(num_threads);
-        std::mutex mutex{};  // used to control access to shared resources
-
-        for (uint64_t z = 0ul; z < num_threads; z++)
-        {
-            threads.emplace_back(
-                [&]
+            if (!negative_sidb_indices.empty())
+            {
+                if (charge_lyt.is_physically_valid())
                 {
-                    charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+                    st.valid_lyts.push_back(charge_distribution_surface<Lyt>{charge_lyt});
+                }
+            }
 
-                    for (uint64_t l = 0ul; l < iter_per_thread; ++l)
+            // If the number of threads is initially set to zero, the simulation is run with one thread.
+            const uint64_t num_threads = std::max(ps.number_threads, uint64_t{1});
+
+            // split the iterations among threads
+            const auto iter_per_thread =
+                std::max(ps.interation_steps / num_threads,
+                         uint64_t{1});  // If the number of set threads is greater than the number of iterations, the
+                                        // number of threads defines how many times QuickSim is repeated
+
+            std::vector<std::thread> threads{};
+            threads.reserve(num_threads);
+            std::mutex                                    mutex{};  // used to control access to shared resources
+            std::vector<charge_distribution_surface<Lyt>> charge_lyt_coll{};
+            std::vector<std::pair<charge_distribution_surface<Lyt>, uint64_t>> defect_coll{};
+            for (uint64_t z = 0ul; z < num_threads; z++)
+            {
+                threads.emplace_back(
+                    [&]
                     {
-                        for (uint64_t i = 0ul; i < charge_lyt.num_cells(); ++i)
+                        charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+
+                        for (uint64_t l = 0ul; l < iter_per_thread; ++l)
                         {
+                            for (uint64_t i = 0ul; i < charge_lyt_copy.num_cells(); ++i)
                             {
-                                const std::lock_guard lock{mutex};
-                                if (std::find(negative_sidb_indices.cbegin(), negative_sidb_indices.cend(), i) !=
-                                    negative_sidb_indices.cend())
                                 {
-                                    continue;
+                                    const std::lock_guard lock{mutex};
+                                    if (std::find(negative_sidb_indices.cbegin(), negative_sidb_indices.cend(), i) !=
+                                        negative_sidb_indices.cend())
+                                    {
+                                        continue;
+                                    }
                                 }
-                            }
 
-                            std::vector<uint64_t> index_start{i};
+                                std::vector<uint64_t> index_start{i};
 
-                            charge_lyt_copy.set_all_charge_states(sidb_charge_state::NEUTRAL);
+                                charge_lyt_copy.set_all_charge_states(sidb_charge_state::NEUTRAL);
 
-                            for (const auto& index : negative_sidb_indices)
-                            {
-                                charge_lyt_copy.assign_charge_state_by_cell_index(static_cast<uint64_t>(index),
-                                                                                  sidb_charge_state::NEGATIVE);
-                                index_start.push_back(static_cast<uint64_t>(index));
-                            }
+                                for (const auto& index : negative_sidb_indices)
+                                {
+                                    charge_lyt_copy.assign_charge_state_by_cell_index(static_cast<uint64_t>(index),
+                                                                                      sidb_charge_state::NEGATIVE);
+                                    index_start.push_back(static_cast<uint64_t>(index));
+                                }
 
-                            charge_lyt_copy.assign_charge_state_by_cell_index(i, sidb_charge_state::NEGATIVE);
-                            charge_lyt_copy.update_after_charge_change();
-
-                            if (charge_lyt_copy.is_physically_valid())
-                            {
-                                const std::lock_guard lock{mutex};
-                                st.valid_lyts.push_back(charge_distribution_surface<Lyt>{charge_lyt_copy});
-                            }
-
-                            const auto upper_limit =
-                                std::min(static_cast<uint64_t>(static_cast<double>(charge_lyt_copy.num_cells()) / 1.5),
-                                         charge_lyt.num_cells() - negative_sidb_indices.size());
-
-                            for (uint64_t num = 0ul; num < upper_limit; num++)
-                            {
-                                charge_lyt_copy.adjacent_search(ps.alpha, index_start);
-                                charge_lyt_copy.validity_check();
+                                charge_lyt_copy.assign_charge_state_by_cell_index(i, sidb_charge_state::NEGATIVE);
+                                charge_lyt_copy.update_after_charge_change();
 
                                 if (charge_lyt_copy.is_physically_valid())
                                 {
                                     const std::lock_guard lock{mutex};
-                                    st.valid_lyts.push_back(charge_distribution_surface<Lyt>{charge_lyt_copy});
+                                    for (const auto& defect_cells : defects[0])
+                                    {
+                                        lyt.assign_cell_type(defect_cells.first, sidb_technology::cell_type::EMPTY);
+                                    }
+                                    charge_distribution_surface charge_lyt_copy_final{lyt, ps.phys_params};
+                                    charge_lyt_copy_final.foreach_cell(
+                                        [&charge_lyt_copy_final, &charge_lyt_copy](const auto& c1) {
+                                            charge_lyt_copy_final.assign_charge_state(
+                                                c1, charge_lyt_copy.get_charge_state(c1), false);
+                                        });
+                                    charge_lyt_copy_final.charge_distr_to_index();
+                                    charge_lyt_copy_final.update_after_charge_change();
+                                    charge_lyt_coll.push_back(charge_lyt_copy_final);
+                                    defect_coll.push_back(std::make_pair(charge_lyt_copy_final, counter_conf));
+                                    //                                    st.valid_lyts.push_back(charge_distribution_surface<Lyt>{charge_lyt_copy_final});
+                                    for (const auto& defect_cells : defects[0])
+                                    {
+                                        lyt.assign_cell_type(defect_cells.first, sidb_technology::cell_type::NORMAL);
+                                    }
+                                }
+
+                                const auto upper_limit = std::min(
+                                    static_cast<uint64_t>(static_cast<double>(charge_lyt_copy.num_cells()) / 1.5),
+                                    charge_lyt_copy.num_cells() - negative_sidb_indices.size());
+
+                                for (uint64_t num = 0ul; num < upper_limit; num++)
+                                {
+                                    charge_lyt_copy.adjacent_search(ps.alpha, index_start);
+                                    charge_lyt_copy.validity_check();
+
+                                    if (charge_lyt_copy.is_physically_valid())
+                                    {
+                                        const std::lock_guard lock{mutex};
+                                        for (const auto& defect_cells : defects[0])
+                                        {
+                                            lyt.assign_cell_type(defect_cells.first, sidb_technology::cell_type::EMPTY);
+                                        }
+                                        charge_distribution_surface charge_lyt_copy_final{lyt, ps.phys_params};
+                                        charge_lyt_copy_final.foreach_cell(
+                                            [&charge_lyt_copy_final, &charge_lyt_copy](const auto& c1) {
+                                                charge_lyt_copy_final.assign_charge_state(
+                                                    c1, charge_lyt_copy.get_charge_state(c1), false);
+                                            });
+                                        charge_lyt_copy_final.charge_distr_to_index();
+                                        charge_lyt_copy_final.update_after_charge_change();
+                                        charge_lyt_coll.push_back(charge_lyt_copy_final);
+                                        defect_coll.push_back(std::make_pair(charge_lyt_copy_final, counter_conf));
+                                        //                                        st.valid_lyts.push_back(
+                                        //                                            charge_distribution_surface<Lyt>{charge_lyt_copy_final});
+                                        for (const auto& defect_cells : defects[0])
+                                        {
+                                            lyt.assign_cell_type(defect_cells.first,
+                                                                 sidb_technology::cell_type::NORMAL);
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+            }
+
+            for (auto& thread : threads)
+            {
+                thread.join();
+            }
+
+            if (charge_lyt_coll.size() == 0)
+            {
+                std::cout << "no layout found!" << std::endl;
+            }
+
+            auto min_energy = minimum_energy(charge_lyt_coll);
+            for (const auto& lyts : charge_lyt_coll)
+            {
+                if (lyts.get_system_energy() == min_energy)
+                {
+                    st.valid_lyts.push_back(lyts);
+                    break;
+                }
+            }
+            for (const auto& coll : defect_coll)
+            {
+                if (coll.first.get_system_energy() == min_energy)
+                {
+                    st.defect_iter_num_valid_lyts.push_back(std::make_pair(coll.first, coll.second));
+                    break;
+                }
+            }
+            counter_conf += 1;
+            for (const auto& defect_cells : defects[0])
+            {
+                lyt.assign_cell_type(defect_cells.first, sidb_technology::cell_type::EMPTY);
+            }
         }
 
-        for (auto& thread : threads)
+        if (pst)
         {
-            thread.join();
+            *pst = st;
         }
-    }
-
-    if (pst)
-    {
-        *pst = st;
     }
 }
 

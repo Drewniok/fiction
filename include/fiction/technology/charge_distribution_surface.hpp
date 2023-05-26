@@ -1884,8 +1884,11 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void adding_sidb_to_layout(const typename Lyt::cell& cell, const int8_t& charge) noexcept
     {
-        strg->cell_charge.push_back(sign_to_charge_state(charge));
-        strg->sidb_order.push_back(cell);
+        if (std::find(strg->sidb_order.begin(), strg->sidb_order.end(), cell) == strg->sidb_order.end())
+        {
+            strg->cell_charge.push_back(sign_to_charge_state(charge));
+            strg->sidb_order.push_back(cell);
+        }
     }
 
     void init_defects()
