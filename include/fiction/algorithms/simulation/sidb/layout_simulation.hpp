@@ -217,27 +217,71 @@ class layout_simulation_impl
             std::cout << allowed << std::endl;
             std::cout << allowed_y << std::endl;
 
-            layout.foreach_cell(
-                [this](const cell<Lyt>& c)
+            std::set<int64_t> x_coordinates{};
+            for (const auto& cell : cells)
+            {
+                x_coordinates.insert(cell.x);
+            }
+
+            number_same_column = {};
+            for (const auto& x_coordinate : x_coordinates)
+            {
+                uint64_t counter = 0;
+                for (const auto& cell : cells)
                 {
-                    if (std::find(cells.begin(), cells.end(), c) == cells.end())
+                    if (cell.x == x_coordinate)
                     {
-                        uint64_t counter = 0;
-                        for (auto it = cells.begin(); it != cells.end(); it++)
+                        counter += 1;
+                    }
+                }
+                number_same_column.insert(counter);
+            }
+            if (*number_same_column.rbegin() == 4 && cells.size() < 14)
+            {
+                layout.foreach_cell(
+                    [this](const cell<Lyt>& c)
+                    {
+                        if (std::find(cells.begin(), cells.end(), c) == cells.end())
                         {
-                            if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
+                            uint64_t counter = 0;
+                            for (auto it = cells.begin(); it != cells.end(); it++)
                             {
-                                counter += 1;
+                                if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 11.2)
+                                {
+                                    counter += 1;
+                                }
+                            }
+                            if (counter != 0)
+                            {
+                                border_cells.push_back(c);
+                                border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
                             }
                         }
-                        if (counter != 0)
+                    });
+            }
+            else
+            {
+                layout.foreach_cell(
+                    [this](const cell<Lyt>& c)
+                    {
+                        if (std::find(cells.begin(), cells.end(), c) == cells.end())
                         {
-                            border_cells.push_back(c);
-                            border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
+                            uint64_t counter = 0;
+                            for (auto it = cells.begin(); it != cells.end(); it++)
+                            {
+                                if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
+                                {
+                                    counter += 1;
+                                }
+                            }
+                            if (counter != 0)
+                            {
+                                border_cells.push_back(c);
+                                border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
+                            }
                         }
-                    }
-                });
-
+                    });
+            }
             border_cell_region.insert(std::make_pair(region_counter, border_cells));
 
             border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
@@ -263,326 +307,7 @@ class layout_simulation_impl
         return EXIT_SUCCESS;
     }
 
-    //    bool layout_generation_hexagon()
-    //    {
-    //        cells           = {};
-    //        uint64_t length = 0;
-    //
-    //        uint64_t allowed   = start_cell.x + 26;
-    //        uint64_t allowed_y = start_cell.y + 32;
-    //
-    //        border_cells       = {};
-    //        border_cell_charge = {};
-    //
-    //        //        cells.insert(start_cell);
-    //        //        total_cells.insert(start_cell);
-    //
-    //        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
-    //        //        {
-    //        //            cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //        }
-    //
-    //        layout.foreach_cell(
-    //            [&allowed, &allowed_y, this](const cell<Lyt>& c)
-    //            {
-    //                if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                {
-    //                    auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
-    //                    if (cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
-    //                    {
-    //                        cells.insert(c);
-    //                        total_cells.insert(c);
-    //                    }
-    //                }
-    //            });
-    //
-    //        //            std::cout << allowed << std::endl;
-    //        //            std::cout << allowed_y << std::endl;
-    //        //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //        //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
-    //
-    //        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
-    //        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //        std::cout << allowed << std::endl;
-    //        std::cout << allowed_y << std::endl;
-    //
-    //        layout.foreach_cell(
-    //            [this](const cell<Lyt>& c)
-    //            {
-    //                if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                {
-    //                    uint64_t counter = 0;
-    //                    for (auto it = cells.begin(); it != cells.end(); it++)
-    //                    {
-    //                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
-    //                        {
-    //                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
-    //                            //                            siqad::to_siqad_coord(start_cell).y)
-    //                            //                            {
-    //                            counter += 1;
-    //                            //}
-    //                        }
-    //                    }
-    //                    if (counter != 0)
-    //                    {
-    //                        border_cells.push_back(c);
-    //                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
-    //                    }
-    //                }
-    //            });
-    //
-    //        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
-    //        start_cell.x                 = start_cell.x + length;
-    //        start_cell.y                 = start_cell.y + length;
-    //    }
 
-    //    bool layout_generation_hexagon()
-    //    {
-    //        cells           = {};
-    //        uint64_t length = 0;
-    //
-    //        uint64_t allowed   = start_cell.x + 26;
-    //        uint64_t allowed_y = start_cell.y + 32;
-    //
-    //        border_cells       = {};
-    //        border_cell_charge = {};
-    //
-    //        //        cells.insert(start_cell);
-    //        //        total_cells.insert(start_cell);
-    //
-    //        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
-    //        //        {
-    //        //            cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //        }
-    //
-    //            layout.foreach_cell(
-    //                [&allowed, &allowed_y, this](const cell<Lyt>& c)
-    //                {
-    //                    if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                    {
-    //                        auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
-    //                        if (cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
-    //                        {
-    //                            cells.insert(c);
-    //                            total_cells.insert(c);
-    //                        }
-    //                    }
-    //                });
-    //
-    //            //            std::cout << allowed << std::endl;
-    //            //            std::cout << allowed_y << std::endl;
-    //            //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //            //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
-    //
-    //        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
-    //        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //        std::cout << allowed << std::endl;
-    //        std::cout << allowed_y << std::endl;
-    //
-    //        layout.foreach_cell(
-    //            [this](const cell<Lyt>& c)
-    //            {
-    //                if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                {
-    //                    uint64_t counter = 0;
-    //                    for (auto it = cells.begin(); it != cells.end(); it++)
-    //                    {
-    //                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
-    //                        {
-    //                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
-    //                            //                            siqad::to_siqad_coord(start_cell).y)
-    //                            //                            {
-    //                            counter += 1;
-    //                            //}
-    //                        }
-    //                    }
-    //                    if (counter != 0)
-    //                    {
-    //                        border_cells.push_back(c);
-    //                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
-    //                    }
-    //                }
-    //            });
-    //
-    //        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
-    //        start_cell.x                 = start_cell.x + length;
-    //        start_cell.y                 = start_cell.y + length;
-    //    }
-
-    //    bool layout_generation_top_down()
-    //    {
-    //        cells           = {};
-    //        uint64_t length = 0;
-    //
-    //        uint64_t allowed   = start_cell.x;
-    //        uint64_t allowed_y = start_cell.y + length;
-    //
-    //        border_cells       = {};
-    //        border_cell_charge = {};
-    //
-    //        //        cells.insert(start_cell);
-    //        //        total_cells.insert(start_cell);
-    //
-    //        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
-    //        //        {
-    //        //            cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //        }
-    //
-    //        while (total_cells.size() < layout.num_cells() && cells.size() < 40)
-    //        {
-    //            layout.foreach_cell(
-    //                [&allowed, &allowed_y, this](const cell<Lyt>& c)
-    //                {
-    //                    if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                    {
-    //                        auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
-    //                        if (cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
-    //                        {
-    //                            cells.insert(c);
-    //                            total_cells.insert(c);
-    //                        }
-    //                        //                        if (cell_conv.x == start_cell.x && cell_conv.y <= allowed_y &&
-    //                        //                        cell_conv.y > start_cell.y)
-    //                        //                        {
-    //                        //                            cells.insert(c);
-    //                        //                            total_cells.insert(c);
-    //                        //                        }
-    //                    }
-    //                });
-    //            length += 1;
-    //            allowed   = start_cell.x + length;
-    //            allowed_y = start_cell.y + length;
-    //            //            std::cout << allowed << std::endl;
-    //            //            std::cout << allowed_y << std::endl;
-    //            //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //            //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
-    //        }
-    //        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
-    //        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //        std::cout << allowed << std::endl;
-    //        std::cout << allowed_y << std::endl;
-    //
-    //        layout.foreach_cell(
-    //            [this](const cell<Lyt>& c)
-    //            {
-    //                if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                {
-    //                    uint64_t counter = 0;
-    //                    for (auto it = cells.begin(); it != cells.end(); it++)
-    //                    {
-    //                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
-    //                        {
-    //                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
-    //                            //                            siqad::to_siqad_coord(start_cell).y)
-    //                            //                            {
-    //                            counter += 1;
-    //                            //}
-    //                        }
-    //                    }
-    //                    if (counter != 0)
-    //                    {
-    //                        border_cells.push_back(c);
-    //                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
-    //                    }
-    //                }
-    //            });
-    //
-    //        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
-    //        start_cell.x                 = start_cell.x + length;
-    //        start_cell.y                 = start_cell.y + length;
-    //    }
-
-    //    bool layout_generation()
-    //    {
-    //        cells           = {};
-    //        uint64_t length = 0;
-    //
-    //        uint64_t allowed   = start_cell.x + length;
-    //        uint64_t allowed_y = start_cell.y + length;
-    //
-    //        border_cells       = {};
-    //        border_cell_charge = {};
-    //
-    //        //        cells.insert(start_cell);
-    //        //        total_cells.insert(start_cell);
-    //
-    //        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
-    //        //        {
-    //        //            cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
-    //        //        }
-    //
-    //        while (total_cells.size() < layout.num_cells() && cells.size() < 27)
-    //        {
-    //            layout.foreach_cell(
-    //                [&allowed, &allowed_y, this](const cell<Lyt>& c)
-    //                {
-    //                    if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                    {
-    //                        auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
-    //                        if (cell_conv.x < start_cell.x && cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
-    //                        {
-    //                            cells.insert(c);
-    //                            total_cells.insert(c);
-    //                        }
-    //                        if (cell_conv.x >= start_cell.x && cell_conv.y <= allowed_y && cell_conv.x <= allowed)
-    //                        {
-    //                            cells.insert(c);
-    //                            total_cells.insert(c);
-    //                        }
-    //                        //                        if (cell_conv.x == start_cell.x && cell_conv.y <= allowed_y &&
-    //                        //                        cell_conv.y > start_cell.y)
-    //                        //                        {
-    //                        //                            cells.insert(c);
-    //                        //                            total_cells.insert(c);
-    //                        //                        }
-    //                    }
-    //                });
-    //            length += 1;
-    //            allowed   = start_cell.x + length;
-    //            allowed_y = start_cell.y + length;
-    //            //            std::cout << allowed << std::endl;
-    //            //            std::cout << allowed_y << std::endl;
-    //            //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //            //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
-    //        }
-    //        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
-    //        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
-    //        std::cout << allowed << std::endl;
-    //        std::cout << allowed_y << std::endl;
-    //
-    //        layout.foreach_cell(
-    //            [this](const cell<Lyt>& c)
-    //            {
-    //                if (std::find(cells.begin(), cells.end(), c) == cells.end())
-    //                {
-    //                    uint64_t counter = 0;
-    //                    for (auto it = cells.begin(); it != cells.end(); it++)
-    //                    {
-    //                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 3)
-    //                        {
-    //                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
-    //                            //                            siqad::to_siqad_coord(start_cell).y)
-    //                            //                            {
-    //                            counter += 1;
-    //                            //}
-    //                        }
-    //                    }
-    //                    if (counter != 0)
-    //                    {
-    //                        border_cells.push_back(c);
-    //                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
-    //                    }
-    //                }
-    //            });
-    //
-    //        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
-    //        start_cell.x                 = start_cell.x + length;
-    //        start_cell.y                 = start_cell.y + length;
-    //    }
 
     uint64_t charge_distribution_external_to_index(std::vector<typename Lyt::cell>&        defect_vector,
                                                    const charge_distribution_surface<Lyt>& lyt) const
@@ -615,111 +340,6 @@ class layout_simulation_impl
         }
     }
 
-    //    bool run_simulation()
-    //    {
-    //        uint64_t counter = 0;
-    //        while (total_cells.size() < layout.num_cells())
-    //        {
-    ////            this->layout_generation();
-    //            this->layout_generation_hexagon();
-    //
-    //            Lyt lyt{};
-    //
-    //            for (const auto& cell : cells)
-    //            {
-    //                lyt.assign_cell_type(cell, Lyt::cell_type::NORMAL);
-    //            }
-    //
-    //            layout_num = lyt.num_cells();
-    //
-    //            std::cout << "border cell max index: " << std::to_string(border_cell_max_charge_index) << std::endl;
-    //            std::cout << "border cells: " << std::to_string(border_cells.size()) << std::endl;
-    //            std::set<uint64_t> charge_index{};
-    //
-    //            border_cell_index    = 0;
-    //            auto lyts_collection = std::vector<charge_distribution_surface<Lyt>>{};
-    //            std::vector<std::unordered_map<typename Lyt::cell, const sidb_defect>> all_defect_confs{};
-    //            while (border_cell_index <= border_cell_max_charge_index)
-    //            {
-    //                this->index_to_charge_distribution();
-    //
-    //                this->defect_map_update();
-    //
-    //                //                std::vector<sidb_charge_state> defect_charges{};
-    //                //                for (const auto& charge : defect_charge)
-    //                //                {
-    //                //                    defect_charges.push_back(sign_to_charge_state(charge));
-    //                //                }
-    //
-    //                //    std::cout << charge_configuration_to_string(defect_charges) << std::endl;
-    //                // std::cout << border_cell_index << std::endl;
-    //                std::unordered_map<typename Lyt::cell, const sidb_defect> defect{};
-    //                for (uint64_t i = 0; i < defect_cell.size(); i++)
-    //                {
-    //                    defect.insert({defect_cell[i],
-    //                                   sidb_defect{sidb_defect_type::UNKNOWN,
-    //                                   static_cast<double>(defect_charge[i])}});
-    //                }
-    //                border_cell_index += 1;
-    //                all_defect_confs.push_back(defect);
-    //            }
-    //            std::cout << "defect confs:" << std::to_string(all_defect_confs.size()) << std::endl;
-    //            // std::cout << "defects: " << defect.size() << std::endl;
-    //            exgs_stats<Lyt> exgs_stats{};
-    //            // std::vector<uint64_t> charge_index_in{};
-    //            //exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, all_defect_confs);
-    //            for (const auto& lyt_loop : exgs_stats.valid_lyts)
-    //            {
-    //                charge_index.insert(lyt_loop.get_charge_index().first);
-    //                // charge_index_in.emplace_back(charge_distribution_external_to_index(defect_cell, lyt_loop));
-    //            }
-    //            // charge_index_innen.emplace_back(charge_index_in);
-    //            all_charge_lyts.emplace_back(exgs_stats.valid_lyts);
-    //            for (const auto& solution_lyts : exgs_stats.valid_lyts)
-    //            {
-    //                lyts_collection.emplace_back(solution_lyts);
-    //            }
-    //            region_num.emplace_back(counter);
-    //
-    //            all_defect_charges.emplace_back(defect_charge);
-    //            // border_cell_index += 1;
-    //
-    //            std::vector<charge_distribution_surface<Lyt>> unique_lyts{};
-    //            for (const auto& index : charge_index)
-    //            {
-    //                for (const auto& lyt : lyts_collection)
-    //                {
-    //                    if (lyt.get_charge_index().first == index)
-    //                    {
-    //                        unique_lyts.push_back(lyt);
-    //                        break;
-    //                    }
-    //                }
-    //            }
-    //            lyts_of_regions.emplace_back(unique_lyts);
-    //            all_defect_cells.emplace_back(defect_cell);
-    //
-    //            std::cout << "number valid lyts: " << charge_index.size() << std::endl;
-    //
-    //            //                        if (charge_index.size() == 1)
-    //            //                        {
-    //            //                            write_sqd_layout(lyt, "/Users/jandrewniok/Desktop/investi/" +
-    //            //                            std::to_string(total_cells.size()));
-    //            //                        }
-    //
-    //            if (border_cell_max_charge_index == 0)
-    //            {
-    //                fiction::exgs_stats<Lyt> exgs_stats_second{};
-    //                exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats_second);
-    //                all_charge_lyts.emplace_back(exgs_stats_second.valid_lyts);
-    //                region_num.emplace_back(counter);
-    //            }
-    //            // std::cout << all_charge_lyts.size() << std::endl;
-    //            counter += 1;
-    //        }
-    //
-    //        return true;
-    //    };
 
     bool run_simulation_hexagon()
     {
@@ -757,11 +377,8 @@ class layout_simulation_impl
 
                     this->defect_map_update();
 
-                    auto num_pairs = defect_cell.size() / 2;
-                    if (defect_cell.size() % 2 != 0)
-                    {
-                        std::cout << "not" << std::endl;
-                    }
+                    ////                    if (cells.size() > 13)
+                    ////                    {
 
                     uint64_t charge_counter = 0;
                     for (const auto& charge_sign : defect_charge)
@@ -771,39 +388,61 @@ class layout_simulation_impl
                             charge_counter += 1;
                         }
                     }
-                    if (charge_counter != num_pairs)
+                    if (charge_counter < 0.3 * defect_cell.size() || charge_counter > 0.7 * defect_cell.size())
                     {
                         border_cell_index += 1;
                         continue;
                     }
 
-                    uint64_t counter_small_distance = 0;
-
-                    for (auto i = 0u; i < defect_cell.size(); i++)
+                    if (*number_same_column.rbegin() != 4 || cells.size() > 13)
                     {
-                        for (auto j = 0u; j < defect_cell.size(); j++)
+                        auto num_pairs = defect_cell.size() / 2;
+                        if (defect_cell.size() % 2 != 0)
                         {
-                            if (i == j)
+                            std::cout << "not" << std::endl;
+                        }
+                        //
+
+                        //                    if (charge_counter > (num_pairs + 2) ||
+                        //                        charge_counter < std::max(static_cast<uint64_t>(0),
+                        //                        static_cast<uint64_t>(num_pairs - 2)))
+                        if (charge_counter != num_pairs)
+                        {
+                            border_cell_index += 1;
+                            continue;
+                        }
+
+                        //
+                        uint64_t counter_small_distance = 0;
+
+                        for (auto i = 0u; i < defect_cell.size(); i++)
+                        {
+                            for (auto j = 0u; j < defect_cell.size(); j++)
                             {
-                                continue;
-                            }
-                            else
-                            {
-                                if (defect_charge[i] == -1 && defect_charge[j] == -1 &&
-                                    (sidb_nanometer_distance<Lyt>(layout, defect_cell[i], defect_cell[j], parameter)) <
-                                        1.9)
+                                if (i == j)
                                 {
-                                    counter_small_distance += 1;
+                                    continue;
+                                }
+                                else
+                                {
+                                    if (defect_charge[i] == -1 && defect_charge[j] == -1 &&
+                                        (sidb_nanometer_distance<Lyt>(layout, defect_cell[i], defect_cell[j],
+                                                                      parameter)) < 1.9)
+                                    {
+                                        counter_small_distance += 1;
+                                    }
                                 }
                             }
                         }
+
+                        if (counter_small_distance != 0)
+                        {
+                            border_cell_index += 1;
+                            continue;
+                        }
                     }
 
-                    if (counter_small_distance != 0)
-                    {
-                        border_cell_index += 1;
-                        continue;
-                    }
+                    //  }
 
                     std::vector<int8_t> charges{};
                     for (auto i = 0u; i < defect_charge.size(); i++)
@@ -829,16 +468,17 @@ class layout_simulation_impl
                 std::cout << "defect confs:" << std::to_string(all_defect_confs.size()) << std::endl;
                 exgs_stats<Lyt>       exgs_stats{};
                 quicksim_stats<Lyt>   quicksim_stats{};
-                const quicksim_params quicksim_params{sidb_simulation_parameters{2, -0.32}, 5000, 0.65, 1};
-                quicksim<Lyt>(lyt, quicksim_params, &quicksim_stats, all_defect_confs);
+                const quicksim_params quicksim_params{sidb_simulation_parameters{2, -0.32}, 1000, 0.3, 1};
+                // quicksim<Lyt>(lyt, quicksim_params, &quicksim_stats, all_defect_confs);
 
-                // exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, all_defect_confs);
+                exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, all_defect_confs);
 
                 std::cout << "ExGS size: " << std::to_string(exgs_stats.valid_lyts.size()) << std::endl;
-                std::cout << "quicksim size: " << std::to_string(quicksim_stats.valid_lyts.size()) << std::endl;
+                //                std::cout << "quicksim size: " << std::to_string(quicksim_stats.valid_lyts.size()) <<
+                //                std::endl;
 
-                exgs_stats.valid_lyts                 = quicksim_stats.valid_lyts;
-                exgs_stats.defect_iter_num_valid_lyts = quicksim_stats.defect_iter_num_valid_lyts;
+                //                exgs_stats.valid_lyts                 = quicksim_stats.valid_lyts;
+                //                exgs_stats.defect_iter_num_valid_lyts = quicksim_stats.defect_iter_num_valid_lyts;
 
                 for (auto i = 0u; i < exgs_stats.valid_lyts.size(); i++)
                 {
@@ -3002,7 +2642,83 @@ class layout_simulation_impl
         }
     }
 
-    void combining_all_3_small_layout_test()
+    void combining_all_2_small_layout_test()
+    {
+        auto compareFunc =
+            [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
+        { return lyt1.get_system_energy() < lyt2.get_system_energy(); };
+
+        std::cout << "combining starts: " << std::to_string(lyts_of_regions.size()) << std::endl;
+        uint64_t counter_lyts = 1;
+        for (const auto& lyts_region : lyts_of_regions)
+        {
+            counter_lyts *= lyts_region.size();
+        }
+        std::cout << "number enumerations: " << std::to_string(counter_lyts) << std::endl;
+
+        auto lyt_one = lyts_of_regions[0];
+        auto lyt_two = lyts_of_regions[1];
+
+        charge_distribution_surface<Lyt> charge_lyt{layout};
+        uint64_t                         counter = 0;
+        std::vector<double>              valid_energies{};
+        double                           energy_threas = 1000;
+        for (auto i = 0u; i < lyt_one.size(); i++)
+        {
+            for (auto j = 0u; j < lyt_two.size(); j++)
+            {
+                if (!layout_fullfilling_constraint(lyt_two[j], 0, i))
+                {
+                    continue;
+                }
+                if (!previous_layout_fullfilling_constraint(0, i, 1, j))
+                {
+                    continue;
+                }
+
+                lyt_one[i].foreach_cell(
+                    [this, &charge_lyt, &lyt_one, &i](const auto& c1)
+                    { charge_lyt.assign_charge_state(c1, lyt_one[i].get_charge_state(c1), false); });
+                lyt_two[j].foreach_cell(
+                    [this, &charge_lyt, &lyt_two, &j](const auto& c1)
+                    { charge_lyt.assign_charge_state(c1, lyt_two[j].get_charge_state(c1), false); });
+                charge_lyt.update_after_charge_change();
+                if (charge_lyt.is_physically_valid())
+                {
+                    if (charge_lyt.get_system_energy() < 1000)
+                    {
+                        //                                std::cout << "lyt_one: " << std::to_string(i) << std::endl;
+                        //                                std::cout << "lyt_two: " << std::to_string(j) << std::endl;
+                        //                                std::cout << "lyt_three: " << std::to_string(three) <<
+                        //                                std::endl; std::cout << "lyt_four: " << std::to_string(four)
+                        //                                << std::endl;
+
+                        std::vector<charge_distribution_surface<Lyt>> lyts{};
+                        std::cout << charge_lyt.get_system_energy() << std::endl;
+
+                        sidb_simulation_result<Lyt> sim_result{};
+                        sim_result.algorithm_name = "ExGS";
+                        charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
+                        lyts.emplace_back(charge_lyt_copy);
+                        sim_result.charge_distributions = lyts;
+                        energy_threas                   = charge_lyt.get_system_energy();
+                        write_sqd_sim_result<Lyt>(sim_result, "/Users/jandrewniok/"
+                                                              "CLionProjects/"
+                                                              "fiction_fork/"
+                                                              "experiments/"
+                                                              "result.xml");
+                    }
+                }
+                counter += 1;
+                if (counter % 1 == 0)
+                {
+                    std::cout << counter << std::endl;
+                }
+            }
+        }
+    }
+
+    void combining_all_4_small_layout_test()
     {
         auto compareFunc =
             [](const charge_distribution_surface<Lyt>& lyt1, const charge_distribution_surface<Lyt>& lyt2)
@@ -3066,14 +2782,16 @@ class layout_simulation_impl
                             [this, &charge_lyt, &lyt_four, &four](const auto& c1)
                             { charge_lyt.assign_charge_state(c1, lyt_four[four].get_charge_state(c1), false); });
                         charge_lyt.update_after_charge_change();
-                        if (charge_lyt.is_physically_valid())
+                        if (!charge_lyt.is_physically_valid())
                         {
-                            if (charge_lyt.get_system_energy() < energy_threas)
+                            if (charge_lyt.get_system_energy() < 1000)
                             {
-                                std::cout << "lyt_one: " << std::to_string(i) << std::endl;
-                                std::cout << "lyt_two: " << std::to_string(j) << std::endl;
-                                std::cout << "lyt_three: " << std::to_string(three) << std::endl;
-                                std::cout << "lyt_four: " << std::to_string(four) << std::endl;
+                                //                                std::cout << "lyt_one: " << std::to_string(i) <<
+                                //                                std::endl; std::cout << "lyt_two: " <<
+                                //                                std::to_string(j) << std::endl; std::cout <<
+                                //                                "lyt_three: " << std::to_string(three) << std::endl;
+                                //                                std::cout << "lyt_four: " << std::to_string(four) <<
+                                //                                std::endl;
 
                                 std::vector<charge_distribution_surface<Lyt>> lyts{};
                                 std::cout << charge_lyt.get_system_energy() << std::endl;
@@ -3094,7 +2812,7 @@ class layout_simulation_impl
                         counter += 1;
                         if (counter % 1 == 0)
                         {
-                            std::cout << counter << std::endl;
+                            // std::cout << counter << std::endl;
                         }
                     }
                 }
@@ -10906,6 +10624,7 @@ class layout_simulation_impl
                                                         for (auto thirdteen = 0u; thirdteen < lyt_13.size();
                                                              thirdteen++)
                                                         {
+                                                            combination_iterator_counter += 1;
 
                                                             lyt_one[one].foreach_cell(
                                                                 [this, &charge_lyt, &lyt_one, &one](const auto& c1) {
@@ -10983,7 +10702,8 @@ class layout_simulation_impl
                                                             charge_lyt.update_after_charge_change();
                                                             if (charge_lyt.is_physically_valid())
                                                             {
-                                                                if (charge_lyt.get_system_energy() < energy_threas)
+                                                                std::cout << combination_iterator_counter << std::endl;
+                                                                if (charge_lyt.get_system_energy() < 1000)
                                                                 {
                                                                     std::vector<charge_distribution_surface<Lyt>>
                                                                         lyts{};
@@ -11549,7 +11269,7 @@ class layout_simulation_impl
         if (charge_lyt.is_physically_valid())
         {
             charge_lyt.recompute_system_energy();
-            if (charge_lyt.get_system_energy() < 1000)
+            if (charge_lyt.get_system_energy() < energy_threas)
             {
                 std::vector<charge_distribution_surface<Lyt>> lyts{};
                 std::cout << charge_lyt.get_system_energy() << std::endl;
@@ -11572,6 +11292,7 @@ class layout_simulation_impl
                                                       "result."
                                                       "xml");
             }
+            layout_found = false;
         }
     }
 
@@ -11598,27 +11319,47 @@ class layout_simulation_impl
         if (depth == lyts_of_regions.size())
         {
             processCombination();
+            if (combination_iterator_counter % 100000 == 0)
+            {
+                std::cout << combination_iterator_counter << std::endl;
+            }
+
             // std::cout << "path found" << std::endl;
             return;
         }
 
-        const std::vector<charge_distribution_surface<Lyt>>& currentVector = lyts_of_regions[depth];
-        for (auto i = 0u; i < currentVector.size(); i++)
+        const std::vector<charge_distribution_surface<Lyt>>& current_vector = lyts_of_regions[depth];
+        for (auto i = 0u; i < current_vector.size(); i++)
         {
             combination_iterator_counter += 1;
-            if (combination_iterator_counter % 1000000 == 0)
-            {
-                std::cout << combination_iterator_counter << std::endl;
-            }
             if (depth < indices.size())
             {
                 indices[depth]     = i;
-                combination[depth] = currentVector[i];
+                combination[depth] = current_vector[i];
             }
             else
             {
                 indices.push_back(i);
-                combination.push_back(currentVector[i]);
+                combination.push_back(current_vector[i]);
+            }
+
+            uint64_t mismatch_previous = 0;
+            for (const auto& lyt_index : all_neighbor_pairs[depth])
+            {
+                if (lyt_index < depth)
+                {
+
+                    if (!previous_layout_fullfilling_constraint(lyt_index, indices[lyt_index], depth, indices[depth]))
+                    {
+                        mismatch_previous += 1;
+                    }
+                }
+            }
+            if (mismatch_previous > 0)
+            {
+                combination.pop_back();
+                indices.pop_back();
+                continue;
             }
 
             // Check the condition and continue if it's not fulfilled
@@ -11627,7 +11368,7 @@ class layout_simulation_impl
             {
                 if (lyt_index < depth)
                 {
-                    if (!layout_fullfilling_constraint(currentVector[i], lyt_index, indices[lyt_index]))
+                    if (!layout_fullfilling_constraint(current_vector[i], lyt_index, indices[lyt_index]))
                     {
                         mismatch += 1;
                     }
@@ -12518,6 +12259,44 @@ class layout_simulation_impl
         }
     }
 
+    bool previous_layout_fullfilling_constraint(const uint64_t depending_gate_index_previous,
+                                                const uint64_t state_index_previous,
+                                                const uint64_t depending_gate_index_current,
+                                                const uint64_t current_layout_index)
+    {
+        charge_distribution_surface<Lyt> lyt_previous{
+            lyts_of_regions[depending_gate_index_previous][state_index_previous]};
+        auto       neighbor_cells_of_current_layout = all_defect_cells[depending_gate_index_current];
+        const auto defect_confs_of_given_index_current_layout =
+            all_defect_configrations_all_layouts[depending_gate_index_current][current_layout_index];
+        bool layout_correct = false;
+        for (const auto& conf : defect_confs_of_given_index_current_layout)
+        {
+            uint64_t incorrect_counter = 0;
+            lyt_previous.foreach_cell(
+                [this, &lyt_previous, &neighbor_cells_of_current_layout, &depending_gate_index_current,
+                 &incorrect_counter, &conf](const auto& c1)
+                {
+                    for (const auto& cell : neighbor_cells_of_current_layout)
+                    {
+                        auto cell_index = get_index_of_cell(cell, all_defect_cells[depending_gate_index_current]);
+                        if (cell == c1)
+                        {
+                            if (charge_state_to_sign(lyt_previous.get_charge_state(c1)) != conf[cell_index])
+                            {
+                                incorrect_counter += 1;
+                            }
+                        }
+                    }
+                });
+            if (incorrect_counter == 0)
+            {
+                layout_correct = true;
+            }
+        }
+        return layout_correct;
+    }
+
     bool layout_fullfilling_constraint(const charge_distribution_surface<Lyt>& lyt, const uint64_t depending_gate_index,
                                        const uint64_t state_index)
     {
@@ -12586,6 +12365,8 @@ class layout_simulation_impl
     std::vector<uint64_t>                                                    indices{};
     charge_distribution_surface<Lyt>                                         charge_lyt{};
     uint64_t                                                                 combination_iterator_counter{};
+    std::set<uint64_t>                                                       number_same_column{};
+    bool                                                                     layout_found = true;
 };
 
 template <typename Lyt>
@@ -12602,6 +12383,7 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
     p.init_size();
     p.count_combinations();
     p.generateCombinations(0);
+    // p.combining_all_2_small_layout_test();
 
     if (ps)
     {
@@ -12615,3 +12397,324 @@ bool layout_simulation(Lyt& lyt, const sidb_simulation_parameters& params = sidb
 
 }  // namespace fiction
 #endif  // FICTION_LAYOUT_SIMULATION_HPP
+
+        //    bool layout_generation_hexagon()
+//    {
+//        cells           = {};
+//        uint64_t length = 0;
+//
+//        uint64_t allowed   = start_cell.x + 26;
+//        uint64_t allowed_y = start_cell.y + 32;
+//
+//        border_cells       = {};
+//        border_cell_charge = {};
+//
+//        //        cells.insert(start_cell);
+//        //        total_cells.insert(start_cell);
+//
+//        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
+//        //        {
+//        //            cells.insert(siqad::to_siqad_coord(start_cell));
+//        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
+//        //        }
+//
+//        layout.foreach_cell(
+//            [&allowed, &allowed_y, this](const cell<Lyt>& c)
+//            {
+//                if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                {
+//                    auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
+//                    if (cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
+//                    {
+//                        cells.insert(c);
+//                        total_cells.insert(c);
+//                    }
+//                }
+//            });
+//
+//        //            std::cout << allowed << std::endl;
+//        //            std::cout << allowed_y << std::endl;
+//        //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//        //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
+//
+//        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
+//        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//        std::cout << allowed << std::endl;
+//        std::cout << allowed_y << std::endl;
+//
+//        layout.foreach_cell(
+//            [this](const cell<Lyt>& c)
+//            {
+//                if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                {
+//                    uint64_t counter = 0;
+//                    for (auto it = cells.begin(); it != cells.end(); it++)
+//                    {
+//                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
+//                        {
+//                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
+//                            //                            siqad::to_siqad_coord(start_cell).y)
+//                            //                            {
+//                            counter += 1;
+//                            //}
+//                        }
+//                    }
+//                    if (counter != 0)
+//                    {
+//                        border_cells.push_back(c);
+//                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
+//                    }
+//                }
+//            });
+//
+//        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
+//        start_cell.x                 = start_cell.x + length;
+//        start_cell.y                 = start_cell.y + length;
+//    }
+
+//    bool layout_generation_hexagon()
+//    {
+//        cells           = {};
+//        uint64_t length = 0;
+//
+//        uint64_t allowed   = start_cell.x + 26;
+//        uint64_t allowed_y = start_cell.y + 32;
+//
+//        border_cells       = {};
+//        border_cell_charge = {};
+//
+//        //        cells.insert(start_cell);
+//        //        total_cells.insert(start_cell);
+//
+//        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
+//        //        {
+//        //            cells.insert(siqad::to_siqad_coord(start_cell));
+//        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
+//        //        }
+//
+//            layout.foreach_cell(
+//                [&allowed, &allowed_y, this](const cell<Lyt>& c)
+//                {
+//                    if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                    {
+//                        auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
+//                        if (cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
+//                        {
+//                            cells.insert(c);
+//                            total_cells.insert(c);
+//                        }
+//                    }
+//                });
+//
+//            //            std::cout << allowed << std::endl;
+//            //            std::cout << allowed_y << std::endl;
+//            //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//            //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
+//
+//        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
+//        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//        std::cout << allowed << std::endl;
+//        std::cout << allowed_y << std::endl;
+//
+//        layout.foreach_cell(
+//            [this](const cell<Lyt>& c)
+//            {
+//                if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                {
+//                    uint64_t counter = 0;
+//                    for (auto it = cells.begin(); it != cells.end(); it++)
+//                    {
+//                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
+//                        {
+//                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
+//                            //                            siqad::to_siqad_coord(start_cell).y)
+//                            //                            {
+//                            counter += 1;
+//                            //}
+//                        }
+//                    }
+//                    if (counter != 0)
+//                    {
+//                        border_cells.push_back(c);
+//                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
+//                    }
+//                }
+//            });
+//
+//        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
+//        start_cell.x                 = start_cell.x + length;
+//        start_cell.y                 = start_cell.y + length;
+//    }
+
+//    bool layout_generation_top_down()
+//    {
+//        cells           = {};
+//        uint64_t length = 0;
+//
+//        uint64_t allowed   = start_cell.x;
+//        uint64_t allowed_y = start_cell.y + length;
+//
+//        border_cells       = {};
+//        border_cell_charge = {};
+//
+//        //        cells.insert(start_cell);
+//        //        total_cells.insert(start_cell);
+//
+//        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
+//        //        {
+//        //            cells.insert(siqad::to_siqad_coord(start_cell));
+//        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
+//        //        }
+//
+//        while (total_cells.size() < layout.num_cells() && cells.size() < 40)
+//        {
+//            layout.foreach_cell(
+//                [&allowed, &allowed_y, this](const cell<Lyt>& c)
+//                {
+//                    if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                    {
+//                        auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
+//                        if (cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
+//                        {
+//                            cells.insert(c);
+//                            total_cells.insert(c);
+//                        }
+//                        //                        if (cell_conv.x == start_cell.x && cell_conv.y <= allowed_y &&
+//                        //                        cell_conv.y > start_cell.y)
+//                        //                        {
+//                        //                            cells.insert(c);
+//                        //                            total_cells.insert(c);
+//                        //                        }
+//                    }
+//                });
+//            length += 1;
+//            allowed   = start_cell.x + length;
+//            allowed_y = start_cell.y + length;
+//            //            std::cout << allowed << std::endl;
+//            //            std::cout << allowed_y << std::endl;
+//            //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//            //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
+//        }
+//        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
+//        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//        std::cout << allowed << std::endl;
+//        std::cout << allowed_y << std::endl;
+//
+//        layout.foreach_cell(
+//            [this](const cell<Lyt>& c)
+//            {
+//                if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                {
+//                    uint64_t counter = 0;
+//                    for (auto it = cells.begin(); it != cells.end(); it++)
+//                    {
+//                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
+//                        {
+//                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
+//                            //                            siqad::to_siqad_coord(start_cell).y)
+//                            //                            {
+//                            counter += 1;
+//                            //}
+//                        }
+//                    }
+//                    if (counter != 0)
+//                    {
+//                        border_cells.push_back(c);
+//                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
+//                    }
+//                }
+//            });
+//
+//        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
+//        start_cell.x                 = start_cell.x + length;
+//        start_cell.y                 = start_cell.y + length;
+//    }
+
+//    bool layout_generation()
+//    {
+//        cells           = {};
+//        uint64_t length = 0;
+//
+//        uint64_t allowed   = start_cell.x + length;
+//        uint64_t allowed_y = start_cell.y + length;
+//
+//        border_cells       = {};
+//        border_cell_charge = {};
+//
+//        //        cells.insert(start_cell);
+//        //        total_cells.insert(start_cell);
+//
+//        //        if (start_cell == siqad::to_fiction_coord<cube::coord_t>(left_corner_cell))
+//        //        {
+//        //            cells.insert(siqad::to_siqad_coord(start_cell));
+//        //            total_cells.insert(siqad::to_siqad_coord(start_cell));
+//        //        }
+//
+//        while (total_cells.size() < layout.num_cells() && cells.size() < 27)
+//        {
+//            layout.foreach_cell(
+//                [&allowed, &allowed_y, this](const cell<Lyt>& c)
+//                {
+//                    if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                    {
+//                        auto cell_conv = fiction::siqad::to_fiction_coord<cube::coord_t>(c);
+//                        if (cell_conv.x < start_cell.x && cell_conv.y <= allowed_y && cell_conv.y >= start_cell.y)
+//                        {
+//                            cells.insert(c);
+//                            total_cells.insert(c);
+//                        }
+//                        if (cell_conv.x >= start_cell.x && cell_conv.y <= allowed_y && cell_conv.x <= allowed)
+//                        {
+//                            cells.insert(c);
+//                            total_cells.insert(c);
+//                        }
+//                        //                        if (cell_conv.x == start_cell.x && cell_conv.y <= allowed_y &&
+//                        //                        cell_conv.y > start_cell.y)
+//                        //                        {
+//                        //                            cells.insert(c);
+//                        //                            total_cells.insert(c);
+//                        //                        }
+//                    }
+//                });
+//            length += 1;
+//            allowed   = start_cell.x + length;
+//            allowed_y = start_cell.y + length;
+//            //            std::cout << allowed << std::endl;
+//            //            std::cout << allowed_y << std::endl;
+//            //            std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//            //            std::cout << "all collected cells: " << std::to_string(cells.size()) << std::endl;
+//        }
+//        std::cout << "part cells: " << std::to_string(cells.size()) << std::endl;
+//        std::cout << "all collected cells: " << std::to_string(total_cells.size()) << std::endl;
+//        std::cout << allowed << std::endl;
+//        std::cout << allowed_y << std::endl;
+//
+//        layout.foreach_cell(
+//            [this](const cell<Lyt>& c)
+//            {
+//                if (std::find(cells.begin(), cells.end(), c) == cells.end())
+//                {
+//                    uint64_t counter = 0;
+//                    for (auto it = cells.begin(); it != cells.end(); it++)
+//                    {
+//                        if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 3)
+//                        {
+//                            //                            if (c.x > siqad::to_siqad_coord(start_cell).x && c.y >
+//                            //                            siqad::to_siqad_coord(start_cell).y)
+//                            //                            {
+//                            counter += 1;
+//                            //}
+//                        }
+//                    }
+//                    if (counter != 0)
+//                    {
+//                        border_cells.push_back(c);
+//                        border_cell_charge.push_back(sidb_charge_state::NEUTRAL);
+//                    }
+//                }
+//            });
+//
+//        border_cell_max_charge_index = std::pow(2, border_cells.size()) - 1;
+//        start_cell.x                 = start_cell.x + length;
+//        start_cell.y                 = start_cell.y + length;
+//    }
