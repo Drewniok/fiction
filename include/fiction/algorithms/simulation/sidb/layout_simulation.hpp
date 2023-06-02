@@ -246,7 +246,7 @@ class layout_simulation_impl
                             uint64_t counter = 0;
                             for (auto it = cells.begin(); it != cells.end(); it++)
                             {
-                                if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 11.2)
+                                if (sidb_nanometer_distance<Lyt>(layout, *it, c, parameter) < 6)
                                 {
                                     counter += 1;
                                 }
@@ -468,7 +468,7 @@ class layout_simulation_impl
                 std::cout << "defect confs:" << std::to_string(all_defect_confs.size()) << std::endl;
                 exgs_stats<Lyt>       exgs_stats{};
                 quicksim_stats<Lyt>   quicksim_stats{};
-                const quicksim_params quicksim_params{sidb_simulation_parameters{2, -0.32}, 1000, 0.3, 1};
+                const quicksim_params quicksim_params{sidb_simulation_parameters{2, -0.32}, 1000, 0.7, 1};
                 // quicksim<Lyt>(lyt, quicksim_params, &quicksim_stats, all_defect_confs);
 
                 exhaustive_ground_state_simulation(lyt, parameter, &exgs_stats, all_defect_confs);
@@ -477,8 +477,9 @@ class layout_simulation_impl
                 //                std::cout << "quicksim size: " << std::to_string(quicksim_stats.valid_lyts.size()) <<
                 //                std::endl;
 
-                //                exgs_stats.valid_lyts                 = quicksim_stats.valid_lyts;
-                //                exgs_stats.defect_iter_num_valid_lyts = quicksim_stats.defect_iter_num_valid_lyts;
+                //                                exgs_stats.valid_lyts                 = quicksim_stats.valid_lyts;
+                //                                exgs_stats.defect_iter_num_valid_lyts =
+                //                                quicksim_stats.defect_iter_num_valid_lyts;
 
                 for (auto i = 0u; i < exgs_stats.valid_lyts.size(); i++)
                 {
