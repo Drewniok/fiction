@@ -13,10 +13,10 @@
 #include <fiction/types.hpp>                                         // pre-defined types suitable for the FCN domain
 #include <fiction/utils/routing_utils.hpp>                           // routing utility functions
 
-#include <fmt/format.h>                      // output formatting
-#include <lorina/lorina.hpp>                 // Verilog/BLIF/AIGER/... file parsing
-#include <mockturtle/io/verilog_reader.hpp>  // call-backs to read Verilog files into networks
-#include <mockturtle/networks/aig.hpp>       // AND-inverter graphs
+#include <fmt/format.h>                                              // output formatting
+#include <lorina/lorina.hpp>                                         // Verilog/BLIF/AIGER/... file parsing
+#include <mockturtle/io/verilog_reader.hpp>                          // call-backs to read Verilog files into networks
+#include <mockturtle/networks/aig.hpp>                               // AND-inverter graphs
 
 #include <cstdint>
 #include <cstdlib>
@@ -183,8 +183,9 @@ void ortho_sat_complete()
                                                       "runtime graph coloring (sec)",
                                                       "equivalent"};
 
-    constexpr const uint64_t bench_select =
-        fiction_experiments::all & ~fiction_experiments::majority & ~fiction_experiments::newtag;
+    constexpr const uint64_t bench_select = fiction_experiments::all & ~fiction_experiments::majority &
+                                            ~fiction_experiments::newtag & ~fiction_experiments::iscas85 &
+                                            ~fiction_experiments::epfl;
 
     for (const auto& benchmark : fiction_experiments::all_benchmarks(bench_select))
     {

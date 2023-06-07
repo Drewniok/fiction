@@ -24,21 +24,21 @@ TEST_CASE("Utility function: any_to_string", "[sqd-sim-result]")
         const std::any value{};
         const auto     result = detail::any_to_string(value);
 
-        REQUIRE(result.empty());
+        CHECK(result.empty());
     }
     SECTION("int8_t")
     {
         const int8_t value  = -42;
         const auto   result = detail::any_to_string(value);
 
-        REQUIRE(result == "-42");
+        CHECK(result == "-42");
     }
     SECTION("uint8_t")
     {
         const uint8_t value  = 42;
         const auto    result = detail::any_to_string(value);
 
-        REQUIRE(result == "42");
+        CHECK(result == "42");
     }
     SECTION("int16_t")
     {
@@ -251,17 +251,11 @@ TEST_CASE("Write simulation result with ExGS simulation", "[sqd-sim-result]")
     lyt.assign_cell_type({17, 0, 0}, sidb_layout::cell_type::NORMAL);
     lyt.assign_cell_type({19, 0, 0}, sidb_layout::cell_type::NORMAL);
 
-    exgs_stats<sidb_layout>          exgs_stats{};
     const sidb_simulation_parameters params{2, -0.32};
 
-    exhaustive_ground_state_simulation<sidb_layout>(lyt, params, &exgs_stats);
+    auto sim_result = exhaustive_ground_state_simulation<sidb_layout>(lyt, params);
 
-    sidb_simulation_result<sidb_layout> sim_result{};
-
-    sim_result.algorithm_name       = "ExGS";
-    sim_result.simulation_runtime   = exgs_stats.time_total;
-    sim_result.charge_distributions = exgs_stats.valid_lyts;
-    sim_result.physical_parameters  = params;
+    sim_result.algorithm_name = "ExGS";
 
     std::stringstream simulation_stream{};
 
@@ -283,16 +277,16 @@ TEST_CASE("Write simulation result with ExGS simulation", "[sqd-sim-result]")
         "    </sim_params>\n"
         "    <physloc>\n"
         "        <dbdot x=\"0.000000\" y=\"0.000000\"/>\n"
-        "        <dbdot x=\"42.240000\" y=\"0.000000\"/>\n"
-        "        <dbdot x=\"65.280000\" y=\"0.000000\"/>\n"
         "        <dbdot x=\"19.200000\" y=\"0.000000\"/>\n"
-        "        <dbdot x=\"72.960000\" y=\"0.000000\"/>\n"
-        "        <dbdot x=\"49.920000\" y=\"0.000000\"/>\n"
         "        <dbdot x=\"26.880000\" y=\"0.000000\"/>\n"
+        "        <dbdot x=\"42.240000\" y=\"0.000000\"/>\n"
+        "        <dbdot x=\"49.920000\" y=\"0.000000\"/>\n"
+        "        <dbdot x=\"65.280000\" y=\"0.000000\"/>\n"
+        "        <dbdot x=\"72.960000\" y=\"0.000000\"/>\n"
         "    </physloc>\n"
         "    <elec_dist>\n"
         "        <dist energy=\"0.246027\" count=\"1\" physically_valid=\"1\" "
-        "state_count=\"2\">-000---</dist>\n"
+        "state_count=\"3\">-0-0-0-</dist>\n"
         "    </elec_dist>\n"
         "</sim_out>\n",
         FICTION_VERSION, FICTION_REPO, fmt::format("{:%Y-%m-%d %H:%M:%S}", fmt::localtime(std::time(nullptr))),
@@ -316,18 +310,11 @@ TEST_CASE("Write simulation result with ExGS simulation and positive DBs", "[sqd
     lyt.assign_cell_type({6, 0, 0}, sidb_layout::cell_type::NORMAL);
     lyt.assign_cell_type({7, 0, 0}, sidb_layout::cell_type::NORMAL);
 
-    exgs_stats<sidb_layout>          exgs_stats{};
     const sidb_simulation_parameters params{3, -0.32};
 
-    exhaustive_ground_state_simulation<sidb_layout>(lyt, params, &exgs_stats);
+    auto sim_result = exhaustive_ground_state_simulation<sidb_layout>(lyt, params);
 
-    sidb_simulation_result<sidb_layout> sim_result{};
-
-    sim_result.algorithm_name       = "ExGS";
-    sim_result.simulation_runtime   = exgs_stats.time_total;
-    sim_result.charge_distributions = exgs_stats.valid_lyts;
-    sim_result.physical_parameters  = params;
-
+    sim_result.algorithm_name = "ExGS";
     std::stringstream simulation_stream{};
 
     const std::string sim_result_str = fmt::format(
@@ -347,13 +334,13 @@ TEST_CASE("Write simulation result with ExGS simulation and positive DBs", "[sqd
         "        <muzm>{}</muzm>\n"
         "    </sim_params>\n"
         "    <physloc>\n"
-        "        <dbdot x=\"23.040000\" y=\"0.000000\"/>\n"
         "        <dbdot x=\"19.200000\" y=\"0.000000\"/>\n"
+        "        <dbdot x=\"23.040000\" y=\"0.000000\"/>\n"
         "        <dbdot x=\"26.880000\" y=\"0.000000\"/>\n"
         "    </physloc>\n"
         "    <elec_dist>\n"
-        "        <dist energy=\"0.000000\" count=\"1\" physically_valid=\"1\" state_count=\"3\">-00</dist>\n"
-        "        <dist energy=\"-0.953023\" count=\"1\" physically_valid=\"1\" state_count=\"3\">+--</dist>\n"
+        "        <dist energy=\"-0.953023\" count=\"1\" physically_valid=\"1\" state_count=\"3\">-+-</dist>\n"
+        "        <dist energy=\"0.000000\" count=\"1\" physically_valid=\"1\" state_count=\"3\">0-0</dist>\n"
         "    </elec_dist>\n"
         "</sim_out>\n",
         FICTION_VERSION, FICTION_REPO, fmt::format("{:%Y-%m-%d %H:%M:%S}", fmt::localtime(std::time(nullptr))),
