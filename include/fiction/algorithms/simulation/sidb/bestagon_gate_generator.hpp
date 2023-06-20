@@ -159,7 +159,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
     for (auto& lyt : random_layouts)
     {
         layout_counter += 1;
-        write_sqd_layout(lyt, "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/test_gate/" +
+        write_sqd_layout(lyt, "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/test_gate/layout_" +
                                   std::to_string(layout_counter) + ".sqd");
         if (layout_counter % 10 == 0)
         {
