@@ -138,9 +138,10 @@ std::vector<Lyt> generate_multiple_random_layout(const random_layout_params<Lyt>
         const auto random_lyt = generate_random_layout(params, lyt_skeleton);
 
         uint64_t identical_layout_counter = 0;
+        // Checks if two layouts have the same cell.
+
         for (const auto& old_lyt : unique_lyts)
         {
-            // Checks if two layouts have the same cell.
             uint64_t identical_cell_counter = 0;
             old_lyt.foreach_cell(
                 [&identical_cell_counter, random_lyt](const auto& cell_old)
@@ -165,6 +166,11 @@ std::vector<Lyt> generate_multiple_random_layout(const random_layout_params<Lyt>
         if (identical_layout_counter == 0)
         {
             unique_lyts.push_back(random_lyt);
+        }
+
+        if (unique_lyts.size() % 1000 == 0)
+        {
+            std::cout << unique_lyts.size() << std::endl;
         }
 
         counter += 1;
