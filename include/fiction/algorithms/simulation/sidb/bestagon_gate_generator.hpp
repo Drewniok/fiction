@@ -148,7 +148,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
 
     critical_temperature_params temp_params{simulation_engine::APPROXIMATE,
                                             critical_temperature_mode::GATE_BASED_SIMULATION,
-                                            quicksim_params{sidb_simulation_parameters{2, -0.32}, 200},
+                                            quicksim_params{sidb_simulation_parameters{2, -0.32}, 80},
                                             0.99,
                                             350,
                                             params.truth_table};
