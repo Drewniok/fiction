@@ -97,9 +97,8 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
             layout =
                 read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
                                                          "skeleton/skeleton_hex_inputsdbp_1i1o_straight.sqd");
-            top_left_cell             = {14 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 6, 0};
-            bottom_right_cell         = {14 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
-                                         6 + params.canvas_size.second, 0};
+            top_left_cell             = {14, 6, 0};
+            bottom_right_cell         = {14 + params.canvas_size.first, 6 + params.canvas_size.second, 0};
             deactivating_cell_indices = {{1}, {0}};
         }
         else
@@ -107,7 +106,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
             layout =
                 read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
                                                          "skeleton/skeleton_hex_inputsdbp_1i1o_diagonal.sqd");
-            top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 6, 0};
+            top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 7, 0};
             bottom_right_cell         = {19 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
                                          6 + params.canvas_size.second, 0};
             deactivating_cell_indices = {{1}, {0}};
@@ -149,7 +148,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
 
     uint64_t counter = 0;
 
-    uint64_t const           num_threads = 100;
+    uint64_t const           num_threads = 10;
     std::vector<std::thread> threads{};
     threads.reserve(num_threads);
     std::mutex mutex{};  // used to control access to shared resources
@@ -161,12 +160,13 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
         threads.emplace_back(
             [&]
             {
-                critical_temperature_params temp_params{simulation_engine::APPROXIMATE,
-                                                        critical_temperature_mode::GATE_BASED_SIMULATION,
-                                                        quicksim_params{sidb_simulation_parameters{2, -0.32}, 50, 0.65},
-                                                        0.99,
-                                                        350,
-                                                        params.truth_table};
+                critical_temperature_params temp_params{
+                    simulation_engine::APPROXIMATE,
+                    critical_temperature_mode::GATE_BASED_SIMULATION,
+                    quicksim_params{sidb_simulation_parameters{2, -0.32}, 100, 0.65},
+                    0.99,
+                    350,
+                    params.truth_table};
 
                 while (!found)
                 {
@@ -196,10 +196,12 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
                             lyt.assign_cell_type(cells[deactive_cell], sidb_cell_clk_lyt_siqad::technology::NORMAL);
                         }
                     }
+
                     //                    write_sqd_layout(
                     //                        lyt,
                     //                        "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/layout_found.sqd");
-                    if (temp != 0)
+                    //
+                    if (temp > 0)
                     {
                         found = true;
                         std::cout << "layout found" << std::endl;

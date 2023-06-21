@@ -185,6 +185,31 @@ inline kitty::dynamic_truth_table create_half_adder_tt() noexcept
 }
 
 /**
+ * Creates and returns a truth table that implements a half-adder in two variables.
+ *
+ * @return half-adder in two variables.
+ */
+inline kitty::dynamic_truth_table create_inv_tt() noexcept
+{
+    static constexpr const char* truth_table_string = "01";
+
+    kitty::dynamic_truth_table tt(1);
+    kitty::create_from_binary_string(tt, truth_table_string);
+
+    return tt;
+}
+
+inline kitty::dynamic_truth_table create_double_inv_tt() noexcept
+{
+    static constexpr const char* truth_table_string = "00011011";
+
+    kitty::dynamic_truth_table tt(3);
+    kitty::create_from_binary_string(tt, truth_table_string);
+
+    return tt;
+}
+
+/**
  * Creates and returns a truth table that implements the majority function in three variables.
  *
  * @return Majority function in three variables.
