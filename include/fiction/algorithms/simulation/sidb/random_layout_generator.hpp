@@ -47,7 +47,7 @@ struct random_layout_params
      * If positively charged SiDBs should be prevented, SiDBs are not placed closer than this value (2 cells as
      * Euclidean distance by default).
      */
-    double minimal_spacing = 2;
+    double minimal_spacing = 3;
     /**
      * Maximal number of steps to place the given number of SiDBs.
      */

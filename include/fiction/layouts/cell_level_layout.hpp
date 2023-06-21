@@ -12,10 +12,13 @@
 #include <mockturtle/networks/detail/foreach.hpp>
 #include <phmap.h>
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace fiction
 {
@@ -117,7 +120,28 @@ class cell_level_layout : public ClockedLayout
         static_assert(is_clocked_layout_v<ClockedLayout>, "ClockedLayout is not a clocked layout type");
     }
 
-    explicit cell_level_layout(std::shared_ptr<cell_level_layout_storage<cell>> s) : strg{std::move(s)} {}
+    // explicit cell_level_layout(std::shared_ptr<cell_level_layout_storage<cell>> s) : strg{std::move(s)} {}
+
+    cell_level_layout(const cell_level_layout<Technology, ClockedLayout>& lyt) :
+            ClockedLayout(lyt),
+            strg(std::make_shared<cell_level_layout_storage<cell>>(*lyt.strg))
+    {
+        static_assert(std::is_copy_constructible_v<ClockedLayout>, "ClockedLayout is not copy constructible");
+    }
+    //    cell_level_layout(const cell_level_layout<Technology, ClockedLayout>& lyt) :
+    //            cell_level_layout<Technology, ClockedLayout>(lyt),
+    //            strg(std::make_shared<cell_level_layout_storage<cell>>(*lyt.strg))
+    //    {}
+
+    cell_level_layout& operator=(const cell_level_layout<Technology, ClockedLayout>& other)
+    {
+        if (this != &other)
+        {
+            strg = std::make_shared<cell_level_layout_storage<cell>>(*other.strg);
+        }
+
+        return *this;
+    }
 
 #pragma endregion
 

@@ -16,8 +16,10 @@
 
 #include <cstdint>
 #include <iostream>
+#include <mutex>
 #include <random>
 #include <string_view>
+#include <thread>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -81,9 +83,9 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
         {
             layout = read_sqd_layout<sidb_cell_clk_lyt_siqad>(
                 "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/skeleton_hex_inputsdbp_2i2o.sqd");
-            top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 6, 0};
+            top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 7, 0};
             bottom_right_cell         = {19 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
-                                         6 + params.canvas_size.second, 0};
+                                         7 + params.canvas_size.second, 0};
             deactivating_cell_indices = {{2, 3}, {1, 2}, {0, 3}, {0, 1}};
         }
     }
@@ -141,56 +143,77 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
 
     params.random_lyt_params.coordinate_pair = std::make_pair(top_left_cell, bottom_right_cell);
 
-    auto random_layouts = generate_multiple_random_layout(params.random_lyt_params, layout, params.number_of_layouts,
-                                                          params.number_of_maximal_iterations);
-
     std::cout << "layouts produced" << std::endl;
-
-    critical_temperature_params temp_params{simulation_engine::APPROXIMATE,
-                                            critical_temperature_mode::GATE_BASED_SIMULATION,
-                                            quicksim_params{sidb_simulation_parameters{2, -0.32}, 80},
-                                            0.99,
-                                            350,
-                                            params.truth_table};
 
     std::vector<sidb_cell_clk_lyt_siqad> found_gates{};
 
-    uint64_t layout_counter = 0;
-    for (auto& lyt : random_layouts)
+    uint64_t counter = 0;
+
+    uint64_t const           num_threads = 100;
+    std::vector<std::thread> threads{};
+    threads.reserve(num_threads);
+    std::mutex mutex{};  // used to control access to shared resources
+
+    std::atomic<bool> found(false);
+
+    for (uint64_t z = 0u; z < num_threads; z++)
     {
-        layout_counter += 1;
-        write_sqd_layout(lyt, "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/test_gate/layout_" +
-                                  std::to_string(layout_counter) + ".sqd");
-        if (layout_counter % 10 == 0)
-        {
-            std::cout << layout_counter << std::endl;
-        }
-        double temp = 1000;
-        for (auto i = 0u; i < deactivating_cell_indices.size(); i++)
-        {
-            critical_temperature_stats<sidb_cell_clk_lyt_siqad> criticalstats{};
-            for (const auto& deactive_cell : deactivating_cell_indices[i])
+        threads.emplace_back(
+            [&]
             {
-                lyt.assign_cell_type(cells[deactive_cell], sidb_cell_clk_lyt_siqad::technology::EMPTY);
-            }
-            temp_params.input_bit = i;
-            critical_temperature(lyt, temp_params, &criticalstats);
-            if (criticalstats.critical_temperature < temp)
-            {
-                temp = criticalstats.critical_temperature;
-            }
-            // write_sqd_layout(lyt, "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/test" +
-            // std::to_string(i) + ".sqd");
-            for (const auto& deactive_cell : deactivating_cell_indices[i])
-            {
-                lyt.assign_cell_type(cells[deactive_cell], sidb_cell_clk_lyt_siqad::technology::NORMAL);
-            }
-        }
-        if (temp != 0)
-        {
-            std::cout << "layout found" << std::endl;
-            found_gates.push_back(lyt);
-        }
+                critical_temperature_params temp_params{simulation_engine::APPROXIMATE,
+                                                        critical_temperature_mode::GATE_BASED_SIMULATION,
+                                                        quicksim_params{sidb_simulation_parameters{2, -0.32}, 50, 0.65},
+                                                        0.99,
+                                                        350,
+                                                        params.truth_table};
+
+                while (!found)
+                {
+
+                    auto lyt = generate_random_layout(params.random_lyt_params, layout);
+
+                    double temp = 1000;
+
+                    for (auto i = 0u; i < deactivating_cell_indices.size(); i++)
+                    {
+                        critical_temperature_stats<sidb_cell_clk_lyt_siqad> criticalstats{};
+                        for (const auto& deactive_cell : deactivating_cell_indices[i])
+                        {
+                            lyt.assign_cell_type(cells[deactive_cell], sidb_cell_clk_lyt_siqad::technology::EMPTY);
+                        }
+
+                        temp_params.input_bit = i;
+
+                        critical_temperature(lyt, temp_params, &criticalstats);
+                        if (criticalstats.critical_temperature < temp)
+                        {
+                            temp = criticalstats.critical_temperature;
+                        }
+
+                        for (const auto& deactive_cell : deactivating_cell_indices[i])
+                        {
+                            lyt.assign_cell_type(cells[deactive_cell], sidb_cell_clk_lyt_siqad::technology::NORMAL);
+                        }
+                    }
+                    //                    write_sqd_layout(
+                    //                        lyt,
+                    //                        "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/layout_found.sqd");
+                    if (temp != 0)
+                    {
+                        found = true;
+                        std::cout << "layout found" << std::endl;
+                        std::cout << temp << std::endl;
+                        const std::lock_guard lock{mutex};
+                        found_gates.push_back(lyt);
+                        break;
+                    }
+                }
+            });
+    }
+    for (auto& thread : threads)
+    {
+        thread.join();
     }
 
     return found_gates;
