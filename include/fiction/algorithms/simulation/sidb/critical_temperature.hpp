@@ -188,6 +188,7 @@ class critical_temperature_impl
             const quickexact_params<Lyt> params{parameter.simulation_params.phys_params,
                                                 automatic_base_number_detection::OFF};
             simulation_results = quickexact(layout, params);
+            // std::cout << mockturtle::to_seconds(simulation_results.simulation_runtime) << std::endl;
         }
         else
         {
@@ -195,6 +196,7 @@ class critical_temperature_impl
             // All physically valid charge configurations are determined for the given layout (exhaustive ground state
             // simulation is used to provide 100 % accuracy for the Critical Temperature).
             simulation_results = quicksim(layout, parameter.simulation_params);
+            // std::cout << mockturtle::to_seconds(simulation_results.simulation_runtime) << std::endl;
         }
 
         // The number of physically valid charge configurations is stored.
