@@ -137,8 +137,8 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
             layout =
                 read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
                                                          "skeleton/skeleton_hex_inputsdbp_1i1o_straight.sqd");
-            top_left_cell             = {14, 6, 0};
-            bottom_right_cell         = {14 + canvas_siqad.x, 6 + canvas_siqad.y, canvas_siqad.z};
+            top_left_cell     = {14 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 6, 0};
+            bottom_right_cell = {14 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 6 + canvas_siqad.y, canvas_siqad.z};
             deactivating_cell_indices = {{1}, {0}};
         }
         else
@@ -147,7 +147,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                 read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
                                                          "skeleton/skeleton_hex_inputsdbp_1i1o_diagonal.sqd");
             top_left_cell     = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 7, 0};
-            bottom_right_cell = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 6 + canvas_siqad.y, canvas_siqad.z};
+            bottom_right_cell = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 7 + canvas_siqad.y, canvas_siqad.z};
             deactivating_cell_indices = {{1}, {0}};
         }
     }
@@ -158,16 +158,16 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
         {
             layout = read_sqd_layout<sidb_cell_clk_lyt_siqad>(
                 "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/skeleton_hex_inputsdbp_2i1o.sqd");
-            top_left_cell             = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 6, 0};
-            bottom_right_cell         = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 6 + canvas_siqad.y, 0};
+            top_left_cell     = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 6, 0};
+            bottom_right_cell = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 6 + canvas_siqad.y, canvas_siqad.z};
             deactivating_cell_indices = {{2, 3}, {1, 2}, {0, 3}, {0, 1}};
         }
         else
         {
             layout = read_sqd_layout<sidb_cell_clk_lyt_siqad>(
                 "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/skeleton_hex_inputsdbp_1i2o.sqd");
-            top_left_cell             = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 8, 0};
-            bottom_right_cell         = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 8 + canvas_siqad.y, 0};
+            top_left_cell     = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 8, 0};
+            bottom_right_cell = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 8 + canvas_siqad.y, canvas_siqad.z};
             deactivating_cell_indices = {{1}, {0}};
         }
     }
@@ -182,8 +182,8 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
     std::atomic<bool> found(false);
 
     const auto ans = makeCombi(canvas_cells_number, params.number_of_sidbs);
-    std::cout << "done" << std::endl;
-    std::cout << ans.size() << std::endl;
+    // std::cout << "done" << std::endl;
+    // std::cout << ans.size() << std::endl;
 
     //    for (const auto &conf : ans)
     //    {
@@ -248,10 +248,10 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                         }
                     }
 
-                    if (loop_counter % 10000 == 0)
-                    {
-                        std::cout << loop_counter << std::endl;
-                    }
+                    //                    if (loop_counter % 10000 == 0)
+                    //                    {
+                    //                        std::cout << loop_counter << std::endl;
+                    //                    }
 
                     auto layout_with_placed = add_cells_to_layout(layout, placable_cells);
 
@@ -290,17 +290,18 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                     //                                            "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/layout_found.sqd");
                     if (temp > 0)
                     {
-                        for (const auto& idx : config)
-                        {
-                            std::cout << idx << std::endl;
-                        }
-                        write_sqd_layout(
-                            layout_with_placed,
-                            "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/layout_found_temp_" +
-                                std::to_string(loop_counter) + " .sqd");
+                        //                        for (const auto& idx : config)
+                        //                        {
+                        //                            std::cout << idx << std::endl;
+                        //                        }
+                        //                        write_sqd_layout(
+                        //                            layout_with_placed,
+                        //                            "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/nand/nand_2/layout_found_temp_"
+                        //                            +
+                        //                                std::to_string(loop_counter) + " .sqd");
                         found = true;
-                        std::cout << "layout found" << std::endl;
-                        std::cout << temp << std::endl;
+                        // std::cout << "layout found" << std::endl;
+                        // std::cout << temp << std::endl;
                         const std::lock_guard lock{mutex};
                         found_gates.push_back(layout_with_placed);
                         // break;
