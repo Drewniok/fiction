@@ -273,7 +273,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
 
                         temp_params.input_bit = i;
 
-                        critical_temperature(layout_with_placed, temp_params, &criticalstats);
+                        critical_temperature(layout_with_placed, temp_params, &criticalstats, cells);
                         if (criticalstats.critical_temperature < temp)
                         {
                             temp = criticalstats.critical_temperature;
