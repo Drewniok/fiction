@@ -230,71 +230,47 @@ class critical_temperature_impl
                 }
             }
 
-            //                        if (parameter.input_bit == 0)
-            //                        {
-            //                            if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEUTRAL)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                            if (lyt_copy.get_charge_state(all_cells[5]) != sidb_charge_state::NEUTRAL)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                        }
-            //
-            //                        else if (parameter.input_bit == 1)
-            //                        {
-            //                            if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEUTRAL)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                            if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEUTRAL)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                        }
-            //
-            //                        else if (parameter.input_bit == 2)
-            //                        {
-            //                            if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEUTRAL)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                            if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEGATIVE)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                        }
-            //
-            //                        else if (parameter.input_bit == 3)
-            //                        {
-            //                            if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEUTRAL)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                            if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEUTRAL)
-            //                            {
-            //                                temperature_stats.critical_temperature = 0.0;
-            //                                return true;
-            //                            }
-            //                        }
-
-            // WIRE, INV
+            // GATES
             if (parameter.input_bit == 0)
             {
-                if (lyt_copy.get_charge_state(all_cells[1]) != sidb_charge_state::NEGATIVE)
+                if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEGATIVE)
                 {
                     temperature_stats.critical_temperature = 0.0;
                     return true;
                 }
-                if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEUTRAL)
+                if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[5]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[6]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[7]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[8]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[9]) != sidb_charge_state::NEUTRAL)
                 {
                     temperature_stats.critical_temperature = 0.0;
                     return true;
@@ -303,17 +279,246 @@ class critical_temperature_impl
 
             else if (parameter.input_bit == 1)
             {
-                if (lyt_copy.get_charge_state(all_cells[1]) != sidb_charge_state::NEUTRAL)
-                {
-                    temperature_stats.critical_temperature = 0.0;
-                    return true;
-                }
                 if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEGATIVE)
                 {
                     temperature_stats.critical_temperature = 0.0;
                     return true;
                 }
+                if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[5]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[6]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[7]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[8]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[9]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
             }
+
+            else if (parameter.input_bit == 2)
+            {
+                if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[5]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[6]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[7]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[8]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[9]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+            }
+
+            else if (parameter.input_bit == 3)
+            {
+                if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[5]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[6]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[7]) != sidb_charge_state::NEUTRAL)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+
+                if (lyt_copy.get_charge_state(all_cells[8]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+                if (lyt_copy.get_charge_state(all_cells[9]) != sidb_charge_state::NEGATIVE)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+            }
+
+            // WIRE, INV
+            //            if (parameter.input_bit == 0)
+            //            {
+            //                if (lyt_copy.get_charge_state(all_cells[1]) != sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //                if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //                if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //                if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 2]) !=
+            //                sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 3]) !=
+            //                sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 4]) !=
+            //                sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 5]) !=
+            //                sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
+            //
+            //            else if (parameter.input_bit == 1)
+            //            {
+            //                if (lyt_copy.get_charge_state(all_cells[1]) != sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //                if (lyt_copy.get_charge_state(all_cells[2]) != sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //                if (lyt_copy.get_charge_state(all_cells[3]) != sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //                if (lyt_copy.get_charge_state(all_cells[4]) != sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 2]) !=
+            //                sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 3]) !=
+            //                sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 4]) !=
+            //                sidb_charge_state::NEGATIVE)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //
+            //                if (lyt_copy.get_charge_state(all_cells[all_cells.size() - 5]) !=
+            //                sidb_charge_state::NEUTRAL)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
 
             uint64_t negative_counter = 0;
             for (const auto& cell_ske : skeletron)
