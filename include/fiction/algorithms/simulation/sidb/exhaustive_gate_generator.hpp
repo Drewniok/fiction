@@ -78,8 +78,8 @@ std::vector<std::vector<uint64_t>> makeCombi(uint64_t n, uint64_t k)
 
 sidb_cell_clk_lyt_siqad::cell index_to_cell(uint64_t index, cube::coord_t& canvas_size, siqad::coord_t& nordwest)
 {
-    const auto y     = (index - index % (canvas_size.x)) / (canvas_size.x);
-    const auto x     = index % (canvas_size.x);
+    const auto y     = (index - index % (canvas_size.x - 1)) / (canvas_size.x - 1);
+    const auto x     = index % (canvas_size.x - 1);
     auto       siqad = siqad::to_siqad_coord(cube::coord_t{x, y});
 
     return siqad + nordwest;
@@ -181,7 +181,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
 
     std::atomic<bool> found(false);
 
-    const auto ans = makeCombi(canvas_cells_number, params.number_of_sidbs);
+    const auto ans = makeCombi(canvas_cells_number - 1, params.number_of_sidbs);
     // std::cout << "done" << std::endl;
     // std::cout << ans.size() << std::endl;
 
@@ -196,7 +196,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
 
     uint64_t loop_counter = 0;
 
-    uint64_t const           num_threads = 10;
+    uint64_t const           num_threads = 1;
     std::vector<std::thread> threads{};
     threads.reserve(num_threads);
     std::mutex mutex{};  // used to control access to shared resources
@@ -212,7 +212,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                 critical_temperature_params temp_params{
                     simulation_engine::EXACT,
                     critical_temperature_mode::GATE_BASED_SIMULATION,
-                    quicksim_params{sidb_simulation_parameters{2, -0.32}, 100, 0.65},
+                    quicksim_params{sidb_simulation_parameters{2, -0.32}, 80, 0.7, 1},
                     0.99,
                     350,
                     params.truth_table};
@@ -284,6 +284,13 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                             layout_with_placed.assign_cell_type(cells[deactive_cell],
                                                                 sidb_cell_clk_lyt_siqad::technology::NORMAL);
                         }
+                    }
+
+                    if (i % 10 == 0)
+                    {
+                        write_sqd_layout(layout_with_placed, "/Users/jandrewniok/CLionProjects/fiction_fork/"
+                                                             "experiments/iteration_through_combinations/layout_" +
+                                                                 std::to_string(i) + ".sqd");
                     }
                     //                                        write_sqd_layout(
                     //                                            layout_with_placed,
