@@ -196,7 +196,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
 
     uint64_t loop_counter = 0;
 
-    uint64_t const           num_threads = 1;
+    uint64_t const           num_threads = 10;
     std::vector<std::thread> threads{};
     threads.reserve(num_threads);
     std::mutex mutex{};  // used to control access to shared resources
@@ -286,12 +286,14 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                         }
                     }
 
-                    if (i % 10 == 0)
-                    {
-                        write_sqd_layout(layout_with_placed, "/Users/jandrewniok/CLionProjects/fiction_fork/"
-                                                             "experiments/iteration_through_combinations/layout_" +
-                                                                 std::to_string(i) + ".sqd");
-                    }
+                    //                    if (i % 10 == 0)
+                    //                    {
+                    //                        write_sqd_layout(layout_with_placed,
+                    //                        "/Users/jandrewniok/CLionProjects/fiction_fork/"
+                    //                                                             "experiments/iteration_through_combinations/layout_"
+                    //                                                             +
+                    //                                                                 std::to_string(i) + ".sqd");
+                    //                    }
                     //                                        write_sqd_layout(
                     //                                            layout_with_placed,
                     //                                            "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/layout_found.sqd");
@@ -308,12 +310,12 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                         //                                std::to_string(loop_counter) + " .sqd");
                         found = true;
                         // std::cout << "layout found" << std::endl;
-                        if (temp == 350)
+                        if (temp != 0)
                         {
-                            write_sqd_layout(layout_with_placed,
-                                             "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/"
-                                             "result/wire_straight/layout_found_temp_.sqd");
-                            // std::cout << temp << std::endl;
+                            //                            write_sqd_layout(layout_with_placed,
+                            //                                             "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/"
+                            //                                             "result/wire_straight/layout_found_temp_.sqd");
+                            std::cout << temp << std::endl;
                         }
                         const std::lock_guard lock{mutex};
                         found_gates.push_back(layout_with_placed);
