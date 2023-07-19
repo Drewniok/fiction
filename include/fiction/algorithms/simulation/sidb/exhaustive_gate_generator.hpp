@@ -116,6 +116,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
     const auto canvas_siqad = siqad::to_siqad_coord(params.canvas_size);
 
     std::vector<std::vector<uint64_t>> deactivating_cell_indices{};
+    std::vector<uint64_t>              deactivating_cell_indices_output{};
 
     if (params.truth_table.num_vars() == 3)      // truth table of (double wire, cx, etc.) consists of three variables.
     {
@@ -156,11 +157,14 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
     {
         if (params.truth_table.num_bits() == 4 && params.truth_table != create_fan_out_tt())  // and, or, nand, etc.
         {
-            layout = read_sqd_layout<sidb_cell_clk_lyt_siqad>(
-                "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/skeleton_hex_inputsdbp_2i1o.sqd");
+            layout =
+                read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
+                                                         "skeleton/skeleton_hex_inputsdbp_2i1o.sqd");
             top_left_cell     = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 6, 0};
             bottom_right_cell = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 6 + canvas_siqad.y, canvas_siqad.z};
-            deactivating_cell_indices = {{2, 3}, {1, 2}, {0, 3}, {0, 1}};
+            deactivating_cell_indices        = {{2, 3}, {1, 2}, {0, 3}, {0, 1}};
+            deactivating_cell_indices_output = {1, 2, 2, 2};
+            // deactivating_cell_indices_output = {0, 0, 0, 0};
         }
         else
         {
@@ -262,6 +266,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
 
                     double temp = 1000;
 
+                    const uint64_t number_cells = cells.size();
                     for (auto i = 0u; i < deactivating_cell_indices.size(); i++)
                     {
                         critical_temperature_stats<sidb_cell_clk_lyt_siqad> criticalstats{};
@@ -271,6 +276,10 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                                                                 sidb_cell_clk_lyt_siqad::technology::EMPTY);
                         }
 
+                        //                        layout_with_placed.assign_cell_type(cells[number_cells -
+                        //                        deactivating_cell_indices_output[i]],
+                        //                                                            sidb_cell_clk_lyt_siqad::technology::EMPTY);
+
                         temp_params.input_bit = i;
 
                         critical_temperature(layout_with_placed, temp_params, &criticalstats, cells);
@@ -279,11 +288,22 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                             temp = criticalstats.critical_temperature;
                         }
 
+                        //                        const std::lock_guard lock{mutex};
+                        //                        write_sqd_layout(layout_with_placed,
+                        //                        "/Users/jandrewniok/CLionProjects/fiction_fork/"
+                        //                                                             "experiments/skeleton/result/layout_output_deactivating/layout_"
+                        //                                                             +
+                        //                                                                 std::to_string(i) + ".sqd");
+
                         for (const auto& deactive_cell : deactivating_cell_indices[i])
                         {
                             layout_with_placed.assign_cell_type(cells[deactive_cell],
                                                                 sidb_cell_clk_lyt_siqad::technology::NORMAL);
                         }
+
+                        //                        layout_with_placed.assign_cell_type(cells[number_cells -
+                        //                        deactivating_cell_indices_output[i]],
+                        //                                                            sidb_cell_clk_lyt_siqad::technology::NORMAL);
                     }
 
                     //                    if (i % 10 == 0)

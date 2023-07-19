@@ -626,6 +626,40 @@ class critical_temperature_impl
             //            }
 
             uint64_t negative_counter = 0;
+            //            for (const auto& cell_ske : skeletron)
+            //            {
+            //                if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
+            //                {
+            //                    negative_counter += 1;
+            //                }
+            //            }
+            //
+            //            if (skeletron.size() == 12)
+            //            {
+            //                if (negative_counter != 6)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
+            //
+            //            if (skeletron.size() == 16)
+            //            {
+            //                if (negative_counter != 9)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
+            //
+            //            if (skeletron.size() == 21)
+            //            {
+            //                if (negative_counter != 12)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
             for (const auto& cell_ske : skeletron)
             {
                 if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
