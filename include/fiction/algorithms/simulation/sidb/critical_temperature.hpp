@@ -660,40 +660,49 @@ class critical_temperature_impl
             //                    return true;
             //                }
             //            }
-            for (const auto& cell_ske : skeletron)
-            {
-                if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
-                {
-                    negative_counter += 1;
-                }
-            }
-
-            if (skeletron.size() == 11)
-            {
-                if (negative_counter != 6)
-                {
-                    temperature_stats.critical_temperature = 0.0;
-                    return true;
-                }
-            }
-
-            if (skeletron.size() == 15)
-            {
-                if (negative_counter != 9)
-                {
-                    temperature_stats.critical_temperature = 0.0;
-                    return true;
-                }
-            }
-
-            if (skeletron.size() == 20)
-            {
-                if (negative_counter != 12)
-                {
-                    temperature_stats.critical_temperature = 0.0;
-                    return true;
-                }
-            }
+            //            for (const auto& cell_ske : skeletron)
+            //            {
+            //                if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
+            //                {
+            //                    negative_counter += 1;
+            //                }
+            //            }
+            //
+            //            if (skeletron.size() == 11)
+            //            {
+            //                if (negative_counter != 6)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
+            //
+            //            if (skeletron.size() == 15)
+            //            {
+            //                if (negative_counter != 9)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
+            //
+            //            if (skeletron.size() == 20)
+            //            {
+            //                if (negative_counter != 12)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
+            //
+            //            if (skeletron.size() == 36)
+            //            {
+            //                if (negative_counter != 30)
+            //                {
+            //                    temperature_stats.critical_temperature = 0.0;
+            //                    return true;
+            //                }
+            //            }
 
             // The energy distribution of the physically valid charge configurations for the given layout is determined.
             const auto distribution = energy_distribution(simulation_results.charge_distributions);
@@ -725,7 +734,7 @@ class critical_temperature_impl
                 if (parameter.truth_table.num_bits() == 4 &&
                     parameter.truth_table != create_fan_out_tt())  // and, or, nand, etc.
                 {
-                    output_bits_index = {-2};                      // One output SiDB. -2 due to placed perturber.
+                    output_bits_index = {-15};                     // One output SiDB. -2 due to placed perturber.
                     // Truth table entry for given inputs is collected.
                     output_bits.push_back(kitty::get_bit(parameter.truth_table, parameter.input_bit) != 0u);
                 }
@@ -741,6 +750,12 @@ class critical_temperature_impl
             // Output cell(s) is/are collected.
             std::vector<typename Lyt::cell> output_cells;
             output_cells.reserve(output_bits_index.size());
+
+            //            std::cout << fmt::format("x: {}",
+            //            all_cells[static_cast<uint64_t>(static_cast<int64_t>(layout.num_cells()) +
+            //            output_bits_index[0])].x) << std::endl; std::cout << fmt::format("y: {}",
+            //            all_cells[static_cast<uint64_t>(static_cast<int64_t>(layout.num_cells()) +
+            //            output_bits_index[0])].y) << std::endl;
 
             // Collect the SiDB cells where the output bit is read out.
             for (const auto& output_bit : output_bits_index)

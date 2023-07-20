@@ -159,11 +159,14 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
         {
             layout =
                 read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
-                                                         "skeleton/skeleton_hex_inputsdbp_2i1o.sqd");
+                                                         "skeleton/skeleton_hex_inputsdbp_2i1o_far_outputpert.sqd");
             top_left_cell     = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 6, 0};
             bottom_right_cell = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 6 + canvas_siqad.y, canvas_siqad.z};
-            deactivating_cell_indices        = {{2, 3}, {1, 2}, {0, 3}, {0, 1}};
-            deactivating_cell_indices_output = {1, 2, 2, 2};
+            deactivating_cell_indices = {{2, 3}, {1, 2}, {0, 3}, {0, 1}};
+            // OR
+            // deactivating_cell_indices_output = {15, 16, 16, 16};
+            // AND
+            deactivating_cell_indices_output = {12, 12, 12, 13};
             // deactivating_cell_indices_output = {0, 0, 0, 0};
         }
         else
@@ -276,9 +279,8 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                                                                 sidb_cell_clk_lyt_siqad::technology::EMPTY);
                         }
 
-                        //                        layout_with_placed.assign_cell_type(cells[number_cells -
-                        //                        deactivating_cell_indices_output[i]],
-                        //                                                            sidb_cell_clk_lyt_siqad::technology::EMPTY);
+                        layout_with_placed.assign_cell_type(cells[number_cells - deactivating_cell_indices_output[i]],
+                                                            sidb_cell_clk_lyt_siqad::technology::EMPTY);
 
                         temp_params.input_bit = i;
 
@@ -300,10 +302,8 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                             layout_with_placed.assign_cell_type(cells[deactive_cell],
                                                                 sidb_cell_clk_lyt_siqad::technology::NORMAL);
                         }
-
-                        //                        layout_with_placed.assign_cell_type(cells[number_cells -
-                        //                        deactivating_cell_indices_output[i]],
-                        //                                                            sidb_cell_clk_lyt_siqad::technology::NORMAL);
+                        layout_with_placed.assign_cell_type(cells[number_cells - deactivating_cell_indices_output[i]],
+                                                            sidb_cell_clk_lyt_siqad::technology::NORMAL);
                     }
 
                     //                    if (i % 10 == 0)
