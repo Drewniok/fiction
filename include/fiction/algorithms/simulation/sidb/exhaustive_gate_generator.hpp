@@ -159,14 +159,14 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
         {
             layout =
                 read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
-                                                         "skeleton/skeleton_hex_inputsdbp_2i1o_far_outputpert.sqd");
+                                                         "skeleton/skeleton_hex_inputsdbp_2i1o.sqd");
             top_left_cell     = {19 - (canvas_siqad.x - canvas_siqad.x % 2) / 2, 6, 0};
             bottom_right_cell = {19 + (canvas_siqad.x + canvas_siqad.x % 2) / 2, 6 + canvas_siqad.y, canvas_siqad.z};
             deactivating_cell_indices = {{2, 3}, {1, 2}, {0, 3}, {0, 1}};
             // OR
             // deactivating_cell_indices_output = {15, 16, 16, 16};
             // AND
-            deactivating_cell_indices_output = {12, 12, 12, 13};
+            // deactivating_cell_indices_output = {12, 12, 12, 13};
             // deactivating_cell_indices_output = {0, 0, 0, 0};
         }
         else
@@ -279,8 +279,9 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                                                                 sidb_cell_clk_lyt_siqad::technology::EMPTY);
                         }
 
-                        layout_with_placed.assign_cell_type(cells[number_cells - deactivating_cell_indices_output[i]],
-                                                            sidb_cell_clk_lyt_siqad::technology::EMPTY);
+                        //                        layout_with_placed.assign_cell_type(cells[number_cells -
+                        //                        deactivating_cell_indices_output[i]],
+                        //                                                            sidb_cell_clk_lyt_siqad::technology::EMPTY);
 
                         temp_params.input_bit = i;
 
@@ -290,20 +291,23 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                             temp = criticalstats.critical_temperature;
                         }
 
-                        //                        const std::lock_guard lock{mutex};
-                        //                        write_sqd_layout(layout_with_placed,
-                        //                        "/Users/jandrewniok/CLionProjects/fiction_fork/"
-                        //                                                             "experiments/skeleton/result/layout_output_deactivating/layout_"
-                        //                                                             +
-                        //                                                                 std::to_string(i) + ".sqd");
+                        //                                                const std::lock_guard lock{mutex};
+                        //                                                write_sqd_layout(layout_with_placed,
+                        //                                                "/Users/jandrewniok/CLionProjects/fiction_fork/"
+                        //                                                                                     "experiments/skeleton/result/layout_output_deactivating/layout_"
+                        //                                                                                     +
+                        //                                                                                         std::to_string(i)
+                        //                                                                                         +
+                        //                                                                                         ".sqd");
 
                         for (const auto& deactive_cell : deactivating_cell_indices[i])
                         {
                             layout_with_placed.assign_cell_type(cells[deactive_cell],
                                                                 sidb_cell_clk_lyt_siqad::technology::NORMAL);
                         }
-                        layout_with_placed.assign_cell_type(cells[number_cells - deactivating_cell_indices_output[i]],
-                                                            sidb_cell_clk_lyt_siqad::technology::NORMAL);
+                        //                        layout_with_placed.assign_cell_type(cells[number_cells -
+                        //                        deactivating_cell_indices_output[i]],
+                        //                                                            sidb_cell_clk_lyt_siqad::technology::NORMAL);
                     }
 
                     //                    if (i % 10 == 0)
@@ -335,7 +339,7 @@ std::vector<sidb_cell_clk_lyt_siqad> exhaustive_gate_generator(bestagon_gate_gen
                             //                            write_sqd_layout(layout_with_placed,
                             //                                             "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/"
                             //                                             "result/wire_straight/layout_found_temp_.sqd");
-                            std::cout << temp << std::endl;
+                            // std::cout << temp << std::endl;
                         }
                         const std::lock_guard lock{mutex};
                         found_gates.push_back(layout_with_placed);

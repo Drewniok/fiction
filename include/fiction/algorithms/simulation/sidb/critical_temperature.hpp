@@ -626,47 +626,47 @@ class critical_temperature_impl
             //            }
 
             uint64_t negative_counter = 0;
-            //            for (const auto& cell_ske : skeletron)
-            //            {
-            //                if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
-            //                {
-            //                    negative_counter += 1;
-            //                }
-            //            }
-            //
-            //            if (skeletron.size() == 12)
-            //            {
-            //                if (negative_counter != 6)
-            //                {
-            //                    temperature_stats.critical_temperature = 0.0;
-            //                    return true;
-            //                }
-            //            }
-            //
-            //            if (skeletron.size() == 16)
-            //            {
-            //                if (negative_counter != 9)
-            //                {
-            //                    temperature_stats.critical_temperature = 0.0;
-            //                    return true;
-            //                }
-            //            }
-            //
-            //            if (skeletron.size() == 21)
-            //            {
-            //                if (negative_counter != 12)
-            //                {
-            //                    temperature_stats.critical_temperature = 0.0;
-            //                    return true;
-            //                }
-            //            }
-            //            for (const auto& cell_ske : skeletron)
-            //            {
-            //                if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
-            //                {
-            //                    negative_counter += 1;
-            //                }
-            //            }
+            for (const auto& cell_ske : skeletron)
+            {
+                if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
+                {
+                    negative_counter += 1;
+                }
+            }
+
+            if (skeletron.size() == 12)
+            {
+                if (negative_counter != 6)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+            }
+
+            if (skeletron.size() == 16)
+            {
+                if (negative_counter != 9)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+            }
+
+            if (skeletron.size() == 21)
+            {
+                if (negative_counter != 12)
+                {
+                    temperature_stats.critical_temperature = 0.0;
+                    return true;
+                }
+            }
+            for (const auto& cell_ske : skeletron)
+            {
+                if (lyt_copy.get_charge_state(cell_ske) == sidb_charge_state::NEGATIVE)
+                {
+                    negative_counter += 1;
+                }
+            }
             //
             //            if (skeletron.size() == 11)
             //            {
@@ -734,7 +734,7 @@ class critical_temperature_impl
                 if (parameter.truth_table.num_bits() == 4 &&
                     parameter.truth_table != create_fan_out_tt())  // and, or, nand, etc.
                 {
-                    output_bits_index = {-15};                     // One output SiDB. -2 due to placed perturber.
+                    output_bits_index = {-2};                      // One output SiDB. -2 due to placed perturber.
                     // Truth table entry for given inputs is collected.
                     output_bits.push_back(kitty::get_bit(parameter.truth_table, parameter.input_bit) != 0u);
                 }
