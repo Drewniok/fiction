@@ -7,6 +7,7 @@
 
 #include "fiction/layouts/bounding_box.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
+#include "fiction/technology/sidb_defects.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
 
@@ -43,6 +44,8 @@ static const auto SIDB_NEG_COLOR = fmt::fg(fmt::color::cyan);
 static const auto SIDB_POS_COLOR = fmt::fg(fmt::color::red);
 // Escape color sequence for charge-neutral SiDB colors (white).
 static const auto SIDB_NEUT_COLOR = fmt::fg(fmt::color::white);
+// Escape color sequence for charge-negative defect colors (blue).
+static const auto SIDB_DEF_COLOR = fmt::fg(fmt::color::blue);
 // Escape color sequence for lattice background colors (grey).
 static const auto SIDB_LAT_COLOR = fmt::fg(fmt::color::gray);
 // Empty escape color sequence
@@ -375,6 +378,14 @@ void print_charge_layout(std::ostream& os, const Lyt& lyt, const bool cs_color =
             if (crop_layout && (c.x < min.x || c.x > max.x))  // apply horizontal crop
             {
                 return;
+            }
+
+            if constexpr (has_get_sidb_defect_v<Lyt>)
+            {
+                if (lyt.get_sidb_defect(c) != sidb_defect{sidb_defect_type::NONE})
+                {
+                    os << fmt::format(cs_color ? detail::SIDB_DEF_COLOR : detail::NO_COLOR, " ⊕ ");
+                }
             }
 
             switch (lyt.get_charge_state(c))  // switch over the charge state of the SiDB at the current coordinate

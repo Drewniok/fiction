@@ -63,14 +63,21 @@ int main()  // NOLINT
         new_layout.assign_cell_type(sidb, sidb_cell_clk_lyt_siqad::technology::NORMAL);
     }
 
-    charge_distribution_surface<sidb_cell_clk_lyt_siqad> new_charge_layout{new_layout};
+    sidb_surface<sidb_cell_clk_lyt_siqad> defect{new_layout};
+
+    charge_distribution_surface<sidb_surface<sidb_cell_clk_lyt_siqad>> new_charge_layout{defect};
 
     for (const auto& sidb : sidbs)
     {
         new_charge_layout.assign_charge_state(sidb, lyt_copy.get_charge_state(sidb));
     }
 
-    print_charge_layout(std::cout, new_charge_layout, false);
+    lyt.foreach_sidb_defect(
+        [&new_charge_layout](const auto& defect) {
+            new_charge_layout.assign_sidb_defect(defect.first, sidb_defect{sidb_defect_type::UNKNOWN, -1, 5, 5.6});
+        });
+
+    print_charge_layout(std::cout, new_charge_layout, false, true, true);
 
     //    auto lyt_01 = read_sqd_layout<sidb_surface<sidb_cell_clk_lyt_siqad>>(
     //        "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/gate_with_defect/and/layout_found_01.sqd");
