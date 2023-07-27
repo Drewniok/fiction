@@ -59,7 +59,6 @@ Layout Utils
 .. doxygenfunction:: fiction::convert_to_fiction_coordinates
 .. doxygenfunction:: fiction::random_coordinate
 
-
 Placement Utils
 ---------------
 

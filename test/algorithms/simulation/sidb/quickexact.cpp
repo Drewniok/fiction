@@ -71,7 +71,7 @@ TEMPLATE_TEST_CASE(
     quickexact_params<TestType> params{sidb_simulation_parameters{2, -0.25}};
 
     lyt.assign_sidb_defect({1, 2, 0},
-                           sidb_defect{sidb_defect_type::UNKNOWN, -1, params.physical_parameters.epsilon_r, 2 * 10E-9});
+                           sidb_defect{sidb_defect_type::UNKNOWN, -1, params.physical_parameters.epsilon_r, 2});
     const auto simulation_results = quickexact<TestType>(lyt, params);
 
     REQUIRE(simulation_results.charge_distributions.size() == 1);
@@ -295,7 +295,7 @@ TEMPLATE_TEST_CASE("QuickExact simulation of a two-pair BDL wire with one pertur
     CHECK(charge_lyt_first.get_charge_state({19, 0, 0}) == sidb_charge_state::NEGATIVE);
 
     CHECK_THAT(charge_lyt_first.get_system_energy(),
-               Catch::Matchers::WithinAbs(0.24602741408, fiction::physical_constants::POP_STABILITY_ERR));
+               Catch::Matchers::WithinAbs(0.2460493219, physical_constants::POP_STABILITY_ERR));
 }
 
 TEMPLATE_TEST_CASE("QuickExact simulation of a one-pair BDL wire with two perturbers", "[ExGS]",
@@ -333,7 +333,7 @@ TEMPLATE_TEST_CASE("QuickExact simulation of a one-pair BDL wire with two pertur
     CHECK(charge_lyt_first.get_charge_state({15, 0, 0}) == sidb_charge_state::NEGATIVE);
 
     CHECK_THAT(charge_lyt_first.get_system_energy(),
-               Catch::Matchers::WithinAbs(0.1152574819, fiction::physical_constants::POP_STABILITY_ERR));
+               Catch::Matchers::WithinAbs(0.1152677452, physical_constants::POP_STABILITY_ERR));
 }
 
 TEMPLATE_TEST_CASE("QuickExact simulation of a Y-shape SiDB arrangement", "[ExGS]",
@@ -368,7 +368,7 @@ TEMPLATE_TEST_CASE("QuickExact simulation of a Y-shape SiDB arrangement", "[ExGS
     CHECK(charge_lyt_first.get_charge_state({-7, 3, 0}) == sidb_charge_state::NEGATIVE);
 
     CHECK_THAT(charge_lyt_first.get_system_energy(),
-               Catch::Matchers::WithinAbs(0.31915040629512115, fiction::physical_constants::POP_STABILITY_ERR));
+               Catch::Matchers::WithinAbs(0.3191788254, physical_constants::POP_STABILITY_ERR));
 }
 
 TEMPLATE_TEST_CASE("QuickExact simulation of a Y-shape SiDB OR gate with input 01", "[ExGS]",
@@ -405,7 +405,7 @@ TEMPLATE_TEST_CASE("QuickExact simulation of a Y-shape SiDB OR gate with input 0
     CHECK(charge_lyt_first.get_charge_state({6, 2, 0}) == sidb_charge_state::NEGATIVE);
 
     CHECK_THAT(charge_lyt_first.get_system_energy(),
-               Catch::Matchers::WithinAbs(0.46621669, fiction::physical_constants::POP_STABILITY_ERR));
+               Catch::Matchers::WithinAbs(0.4662582096, physical_constants::POP_STABILITY_ERR));
 }
 
 TEMPLATE_TEST_CASE(
@@ -722,7 +722,8 @@ TEMPLATE_TEST_CASE("four DBs next to each other, small mu-", "[ExGS]",
 
     REQUIRE(simulation_results.charge_distributions.size() == 2);
     const auto& charge_lyt_first = simulation_results.charge_distributions.front();
-    CHECK(charge_lyt_first.get_system_energy() == 0);
+    CHECK_THAT(charge_lyt_first.get_system_energy(),
+               Catch::Matchers::WithinAbs(0, physical_constants::POP_STABILITY_ERR));
 }
 
 TEMPLATE_TEST_CASE("seven DBs next to each other, small mu-", "[ExGS]",
@@ -826,6 +827,8 @@ TEMPLATE_TEST_CASE("5 DBs next to each other (positively charged DBs occur)", "[
 
     const auto simulation_results = quickexact<TestType>(lyt, params);
 
+    CHECK(lyt.num_cells() == 6);
+
     CHECK(simulation_results.charge_distributions.size() == 1);
 }
 
@@ -881,4 +884,46 @@ TEMPLATE_TEST_CASE("3 DBs next to each other with automatic base number detectio
     CHECK(std::any_cast<uint64_t>(simulation_results_new.additional_simulation_parameters[0].second) == 2);
 
     CHECK(simulation_results_new.simulation_runtime < simulation_results.simulation_runtime);
+}
+
+TEMPLATE_TEST_CASE("13 DBs which are all negatively charged", "[ExGS]",
+                   (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>))
+{
+
+    using sidb_layout = cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>;
+
+    sidb_layout lyt{{20, 10}};
+
+    lyt.assign_cell_type({26, 10, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({23, 19, 1}, TestType::cell_type::NORMAL);
+
+    lyt.assign_cell_type({0, 5, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({38, 10, 1}, TestType::cell_type::NORMAL);
+
+    lyt.assign_cell_type({11, 5, 0}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({13, 2, 1}, TestType::cell_type::NORMAL);
+
+    lyt.assign_cell_type({40, 19, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({16, 9, 0}, TestType::cell_type::NORMAL);
+
+    lyt.assign_cell_type({19, 16, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({5, 8, 0}, TestType::cell_type::NORMAL);
+
+    lyt.assign_cell_type({8, 15, 1}, TestType::cell_type::NORMAL);
+    lyt.assign_cell_type({39, 9, 0}, TestType::cell_type::NORMAL);
+
+    lyt.assign_cell_type({30, 15, 0}, TestType::cell_type::NORMAL);
+
+    const quickexact_params<TestType> params{sidb_simulation_parameters{3, -0.32}};
+
+    const auto simulation_results = quickexact<TestType>(lyt, params);
+
+    REQUIRE(!simulation_results.charge_distributions.empty());
+
+    const auto& charge_lyt_first = simulation_results.charge_distributions.front();
+
+    charge_lyt_first.foreach_cell([&](const auto& cell)
+                                  { CHECK(charge_lyt_first.get_charge_state(cell) == sidb_charge_state::NEGATIVE); });
+
+    CHECK(lyt.num_cells() == 13);
 }

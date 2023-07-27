@@ -223,7 +223,8 @@ class write_sqd_sim_result_impl
                       {
                           const auto [nm_x, nm_y] = sidb_nm_position<Lyt>(sim_result.physical_parameters, c);
 
-                          os << fmt::format(siqad::DBDOT, nm_x * 10, nm_y * 10);  // convert nm to Angstrom
+                          os << fmt::format(siqad::DBDOT, nm_x * 10,
+                                            nm_y * 10);  // convert nm to Angstrom
                       });
 
         os << siqad::CLOSE_PHYSLOC;

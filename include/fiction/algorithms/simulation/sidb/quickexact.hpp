@@ -116,8 +116,7 @@ class quickexact_impl
                 {
                     for (const auto& [cell, defect] : real_placed_defects)
                     {
-                        charge_lyt_with_assigned_dependent_cell.assign_defect_to_charge_distribution_surface(cell,
-                                                                                                             defect);
+                        charge_lyt_with_assigned_dependent_cell.add_defect_to_charge_distribution_surface(cell, defect);
                     }
                 }
                 // IMPORTANT: The detected negatively charged SiDBs (they have to be negatively charged to fulfill the
@@ -126,7 +125,7 @@ class quickexact_impl
                 // implementation is chosen.
                 for (const auto& cell : detected_negative_sidbs)
                 {
-                    charge_lyt_with_assigned_dependent_cell.assign_defect_to_charge_distribution_surface(
+                    charge_lyt_with_assigned_dependent_cell.add_defect_to_charge_distribution_surface(
                         cell, sidb_defect{sidb_defect_type::UNKNOWN, -1,
                                           charge_lyt_with_assigned_dependent_cell.get_phys_params().epsilon_r,
                                           charge_lyt_with_assigned_dependent_cell.get_phys_params().lambda_tf});
@@ -189,11 +188,11 @@ class quickexact_impl
             else if (all_sidbs_in_lyt_without_negative_detected_ones.empty() && number_of_sidbs > 1)
             {
                 charge_distribution_surface<Lyt> charge_lyt_copy{charge_lyt};
-                for (const auto& cell : detected_negative_sidbs)
-                {
-                    charge_lyt.adding_sidb_to_layout(cell, -1);
-                }
                 result.charge_distributions.push_back(charge_lyt_copy);
+            }
+            for (const auto& cell : detected_negative_sidbs)
+            {
+                layout.assign_cell_type(cell, Lyt::cell_type::NORMAL);
             }
         }
         result.simulation_runtime = time_counter;
@@ -352,8 +351,8 @@ class quickexact_impl
                 {
                     if (layout.get_sidb_defect(defect.first) != sidb_defect{sidb_defect_type::NONE})
                     {
-                        charge_lyt.assign_defect_to_charge_distribution_surface(defect.first,
-                                                                                layout.get_sidb_defect(defect.first));
+                        charge_lyt.add_defect_to_charge_distribution_surface(defect.first,
+                                                                             layout.get_sidb_defect(defect.first));
                     }
                 });
         }
@@ -458,6 +457,11 @@ class quickexact_impl
  * In summary, Quickexact combines advanced SiDB detection, dependent SiDB selection, and the use of gray code
  * to achieve outstanding performance and enable efficient simulations of SiDB layouts, even in scenarios where
  * positively charged SiDBs occur due to small spacing.
+ *
+ * @tparam Lyt SiDB cell-level layout type.
+ * @param lyt Layout to simulate.
+ * @param params Parameter required for the simulation.
+ *
  */
 template <typename Lyt>
 sidb_simulation_result<Lyt> quickexact(Lyt& lyt, const quickexact_params<Lyt>& params = {})
