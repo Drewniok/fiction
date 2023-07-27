@@ -78,6 +78,13 @@ Lyt generate_random_layout(const random_layout_params<Lyt>& params, const Lyt& l
                                   { lyt.assign_cell_type(cell, lyt_skeleton.get_cell_type(cell)); });
     }
 
+    if (has_get_sidb_defect_v<Lyt>)
+    {
+        lyt_skeleton.foreach_sidb_defect(
+            [&lyt, &lyt_skeleton](const auto& defect)
+            { lyt.assign_sidb_defect(defect.first, lyt_skeleton.get_sidb_defect(defect.first)); });
+    }
+
     bool     successful_generation = false;
     uint64_t attempt_counter       = 0;
 

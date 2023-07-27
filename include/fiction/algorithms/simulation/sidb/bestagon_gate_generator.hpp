@@ -8,6 +8,7 @@
 #include "fiction/algorithms/simulation/sidb/critical_temperature.hpp"
 #include "fiction/algorithms/simulation/sidb/random_layout_generator.hpp"
 #include "fiction/io/read_sqd_layout.hpp"
+#include "fiction/technology/sidb_surface.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
 #include "fiction/utils/truth_table_utils.hpp"
@@ -51,11 +52,13 @@ struct bestagon_gate_generator_params
     /**
      * Parameter to generate the random layout.
      */
-    random_layout_params<sidb_cell_clk_lyt_siqad> random_lyt_params{};
+    random_layout_params<Lyt> random_lyt_params{};
     /**
      * Truth table of the given gate (if layout is simulated in `gate-based` mode).
      */
     tt truth_table{};
+
+    Lyt defect_surface{};
     /**
      * Number of generated layouts.
      */
@@ -68,12 +71,16 @@ struct bestagon_gate_generator_params
     bestagon_direction gate_direction = bestagon_direction::STRAIGHT;
 };
 
-std::vector<sidb_cell_clk_lyt_siqad>
-bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>& params)
+template <typename Lyt>
+std::vector<Lyt> bestagon_gate_generator(bestagon_gate_generator_params<Lyt>& params)
 {
-    sidb_cell_clk_lyt_siqad                layout{};
-    typename sidb_cell_clk_lyt_siqad::cell top_left_cell{};
-    typename sidb_cell_clk_lyt_siqad::cell bottom_right_cell{};
+    static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+    static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+    static_assert(has_siqad_coord_v<Lyt>, "Lyt is not based on SiQAD coordinates");
+
+    Lyt                layout{};
+    typename Lyt::cell top_left_cell{};
+    typename Lyt::cell bottom_right_cell{};
 
     std::vector<std::vector<uint64_t>> deactivating_cell_indices{};
 
@@ -81,7 +88,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
     {
         if (params.truth_table.num_bits() == 8)  // number of bits of truth table.
         {
-            layout = read_sqd_layout<sidb_cell_clk_lyt_siqad>(
+            layout = read_sqd_layout<Lyt>(
                 "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/skeleton_hex_inputsdbp_2i2o.sqd");
             top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 7, 0};
             bottom_right_cell         = {19 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
@@ -94,21 +101,19 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
     {
         if (params.gate_direction == bestagon_direction::STRAIGHT)
         {
-            layout =
-                read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
-                                                         "skeleton/skeleton_hex_inputsdbp_1i1o_straight.sqd");
-            top_left_cell             = {14, 6, 0};
-            bottom_right_cell         = {14 + params.canvas_size.first, 6 + params.canvas_size.second, 0};
+            layout            = read_sqd_layout<Lyt>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
+                                                     "skeleton/skeleton_hex_inputsdbp_1i1o_straight.sqd");
+            top_left_cell     = {14, 6, 0};
+            bottom_right_cell = {14 + params.canvas_size.first, 6 + params.canvas_size.second, 0};
             deactivating_cell_indices = {{1}, {0}};
         }
         else
         {
-            layout =
-                read_sqd_layout<sidb_cell_clk_lyt_siqad>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
-                                                         "skeleton/skeleton_hex_inputsdbp_1i1o_diagonal.sqd");
-            top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 7, 0};
-            bottom_right_cell         = {19 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
-                                         6 + params.canvas_size.second, 0};
+            layout            = read_sqd_layout<Lyt>("/Users/jandrewniok/CLionProjects/fiction_fork/experiments/"
+                                                     "skeleton/skeleton_hex_inputsdbp_1i1o_diagonal.sqd");
+            top_left_cell     = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 7, 0};
+            bottom_right_cell = {19 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
+                                 6 + params.canvas_size.second, 0};
             deactivating_cell_indices = {{1}, {0}};
         }
     }
@@ -117,7 +122,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
     {
         if (params.truth_table.num_bits() == 4 && params.truth_table != create_fan_out_tt())  // and, or, nand, etc.
         {
-            layout = read_sqd_layout<sidb_cell_clk_lyt_siqad>(
+            layout = read_sqd_layout<Lyt>(
                 "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/skeleton_hex_inputsdbp_2i1o.sqd");
             top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 6, 0};
             bottom_right_cell         = {19 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
@@ -126,7 +131,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
         }
         else
         {
-            layout = read_sqd_layout<sidb_cell_clk_lyt_siqad>(
+            layout = read_sqd_layout<Lyt>(
                 "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/skeleton/skeleton_hex_inputsdbp_1i2o.sqd");
             top_left_cell             = {19 - (params.canvas_size.first - params.canvas_size.first % 2) / 2, 8, 0};
             bottom_right_cell         = {19 + (params.canvas_size.first + params.canvas_size.first % 2) / 2,
@@ -135,18 +140,12 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
         }
     }
 
-    std::vector<sidb_cell_clk_lyt_siqad::cell> cells{};
-    cells.reserve(layout.num_cells());
-    layout.foreach_cell([&cells](const auto& cell) { cells.push_back(cell); });
-    std::sort(cells.begin(), cells.end());
 
     params.random_lyt_params.coordinate_pair = std::make_pair(top_left_cell, bottom_right_cell);
 
     std::cout << "layouts produced" << std::endl;
 
-    std::vector<sidb_cell_clk_lyt_siqad> found_gates{};
-
-    uint64_t counter = 0;
+    std::vector<Lyt> found_gates{};
 
     uint64_t const           num_threads = 10;
     std::vector<std::thread> threads{};
@@ -155,13 +154,22 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
 
     std::atomic<bool> found(false);
 
+    params.defect_surface.foreach_sidb_defect(
+        [&params, &layout](const auto& defect)
+        { layout.assign_sidb_defect(defect.first, params.defect_surface.get_sidb_defect(defect.first)); });
+
+    std::vector<typename Lyt::cell> cells{};
+    cells.reserve(layout.num_cells());
+    layout.foreach_cell([&cells](const auto& cell) { cells.push_back(cell); });
+    std::sort(cells.begin(), cells.end());
+
     for (uint64_t z = 0u; z < num_threads; z++)
     {
         threads.emplace_back(
-            [&]
+            [&, z, params]
             {
                 critical_temperature_params temp_params{
-                    simulation_engine::APPROXIMATE,
+                    simulation_engine::EXACT,
                     critical_temperature_mode::GATE_BASED_SIMULATION,
                     quicksim_params{sidb_simulation_parameters{2, -0.32}, 100, 0.65},
                     0.99,
@@ -177,10 +185,10 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
 
                     for (auto i = 0u; i < deactivating_cell_indices.size(); i++)
                     {
-                        critical_temperature_stats<sidb_cell_clk_lyt_siqad> criticalstats{};
+                        critical_temperature_stats<Lyt> criticalstats{};
                         for (const auto& deactive_cell : deactivating_cell_indices[i])
                         {
-                            lyt.assign_cell_type(cells[deactive_cell], sidb_cell_clk_lyt_siqad::technology::EMPTY);
+                            lyt.assign_cell_type(cells[deactive_cell], Lyt::technology::EMPTY);
                         }
 
                         temp_params.input_bit = i;
@@ -193,7 +201,7 @@ bestagon_gate_generator(bestagon_gate_generator_params<sidb_cell_clk_lyt_siqad>&
 
                         for (const auto& deactive_cell : deactivating_cell_indices[i])
                         {
-                            lyt.assign_cell_type(cells[deactive_cell], sidb_cell_clk_lyt_siqad::technology::NORMAL);
+                            lyt.assign_cell_type(cells[deactive_cell], Lyt::technology::NORMAL);
                         }
                     }
 
