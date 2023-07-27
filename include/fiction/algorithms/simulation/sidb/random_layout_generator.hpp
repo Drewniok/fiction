@@ -107,6 +107,14 @@ Lyt generate_random_layout(const random_layout_params<Lyt>& params, const Lyt& l
                         constraint_violation_positive_sidbs = true;
                     }
                 });
+            lyt.foreach_sidb_defect(
+                [&lyt, &random_coord, &constraint_violation_positive_sidbs, &params](const auto& c1)
+                {
+                    if (euclidean_distance<Lyt>(lyt, c1.first, random_coord) < params.minimal_spacing)
+                    {
+                        constraint_violation_positive_sidbs = true;
+                    }
+                });
         }
         // If the constraint that no positive SiDBs occur is satisfied, the SiDB is added to the layout.
         if (!constraint_violation_positive_sidbs)

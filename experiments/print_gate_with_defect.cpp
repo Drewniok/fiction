@@ -5,6 +5,7 @@
 #include "fiction/algorithms/simulation/sidb/quickexact.hpp"
 #include "fiction/io/print_layout.hpp"
 #include "fiction/io/read_sqd_layout.hpp"
+#include "fiction/technology/sidb_defects.hpp"
 #include "fiction/technology/sidb_surface.hpp"
 #include "fiction/types.hpp"
 
@@ -18,10 +19,30 @@ int main()  // NOLINT
     const quickexact_params<sidb_surface<sidb_cell_clk_lyt_siqad>> sim_params{sidb_simulation_parameters{2, -0.32}};
 
     auto lyt = read_sqd_layout<sidb_surface<sidb_cell_clk_lyt_siqad>>(
-        "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/gate_with_defect/and/layout_found_00.sqd");
+        "/Users/jandrewniok/CLionProjects/fiction_fork/experiments/gate_with_defect/and/layout_found_11.sqd");
     // std::cout << lyt.num_defects() << std::endl;
     // std::cout << lyt.num_cells() << std::endl;
-    const auto simulation_results = quickexact(lyt, sim_params);
+    //    lyt.foreach_sidb_defect(
+    //        [&lyt](const auto& defect) {
+    //            lyt.assign_sidb_defect(defect.first, sidb_defect{sidb_defect_type::UNKNOWN, -1, 5, 5.6});
+    //        });
+
+    sidb_surface<sidb_cell_clk_lyt_siqad> layout_with_all{};
+
+    lyt.foreach_cell([&layout_with_all](const auto& cell)
+                     { layout_with_all.assign_cell_type(cell, sidb_cell_clk_lyt_siqad::technology::NORMAL); });
+
+    lyt.foreach_sidb_defect(
+        [&layout_with_all](const auto& defect) {
+            layout_with_all.assign_sidb_defect(defect.first, sidb_defect{sidb_defect_type::UNKNOWN, -1, 5, 5.6});
+        });
+
+    //    const sidb_defect defect{sidb_defect_type::DB, -1, 5, 5.6};
+    //
+    //    lyt.assign_sidb_defect({20, 8, 0}, defect);
+    //    const auto sidb_defects = lyt.get_sidb_defect({20, 8, 0});
+
+    const auto simulation_results = quickexact(layout_with_all, sim_params);
 
     auto lowest_energy = round_to_n_decimal_places(minimum_energy(simulation_results.charge_distributions), 6);
     charge_distribution_surface<sidb_surface<sidb_cell_clk_lyt_siqad>> lyt_copy{};
