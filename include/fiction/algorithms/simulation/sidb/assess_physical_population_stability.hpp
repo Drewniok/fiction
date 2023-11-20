@@ -48,7 +48,15 @@ enum class transition_type
      */
     POSITIVE_TO_NEUTRAL,
 };
-
+/**
+ * This struct encapsulates information related to the population stability of a charge distribution.
+ * It includes details about the SiDB closest to a charge transition (critical cell), the specific
+ * charge state transition, the electrostatic potential difference required for the
+ * transition, the corresponding distance, and the total electrostatic energy of the
+ * given charge distribution.
+ *
+ * @tparam Lyt SiDB cell-level layout type.
+ */
 template <typename Lyt>
 struct population_stability_information
 {
@@ -90,21 +98,6 @@ struct assess_physical_population_stability_params
     uint64_t precision_for_distance_corresponding_to_potential = 2;
 };
 
-/**
- * This struct represents the electrostatic energy and charge index of a charge distribution.
- */
-struct energy_and_charge_index
-{
-    /**
-     * Electrostatic energy of the charge distribution.
-     */
-    double energy;
-    /**
-     * Charge index of the charge distribution.
-     */
-    uint64_t charge_index;
-};
-
 namespace detail
 {
 
@@ -143,59 +136,81 @@ class assess_physical_population_stability_impl
         popstability_information.reserve(simulation_results.charge_distributions.size());
 
         // Access the unique indices
-        for (const auto& [energy, index] : energy_and_unique_charge_index)
+        for (const auto& energy_and_index : energy_and_unique_charge_index)
         {
-            for (auto const& charge_lyt : simulation_results.charge_distributions)
-            {
-                if (charge_lyt.get_charge_index_and_base().first == index)
+            const auto it = std::find_if(
+                simulation_results.charge_distributions.begin(), simulation_results.charge_distributions.end(),
+                [&](const charge_distribution_surface<Lyt>& charge_lyt)
                 {
-                    population_stability_information<Lyt> population_stability_info{};
-                    population_stability_info.minimum_potential_difference_to_transition =
-                        std::numeric_limits<double>::infinity();
+                    // Compare with the first element of the pair returned by get_charge_index_and_base()
+                    return charge_lyt.get_charge_index_and_base().first == energy_and_index.charge_index;
+                });
 
-                    charge_lyt.foreach_cell(
-                        [this, &charge_lyt, &population_stability_info](const auto& c)
-                        {
-                            switch (charge_lyt.get_charge_state(c))
-                            {
-                                case sidb_charge_state::NEGATIVE:
-                                {
-                                    population_stability_info = handle_negative_charges(
-                                        *charge_lyt.get_local_potential(c), c, population_stability_info);
-                                    break;
-                                }
-                                case sidb_charge_state::NEUTRAL:
-                                {
-                                    population_stability_info = handle_neutral_charges(
-                                        *charge_lyt.get_local_potential(c), c, population_stability_info);
-                                    break;
-                                }
-                                case sidb_charge_state::POSITIVE:
-                                {
-                                    population_stability_info = handle_positive_charges(
-                                        *charge_lyt.get_local_potential(c), c, population_stability_info);
-                                    break;
-                                }
-                                case sidb_charge_state::NONE:
-                                {
-                                    break;
-                                }
-                            }
-                        });
-                    population_stability_info.system_energy                       = charge_lyt.get_system_energy();
-                    population_stability_info.distance_corresponding_to_potential = convert_potential_to_distance(
-                        population_stability_info.minimum_potential_difference_to_transition,
-                        params.physical_parameters, params.precision_for_distance_corresponding_to_potential);
-                    popstability_information.push_back(population_stability_info);
-                    break;
-                }
+            if (it == simulation_results.charge_distributions.end())
+            {
+                continue;
             }
+
+            const auto& charge_lyt = *it;
+
+            population_stability_information<Lyt> population_stability_info{};
+            population_stability_info.minimum_potential_difference_to_transition =
+                std::numeric_limits<double>::infinity();
+
+            charge_lyt.foreach_cell(
+                [this, &charge_lyt, &population_stability_info](const auto& c)
+                {
+                    switch (charge_lyt.get_charge_state(c))
+                    {
+                        case sidb_charge_state::NEGATIVE:
+                        {
+                            population_stability_info = handle_negative_charges(*charge_lyt.get_local_potential(c), c,
+                                                                                population_stability_info);
+                            break;
+                        }
+                        case sidb_charge_state::NEUTRAL:
+                        {
+                            population_stability_info = handle_neutral_charges(*charge_lyt.get_local_potential(c), c,
+                                                                               population_stability_info);
+                            break;
+                        }
+                        case sidb_charge_state::POSITIVE:
+                        {
+                            population_stability_info = handle_positive_charges(*charge_lyt.get_local_potential(c), c,
+                                                                                population_stability_info);
+                            break;
+                        }
+                        case sidb_charge_state::NONE:
+                        {
+                            break;
+                        }
+                    }
+                });
+            population_stability_info.system_energy                       = charge_lyt.get_system_energy();
+            population_stability_info.distance_corresponding_to_potential = convert_potential_to_distance(
+                population_stability_info.minimum_potential_difference_to_transition, params.physical_parameters,
+                params.precision_for_distance_corresponding_to_potential);
+            popstability_information.push_back(population_stability_info);
         }
 
         return popstability_information;
     };
 
   private:
+    /**
+     * This struct represents the electrostatic energy and charge index of a charge distribution.
+     */
+    struct energy_and_charge_index
+    {
+        /**
+         * Electrostatic energy of the charge distribution.
+         */
+        double energy;
+        /**
+         * Charge index of the charge distribution.
+         */
+        uint64_t charge_index;
+    };
     /**
      * Layout to analyze.
      */
@@ -221,6 +236,7 @@ class assess_physical_population_stability_impl
                             const population_stability_information<Lyt>& pop_stability_information) noexcept
     {
         auto updated_pop_stability_information = pop_stability_information;
+
         if (std::abs(-local_potential + params.physical_parameters.mu_minus) <
             updated_pop_stability_information.minimum_potential_difference_to_transition)
         {
@@ -229,6 +245,7 @@ class assess_physical_population_stability_impl
             updated_pop_stability_information.critical_cell      = c;
             updated_pop_stability_information.transition_from_to = transition_type::NEGATIVE_TO_NEUTRAL;
         }
+
         return updated_pop_stability_information;
     }
     /**
@@ -259,6 +276,7 @@ class assess_physical_population_stability_impl
                 updated_pop_stability_information.transition_from_to = transition_type::NEUTRAL_TO_NEGATIVE;
             }
         }
+
         else
         {
             if (std::abs(-local_potential + params.physical_parameters.mu_plus()) <
@@ -270,6 +288,7 @@ class assess_physical_population_stability_impl
                 updated_pop_stability_information.transition_from_to = transition_type::NEUTRAL_TO_POSITIVE;
             }
         }
+
         return updated_pop_stability_information;
     }
     /**
@@ -296,6 +315,7 @@ class assess_physical_population_stability_impl
             updated_pop_stability_information.critical_cell      = c;
             updated_pop_stability_information.transition_from_to = transition_type::POSITIVE_TO_NEUTRAL;
         }
+
         return updated_pop_stability_information;
     }
     /**
@@ -320,7 +340,7 @@ class assess_physical_population_stability_impl
                 return energy_and_charge_index{ch_lyt.get_system_energy(), ch_lyt.get_charge_index_and_base().first};
             });
 
-        // Sort the vector in ascending order of the double value
+        // Sort the vector in ascending order of the energy value
         std::sort(energy_charge_index.begin(), energy_charge_index.end(),
                   [](const auto& lhs, const auto& rhs) { return lhs.energy < rhs.energy; });
 
@@ -333,7 +353,7 @@ class assess_physical_population_stability_impl
 /**
  * This function assesses the population stability of each physically valid charge distributions of a given SiDB layout.
  * It determines the minimum absolute electrostatic potential required to induce a charge distribution transition.
- * The function also identifies the SiDB (critical SiDB) for which this is the case and the corresponding charge state
+ * The function also identifies the SiDB for which this is the case (critical SiDB) and the corresponding charge state
  * transition (i.e., the change from one charge state to another).
  * @tparam Lyt SiDB cell-level layout type.
  * @param lyt The layout for which the population stability is assessed.

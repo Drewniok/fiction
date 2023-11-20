@@ -75,6 +75,10 @@ struct design_sidb_gates_params
      * The simulation engine to be used for the operational domain computation.
      */
     sidb_simulation_engine sim_engine{sidb_simulation_engine::QUICKEXACT};
+    /**
+     * The percentage of all combinations that are tested before the design process is canceled.
+     */
+    double procentual_maximum_attemps = 1.0;
 };
 
 namespace detail
@@ -109,49 +113,80 @@ class design_sidb_gates_impl
     [[nodiscard]] std::vector<Lyt> run_exhaustive_design() noexcept
     {
         const is_operational_params params_is_operational{params.phys_params, params.sim_engine};
+        auto                        all_combinations = determine_all_combinations_of_given_sidbs_in_canvas();
 
-        const auto all_combinations = determine_all_combinations_of_given_sidbs_in_canvas();
+        std::unordered_set<typename Lyt::coordinate> sidbs_affected_by_defects = {};
 
-        std::vector<Lyt> designed_gate_layouts = {};
+        if constexpr (has_get_sidb_defect_v<Lyt>)
+        {
+            sidbs_affected_by_defects = skeleton_layout.all_affected_sidbs(std::make_pair(0, 0));
+        }
 
-        std::mutex mutex_to_protect_designer_gate_layouts;  // Mutex for protecting shared resources
+        std::vector<Lyt>      designed_gate_layouts = {};
+        std::mutex            mutex_to_protect_designer_gate_layouts;
+        std::atomic<bool>     solution_found = false;
+        std::atomic<uint64_t> global_iteration_counter(0);
+
+        const auto total_comb = binomial_coefficient(all_sidbs_in_cavas.size(), params.number_of_sidbs);
+
+        // Shuffle the combinations before dividing them among threads
+        std::shuffle(all_combinations.begin(), all_combinations.end(),
+                     std::default_random_engine(std::random_device()()));
 
         const auto add_combination_to_layout_and_check_operation =
-            [this, &mutex_to_protect_designer_gate_layouts, &params_is_operational,
-             &designed_gate_layouts](const auto& combination) noexcept
+            [this, &mutex_to_protect_designer_gate_layouts, &params_is_operational, &designed_gate_layouts,
+             &sidbs_affected_by_defects, &solution_found, &global_iteration_counter,
+             &total_comb](const auto& combination) noexcept
         {
-            if (!are_sidbs_too_close(combination))
+            for (const auto& comb : combination)
             {
-                auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(combination);
-                if (const auto [status, sim_calls] =
-                        is_operational(layout_with_added_cells, truth_table, params_is_operational);
-                    status == operational_status::OPERATIONAL)
+                if (!solution_found && !are_sidbs_too_close(comb, sidbs_affected_by_defects) &&
+                    global_iteration_counter <
+                        static_cast<uint64_t>(params.procentual_maximum_attemps * static_cast<double>(total_comb)))
                 {
-                    const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};  // Lock the mutex
-                    designed_gate_layouts.push_back(layout_with_added_cells);
+                    // canvas SiDBs are added to the skeleton
+                    auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(comb);
+
+                    if (!solution_found)
+                    {
+                        if (const auto [status, sim_calls] =
+                                is_operational(layout_with_added_cells, truth_table, params_is_operational);
+                            status == operational_status::OPERATIONAL)
+                        {
+                            {
+                                const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};
+                                designed_gate_layouts.push_back(layout_with_added_cells);
+                            }
+                            solution_found = true;
+                        }
+                    }
                 }
+                global_iteration_counter++;
             }
         };
 
-        std::vector<std::future<void>> futures{};
-        futures.reserve(all_combinations.size());
+        const uint64_t    num_threads = std::thread::hardware_concurrency();
+        const std::size_t chunk_size  = all_combinations.size() / num_threads;
 
-        // Start asynchronous tasks to process combinations in parallel
-        for (const auto& combination : all_combinations)
+        std::vector<std::thread> threads;
+        threads.reserve(num_threads);
+
+        for (auto i = 0u; i < num_threads; ++i)
         {
-            futures.emplace_back(
-                std::async(std::launch::async, add_combination_to_layout_and_check_operation, combination));
+            const std::size_t start = i * chunk_size;
+            const std::size_t end   = (i == num_threads - 1) ? all_combinations.size() : (i + 1) * chunk_size;
+            std::vector<std::vector<std::size_t>> chunk_combinations(all_combinations.begin() + start,
+                                                                     all_combinations.begin() + end);
+            threads.emplace_back(add_combination_to_layout_and_check_operation, chunk_combinations);
         }
 
-        // Wait for all tasks to finish
-        for (auto& future : futures)
+        for (auto& thread : threads)
         {
-            future.wait();
+            thread.join();
         }
 
         return designed_gate_layouts;
     }
-
     /**
      * Design gates randomly and in parallel.
      *
@@ -185,12 +220,34 @@ class design_sidb_gates_impl
                 {
                     while (!gate_layout_is_found)
                     {
-                        const auto result_lyt = generate_random_sidb_layout<Lyt>(skeleton_layout, parameter);
+                        auto result_lyt = generate_random_sidb_layout<Lyt>(skeleton_layout, parameter);
+                        if constexpr (has_get_sidb_defect_v<Lyt>)
+                        {
+                            result_lyt.foreach_sidb_defect(
+                                [&result_lyt](const auto& cd)
+                                {
+                                    if (is_neutrally_charged_defect(cd.second))
+                                    {
+                                        result_lyt.assign_sidb_defect(cd.first, sidb_defect{sidb_defect_type::NONE});
+                                    }
+                                });
+                        }
                         if (const auto [status, sim_calls] =
                                 is_operational(result_lyt, truth_table, params_is_operational);
                             status == operational_status::OPERATIONAL)
                         {
                             const std::lock_guard lock{mutex_to_protect_designed_gate_layouts};
+                            if constexpr (has_get_sidb_defect_v<Lyt>)
+                            {
+                                skeleton_layout.foreach_sidb_defect(
+                                    [&result_lyt](const auto& cd)
+                                    {
+                                        if (is_neutrally_charged_defect(cd.second))
+                                        {
+                                            result_lyt.assign_sidb_defect(cd.first, cd.second);
+                                        }
+                                    });
+                            }
                             randomly_designed_gate_layouts.push_back(result_lyt);
                             gate_layout_is_found = true;
                             break;
@@ -273,10 +330,22 @@ class design_sidb_gates_impl
      * @param cell_indices A vector of cell indices to check for SiDB proximity.
      * @return `true` if any SiDBs are too close; otherwise, `false`.
      */
-    [[nodiscard]] bool are_sidbs_too_close(const std::vector<std::size_t>& cell_indices) noexcept
+    [[nodiscard]] bool are_sidbs_too_close(const std::vector<std::size_t>&               cell_indices,
+                                           const std::unordered_set<typename Lyt::cell>& affected_cells = {}) noexcept
     {
         for (std::size_t i = 0; i < cell_indices.size(); i++)
         {
+            if constexpr (has_get_sidb_defect_v<Lyt>)
+            {
+                if (skeleton_layout.get_sidb_defect(all_sidbs_in_cavas[cell_indices[i]]).type != sidb_defect_type::NONE)
+                {
+                    return true;
+                }
+            }
+            if (affected_cells.count(all_sidbs_in_cavas[cell_indices[i]]) > 0)
+            {
+                return true;
+            }
             for (std::size_t j = i + 1; j < cell_indices.size(); j++)
             {
                 if (sidb_nanometer_distance<sidb_cell_clk_lyt_siqad>(skeleton_layout,
@@ -366,6 +435,7 @@ template <typename Lyt, typename TT>
         return p.run_exhaustive_design();
     }
 
+    detail::design_sidb_gates_impl<Lyt, TT> p_random{skeleton, spec, params};
     return p.run_random_design();
 }
 
