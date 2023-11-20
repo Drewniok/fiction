@@ -6,11 +6,12 @@
 #define FICTION_DESIGN_SIDB_GATES_HPP
 
 #include "fiction/algorithms/simulation/sidb/is_operational.hpp"
-#include "fiction/algorithms/simulation/sidb/operational_domain.hpp"
 #include "fiction/algorithms/simulation/sidb/random_sidb_layout_generator.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_engine.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_parameters.hpp"
+#include "fiction/algorithms/simulation/sidb/simulate_metric_value_of_sidb_gate.hpp"
 #include "fiction/layouts/coordinates.hpp"
+#include "fiction/technology/sidb_defects.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
 #include "fiction/utils/layout_utils.hpp"
@@ -25,6 +26,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <future>
+#include <limits>
 #include <numeric>
 #include <thread>
 #include <utility>
@@ -34,10 +36,8 @@
 
 namespace fiction
 {
-
 /**
  * This struct contains parameters and settings to design SiDB gates.
- *
  */
 struct design_sidb_gates_params
 {
@@ -79,6 +79,10 @@ struct design_sidb_gates_params
      * The percentage of all combinations that are tested before the design process is canceled.
      */
     double procentual_maximum_attemps = 1.0;
+    /**
+     * The parameters used to calculate the SiDB gate value for a given metric.
+     */
+    simulate_metric_value_of_sidb_gate_params metric_params{};
 };
 
 namespace detail
@@ -95,18 +99,20 @@ class design_sidb_gates_impl
      * @param skeleton The skeleton layout used as a basis for gate design.
      * @param tt Expected Boolean function of the layout given as a multi-output truth table.
      * @param ps Parameters and settings for the gate designer.
+     * @param gate_metric_and_threshold Metric and threshold used to design an SiDB gate that has the corresponding
+     * property.
      */
-    design_sidb_gates_impl(const Lyt& skeleton, const std::vector<TT>& tt, const design_sidb_gates_params& ps) :
+    design_sidb_gates_impl(const Lyt& skeleton, const std::vector<TT>& tt, const design_sidb_gates_params& ps,
+                           const std::pair<gate_metric, double>& gate_metric_and_threshold) :
             skeleton_layout{skeleton},
             truth_table{tt},
             params{ps},
-            all_sidbs_in_cavas{all_sidbs_in_spanned_area(params.canvas.first, params.canvas.second)}
+            all_sidbs_in_cavas{all_sidbs_in_spanned_area(params.canvas.first, params.canvas.second)},
+            metric_and_threshold{gate_metric_and_threshold}
     {}
     /**
-     * Design gates exhaustively and in parallel.
-     *
-     * This function adds each cell combination to the given skeleton, and determines whether the layout is operational
-     * based on the specified parameters. The design process is parallelized to improve performance.
+     * This function adds each cell combination to the given skeleton, and determines whether the SiDB layout is
+     * operational based on the specified parameters. The design process is parallelized to improve performance.
      *
      * @return A vector of designed SiDB gate layouts.
      */
@@ -153,11 +159,21 @@ class design_sidb_gates_impl
                                 is_operational(layout_with_added_cells, truth_table, params_is_operational);
                             status == operational_status::OPERATIONAL)
                         {
+                            if (metric_and_threshold.first != gate_metric::NONE)
                             {
-                                const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};
-                                designed_gate_layouts.push_back(layout_with_added_cells);
+                                if (fulfill_metric_threshold(layout_with_added_cells))
+                                {
+                                    const std::lock_guard lock{mutex_to_protect_designer_gate_layouts};
+                                    designed_gate_layouts.push_back(layout_with_added_cells);
+                                }
+                                solution_found = true;
                             }
-                            solution_found = true;
+                            else
+                            {
+                                const std::lock_guard lock{mutex_to_protect_designer_gate_layouts};
+                                designed_gate_layouts.push_back(layout_with_added_cells);
+                                solution_found = true;
+                            }
                         }
                     }
                 }
@@ -188,9 +204,7 @@ class design_sidb_gates_impl
         return designed_gate_layouts;
     }
     /**
-     * Design gates randomly and in parallel.
-     *
-     * This function adds cells randomly to the given skeleton, and determines whether the layout is operational
+     * This function adds cells randomly to the given skeleton, and determines whether the SiDB layout is operational
      * based on the specified parameters. The design process is parallelized to improve performance.
      *
      * @return A vector of designed SiDB gate layouts.
@@ -236,21 +250,45 @@ class design_sidb_gates_impl
                                 is_operational(result_lyt, truth_table, params_is_operational);
                             status == operational_status::OPERATIONAL)
                         {
-                            const std::lock_guard lock{mutex_to_protect_designed_gate_layouts};
-                            if constexpr (has_get_sidb_defect_v<Lyt>)
+                            if (metric_and_threshold.first != gate_metric::NONE)
                             {
-                                skeleton_layout.foreach_sidb_defect(
-                                    [&result_lyt](const auto& cd)
+                                if (fulfill_metric_threshold(result_lyt))
+                                {
+                                    const std::lock_guard lock{mutex_to_protect_designed_gate_layouts};
+                                    if constexpr (has_get_sidb_defect_v<Lyt>)
                                     {
-                                        if (is_neutrally_charged_defect(cd.second))
-                                        {
-                                            result_lyt.assign_sidb_defect(cd.first, cd.second);
-                                        }
-                                    });
+                                        skeleton_layout.foreach_sidb_defect(
+                                            [&result_lyt](const auto& cd)
+                                            {
+                                                if (is_neutrally_charged_defect(cd.second))
+                                                {
+                                                    result_lyt.assign_sidb_defect(cd.first, cd.second);
+                                                }
+                                            });
+                                    }
+                                    randomly_designed_gate_layouts.push_back(result_lyt);
+                                    gate_layout_is_found = true;
+                                    break;
+                                }
                             }
-                            randomly_designed_gate_layouts.push_back(result_lyt);
-                            gate_layout_is_found = true;
-                            break;
+                            else
+                            {
+                                const std::lock_guard lock{mutex_to_protect_designed_gate_layouts};
+                                if constexpr (has_get_sidb_defect_v<Lyt>)
+                                {
+                                    skeleton_layout.foreach_sidb_defect(
+                                        [&result_lyt](const auto& cd)
+                                        {
+                                            if (is_neutrally_charged_defect(cd.second))
+                                            {
+                                                result_lyt.assign_sidb_defect(cd.first, cd.second);
+                                            }
+                                        });
+                                }
+                                randomly_designed_gate_layouts.push_back(result_lyt);
+                                gate_layout_is_found = true;
+                                break;
+                            }
                         }
                     }
                 });
@@ -277,11 +315,16 @@ class design_sidb_gates_impl
     /**
      * Parameters for the *SiDB Gate Designer*.
      */
-    const design_sidb_gates_params& params;
+    design_sidb_gates_params params;
     /**
      * All cells within the canvas.
      */
-    const std::vector<fiction::siqad::coord_t> all_sidbs_in_cavas;
+    std::vector<fiction::siqad::coord_t> all_sidbs_in_cavas;
+    /**
+     * Metric and threshold used to design an SiDB gate that has the corresponding property.
+     */
+    std::pair<gate_metric, double> metric_and_threshold{};
+
     /**
      * Calculates all possible combinations of distributing the given number of SiDBs within a canvas
      * based on the provided parameters. It generates combinations of SiDB indices (representing the cell position in
@@ -328,7 +371,7 @@ class design_sidb_gates_impl
      * otherwise, it returns `false`.
      *
      * @param cell_indices A vector of cell indices to check for SiDB proximity.
-     * @return `true` if any SiDBs are too close; otherwise, `false`.
+     * @return `true` if any SiDBs are too close; `false` otherwise.
      */
     [[nodiscard]] bool are_sidbs_too_close(const std::vector<std::size_t>&               cell_indices,
                                            const std::unordered_set<typename Lyt::cell>& affected_cells = {}) noexcept
@@ -380,13 +423,59 @@ class design_sidb_gates_impl
 
         return lyt_copy;
     }
+
+    /**
+     * This function evaluates the metric value of an SiDB gate using the provided metric parameters
+     * and compares it against a threshold value. The comparison result indicates whether the gate's
+     * metric is above (or below) the acceptable level.
+     *
+     * @param lyt The SiDB gate for which the metric is evaluated.
+     * @return `true` if the metric value satisfies the threshold; `false` otherwise.
+     */
+    [[nodiscard]] bool fulfill_metric_threshold(const Lyt& lyt) const noexcept
+    {
+        if (const auto metric = metric_and_threshold.first; metric != gate_metric::NONE)
+        {
+            switch (metric_and_threshold.first)
+            {
+                case gate_metric::CRITICAL_TEMPERATURE:
+                {
+                    const auto critical_temperature_via_metric_information =
+                        simulate_metric_value_of_sidb_gate(lyt, truth_table, metric, params.metric_params);
+                    return (critical_temperature_via_metric_information > metric_and_threshold.second);
+                }
+                case gate_metric::POPULATION_STABILITY:
+                {
+                    const auto population_stability_via_metric_information =
+                        simulate_metric_value_of_sidb_gate(lyt, truth_table, metric, params.metric_params);
+                    return (population_stability_via_metric_information > metric_and_threshold.second);
+                }
+                case gate_metric::OPERATIONAL_DOMAIN:
+                {
+                    const auto operational_domain_via_metric_information =
+                        simulate_metric_value_of_sidb_gate(lyt, truth_table, metric, params.metric_params);
+                    return (operational_domain_via_metric_information > metric_and_threshold.second);
+                }
+                case gate_metric::MAXIMUM_DEFECT_INFLUENCE_DISTANCE:
+                {
+                    const auto maximum_defect_influence_distance_via_metric_information =
+                        simulate_metric_value_of_sidb_gate(lyt, truth_table, metric, params.metric_params);
+                    return (maximum_defect_influence_distance_via_metric_information < metric_and_threshold.second);
+                }
+                case gate_metric::NONE: return false;
+            }
+            return false;
+        }
+        return false;
+    }
 };
 }  // namespace detail
 
 /**
  * The *SiDB Gate Designer* designs SiDB gate implementations based on a specified Boolean function, a
  * skeleton layout (can hold defects), canvas size, and a predetermined number of canvas SiDBs. Two different design
- * modes are implemented: `exhaustive` and `random design`.
+ * modes are implemented: `exhaustive` and `random design`. Moreover, a gate metric and a threshold can be selected that
+ * the designed gate must meet. This can help to design e.g. temperature or defect robust SiDB gates.
  *
  * The `exhaustive design` is composed of three steps:
  * 1. In the initial step, all possible distributions of `number_of_sidbs` SiDBs within a given canvas are
@@ -408,12 +497,15 @@ class design_sidb_gates_impl
  * @tparam TT The type of the truth table specifying the gate behavior.
  * @param skeleton The skeleton layout used as a starting point for gate design.
  * @param spec Expected Boolean function of the layout given as a multi-output truth table.
- * @param params Parameters for the *SiDB Gate Designer*.
+ * @param design_params Parameters for the *SiDB Gate Designer*.
+ * @param gate_metric_and_threshold Metric and threshold used to design an SiDB gate that has the corresponding
+ * property.
  * @return A vector of designed SiDB gate layouts.
  */
 template <typename Lyt, typename TT>
-[[nodiscard]] std::vector<Lyt> design_sidb_gates(const Lyt& skeleton, const std::vector<TT>& spec,
-                                                 const design_sidb_gates_params& params = {}) noexcept
+[[nodiscard]] std::vector<Lyt>
+design_sidb_gates(const Lyt& skeleton, const std::vector<TT>& spec, const design_sidb_gates_params& design_params = {},
+                  const std::pair<gate_metric, double> gate_metric_and_threshold = {gate_metric::NONE, 0.0}) noexcept
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -428,14 +520,12 @@ template <typename Lyt, typename TT>
     assert(std::adjacent_find(spec.begin(), spec.end(),
                               [](const auto& a, const auto& b) { return a.num_vars() != b.num_vars(); }) == spec.end());
 
-    detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, params};
+    detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, design_params, gate_metric_and_threshold};
 
-    if (params.design_mode == design_sidb_gates_params::design_sidb_gates_mode::EXHAUSTIVE)
+    if (design_params.design_mode == design_sidb_gates_params::design_sidb_gates_mode::EXHAUSTIVE)
     {
         return p.run_exhaustive_design();
     }
-
-    detail::design_sidb_gates_impl<Lyt, TT> p_random{skeleton, spec, params};
     return p.run_random_design();
 }
 
