@@ -66,6 +66,64 @@ inline auto area_with_padding(const uint64_t& area, const T1& x, const T2& y) no
     return area + (static_cast<uint64_t>(x) + 1) * ((static_cast<uint64_t>(y) + 1) % 2ul);
 }
 
+TEST_CASE("Convert offset::ucoord_t layout to cube::coord_t layout", "[layout-utils]")
+{
+    SECTION("empty layout")
+    {
+        const auto x = 10, y = 10;
+
+        sidb_cell_clk_lyt lyt{{x, y}, "test"};
+
+        auto lyt_transformed = convert_offset_to_cube_coordinates<sidb_cell_clk_lyt_cube>(lyt);
+
+        CHECK(lyt_transformed.is_empty());
+        CHECK(lyt_transformed.area() == lyt.area());
+        CHECK(lyt_transformed.get_layout_name() == lyt.get_layout_name());
+    }
+
+    SECTION("layout with one normal and one input cell")
+    {
+        const auto x = 5, y = 3;
+
+        sidb_cell_clk_lyt lyt{{x, y}};
+
+        lyt.assign_cell_type({5, 3}, sidb_cell_clk_lyt::cell_type::NORMAL);
+        lyt.assign_cell_type({5, 1}, sidb_cell_clk_lyt::cell_type::INPUT);
+
+        auto lyt_transformed = convert_offset_to_cube_coordinates<sidb_cell_clk_lyt_cube>(lyt);
+
+        CHECK(lyt_transformed.num_cells() == 2);
+        CHECK(lyt_transformed.area() == lyt.area());
+        CHECK(lyt_transformed.get_cell_type({5, 3}) == sidb_cell_clk_lyt_cube::cell_type::NORMAL);
+        CHECK(lyt_transformed.get_cell_type({5, 1}) == sidb_cell_clk_lyt_cube::cell_type::INPUT);
+    }
+
+    SECTION("layout with three cells")
+    {
+        const auto x = 5, y = 3;
+
+        sidb_cell_clk_lyt lyt{{x, y}};
+
+        lyt.assign_cell_type({0, 0}, sidb_cell_clk_lyt::cell_type::NORMAL);
+        lyt.assign_cell_type({5, 3}, sidb_cell_clk_lyt::cell_type::INPUT);
+        lyt.assign_cell_type({5, 1}, sidb_cell_clk_lyt::cell_type::OUTPUT);
+        lyt.assign_cell_name({0, 0}, "normal cell");
+        lyt.assign_cell_name({5, 3}, "input cell");
+        lyt.assign_cell_name({5, 1}, "output cell");
+
+        auto lyt_transformed = convert_offset_to_cube_coordinates<sidb_cell_clk_lyt_cube>(lyt);
+
+        CHECK(lyt_transformed.num_cells() == 3);
+        CHECK(lyt_transformed.area() == lyt.area());
+        CHECK(lyt_transformed.get_cell_type({0, 0}) == sidb_cell_clk_lyt_cube::cell_type::NORMAL);
+        CHECK(lyt_transformed.get_cell_type({5, 3}) == sidb_cell_clk_lyt_cube::cell_type::INPUT);
+        CHECK(lyt_transformed.get_cell_type({5, 1}) == sidb_cell_clk_lyt_cube::cell_type::OUTPUT);
+        CHECK(lyt_transformed.get_cell_name({0, 0}) == "normal cell");
+        CHECK(lyt_transformed.get_cell_name({5, 3}) == "input cell");
+        CHECK(lyt_transformed.get_cell_name({5, 1}) == "output cell");
+    }
+}
+
 TEMPLATE_TEST_CASE("Convert offset::ucoord_t layout to SiQAD coordinate layout", "[layout-utils]", sidb_cell_clk_lyt)
 {
     SECTION("empty layout")
@@ -336,11 +394,11 @@ TEST_CASE("Generate random siqad::coord_t coordinate", "[layout-utils]")
     }
 }
 
-TEST_CASE("Generate all cells in area spanned by two cells", "[layout-utils]")
+TEST_CASE("Generate all cells in area spanned by two cells, using siqad coordinates", "[layout-utils]")
 {
     SECTION("two identical cells")
     {
-        const auto all_area_cells = all_sidbs_in_spanned_area({-10, -5, 0}, {-10, -5, 0});
+        const auto all_area_cells = all_sidbs_in_spanned_area<siqad::coord_t>({-10, -5, 0}, {-10, -5, 0});
         REQUIRE(all_area_cells.size() == 1);
         const auto first_cell = all_area_cells.front();
         CHECK(first_cell.x == -10);
@@ -350,7 +408,7 @@ TEST_CASE("Generate all cells in area spanned by two cells", "[layout-utils]")
 
     SECTION("two cells at the same y and z coordinate ")
     {
-        const auto all_area_cells = all_sidbs_in_spanned_area({-10, -5, 0}, {10, -5, 0});
+        const auto all_area_cells = all_sidbs_in_spanned_area<siqad::coord_t>({-10, -5, 0}, {10, -5, 0});
         REQUIRE(all_area_cells.size() == 21);
         const auto first_cell = all_area_cells.front();
         CHECK(first_cell.x == -10);
@@ -365,7 +423,7 @@ TEST_CASE("Generate all cells in area spanned by two cells", "[layout-utils]")
 
     SECTION("two cells at the same y coordinate ")
     {
-        const auto all_area_cells = all_sidbs_in_spanned_area({-10, 5, 0}, {10, 5, 1});
+        const auto all_area_cells = all_sidbs_in_spanned_area<siqad::coord_t>({-10, 5, 0}, {10, 5, 1});
         REQUIRE(all_area_cells.size() == 42);
         const auto first_cell = all_area_cells.front();
         CHECK(first_cell.x == -10);
@@ -380,7 +438,7 @@ TEST_CASE("Generate all cells in area spanned by two cells", "[layout-utils]")
 
     SECTION("two cells at the same x coordinate ")
     {
-        const auto all_area_cells = all_sidbs_in_spanned_area({10, 2, 0}, {10, 5, 1});
+        const auto all_area_cells = all_sidbs_in_spanned_area<siqad::coord_t>({10, 2, 0}, {10, 5, 1});
         REQUIRE(all_area_cells.size() == 8);
         const auto first_cell = all_area_cells.front();
         CHECK(first_cell.x == 10);
@@ -391,5 +449,101 @@ TEST_CASE("Generate all cells in area spanned by two cells", "[layout-utils]")
         CHECK(final_cell.x == 10);
         CHECK(final_cell.y == 5);
         CHECK(final_cell.z == 1);
+    }
+}
+
+TEST_CASE("Generate all cells in area spanned by two cells, using cube coordinates", "[layout-utils]")
+{
+    SECTION("two identical cells")
+    {
+        const auto all_area_cells = all_sidbs_in_spanned_area<cube::coord_t>({-10, -10, 0}, {-10, -10, 0});
+        REQUIRE(all_area_cells.size() == 1);
+        const auto first_cell = all_area_cells.front();
+        CHECK(first_cell.x == -10);
+        CHECK(first_cell.y == -10);
+        CHECK(first_cell.z == 0);
+
+        const auto final_cell = all_area_cells.back();
+        CHECK(final_cell.x == -10);
+        CHECK(final_cell.y == -10);
+        CHECK(final_cell.z == 0);
+    }
+
+    SECTION("two cells at the same y coordinate ")
+    {
+        const auto all_area_cells = all_sidbs_in_spanned_area<cube::coord_t>({-10, 10}, {10, 11});
+        REQUIRE(all_area_cells.size() == 42);
+        const auto first_cell = all_area_cells.front();
+        CHECK(first_cell.x == -10);
+        CHECK(first_cell.y == 10);
+        CHECK(first_cell.z == 0);
+
+        const auto final_cell = all_area_cells.back();
+        CHECK(final_cell.x == 10);
+        CHECK(final_cell.y == 11);
+        CHECK(final_cell.z == 0);
+    }
+
+    SECTION("two cells at the same x coordinate ")
+    {
+        const auto all_area_cells = all_sidbs_in_spanned_area<cube::coord_t>({10, 4, 0}, {10, 11});
+        REQUIRE(all_area_cells.size() == 8);
+        const auto first_cell = all_area_cells.front();
+        CHECK(first_cell.x == 10);
+        CHECK(first_cell.y == 4);
+        CHECK(first_cell.z == 0);
+
+        const auto final_cell = all_area_cells.back();
+        CHECK(final_cell.x == 10);
+        CHECK(final_cell.y == 11);
+        CHECK(final_cell.z == 0);
+    }
+}
+
+TEST_CASE("Generate all cells in area spanned by two cells, using offset coordinates", "[layout-utils]")
+{
+    SECTION("two identical cells")
+    {
+        const auto all_area_cells = all_sidbs_in_spanned_area<offset::ucoord_t>({10, 10, 0}, {10, 10, 0});
+        REQUIRE(all_area_cells.size() == 1);
+        const auto first_cell = all_area_cells.front();
+        CHECK(first_cell.x == 10);
+        CHECK(first_cell.y == 10);
+        CHECK(first_cell.z == 0);
+
+        const auto final_cell = all_area_cells.back();
+        CHECK(final_cell.x == 10);
+        CHECK(final_cell.y == 10);
+        CHECK(final_cell.z == 0);
+    }
+
+    SECTION("two cells at the same y coordinate ")
+    {
+        const auto all_area_cells = all_sidbs_in_spanned_area<offset::ucoord_t>({0, 10}, {20, 11});
+        REQUIRE(all_area_cells.size() == 42);
+        const auto first_cell = all_area_cells.front();
+        CHECK(first_cell.x == 0);
+        CHECK(first_cell.y == 10);
+        CHECK(first_cell.z == 0);
+
+        const auto final_cell = all_area_cells.back();
+        CHECK(final_cell.x == 20);
+        CHECK(final_cell.y == 11);
+        CHECK(final_cell.z == 0);
+    }
+
+    SECTION("two cells at the same x coordinate ")
+    {
+        const auto all_area_cells = all_sidbs_in_spanned_area<offset::ucoord_t>({10, 4, 0}, {10, 11});
+        REQUIRE(all_area_cells.size() == 8);
+        const auto first_cell = all_area_cells.front();
+        CHECK(first_cell.x == 10);
+        CHECK(first_cell.y == 4);
+        CHECK(first_cell.z == 0);
+
+        const auto final_cell = all_area_cells.back();
+        CHECK(final_cell.x == 10);
+        CHECK(final_cell.y == 11);
+        CHECK(final_cell.z == 0);
     }
 }
