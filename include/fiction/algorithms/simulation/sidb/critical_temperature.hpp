@@ -463,7 +463,6 @@ double critical_temperature_gate_based(const Lyt& lyt, const std::vector<TT>& sp
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
-    static_assert(has_siqad_coord_v<Lyt>, "Lyt is not based on SiQAD coordinates");
 
     assert(!spec.empty());
     // all elements in tts must have the same number of variables

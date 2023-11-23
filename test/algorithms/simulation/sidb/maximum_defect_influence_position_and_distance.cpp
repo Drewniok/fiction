@@ -7,12 +7,19 @@
 
 #include <fiction/algorithms/path_finding/distance.hpp>
 #include <fiction/algorithms/simulation/sidb/maximum_defect_influence_position_and_distance.hpp>
+#include <fiction/layouts/cell_level_layout.hpp>
+#include <fiction/technology/charge_distribution_surface.hpp>
 #include <fiction/technology/physical_constants.hpp>
+#include <fiction/technology/sidb_surface.hpp>
 #include <fiction/utils/math_utils.hpp>
 
 using namespace fiction;
 
-TEST_CASE("Test influence distance function", "[maximum-defect-influence-position-and-distance]")
+TEMPLATE_TEST_CASE(
+    "Test influence distance function", "[maximum-defect-influence-position-and-distance]",
+    (cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>),
+    (sidb_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>>),
+    (charge_distribution_surface<cell_level_layout<sidb_technology, clocked_layout<cartesian_layout<siqad::coord_t>>>>))
 {
     SECTION("empty layout")
     {
@@ -81,7 +88,7 @@ TEST_CASE("Test influence distance function", "[maximum-defect-influence-positio
                    Catch::Matchers::WithinAbs(0.0, physical_constants::POP_STABILITY_ERR));
     }
 
-    SECTION("QuickExact simulation of a Y-shape SiDB OR gate with input 01")
+    SECTION("Y-shape SiDB OR gate with input 01 and high screening")
     {
         const sidb_defect defect{sidb_defect_type::UNKNOWN, -1, sidb_simulation_parameters{}.epsilon_r,
                                  sidb_simulation_parameters{}.lambda_tf};
@@ -110,10 +117,51 @@ TEST_CASE("Test influence distance function", "[maximum-defect-influence-positio
         const maximum_defect_influence_distance_params sim_params_high_screening{high_screening,
                                                                                  sidb_simulation_parameters{}};
 
-        const auto [defect_pos_high_screeing, distance_high_screeing] =
+        const auto [defect_pos_high_screening, distance_high_screening] =
             maximum_defect_influence_position_and_distance(lyt, sim_params_high_screening);
 
-        CHECK(distance_high_screeing < distance);
+        CHECK(distance_high_screening < distance);
+    }
+}
+
+TEST_CASE("maximum influence distance with already placed defect", "[maximum-defect-influence-position-and-distance]")
+{
+    SECTION("Y-shape SiDB OR gate with input 01")
+    {
+        const sidb_defect defect{sidb_defect_type::UNKNOWN, -1, sidb_simulation_parameters{}.epsilon_r,
+                                 sidb_simulation_parameters{}.lambda_tf};
+        const maximum_defect_influence_distance_params sim_params{defect, sidb_simulation_parameters{}};
+        sidb_defect_cell_clk_lyt_siqad                 lyt{};
+
+        lyt.assign_cell_type({10, 0, 0}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+        lyt.assign_cell_type({0, 1, 0}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+        lyt.assign_cell_type({8, 1, 0}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+
+        lyt.assign_cell_type({2, 2, 0}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+        lyt.assign_cell_type({6, 2, 0}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+        lyt.assign_cell_type({4, 4, 0}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+        lyt.assign_cell_type({4, 5, 1}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+        lyt.assign_cell_type({4, 7, 1}, sidb_cell_clk_lyt_siqad::cell_type::NORMAL);
+
+        // assign defect
+        lyt.assign_sidb_defect({10, 3, 1},
+                               sidb_defect{sidb_defect_type::UNKNOWN, -1, sidb_simulation_parameters{}.epsilon_r,
+                                           sidb_simulation_parameters{}.lambda_tf});
+
+        const auto [defect_pos, distance] = maximum_defect_influence_position_and_distance(lyt, sim_params);
+        CHECK(defect_pos.x == 0);
+        CHECK(defect_pos.y == 4);
+        CHECK(defect_pos.z == 1);
+
+        // number of threads given by the hardware
+        const sidb_defect high_screening{sidb_defect_type::UNKNOWN, -1, sidb_simulation_parameters{}.epsilon_r, 1};
+        const maximum_defect_influence_distance_params sim_params_high_screening{high_screening,
+                                                                                 sidb_simulation_parameters{}};
+
+        const auto [defect_pos_high_screening, distance_high_screening] =
+            maximum_defect_influence_position_and_distance(lyt, sim_params_high_screening);
+
+        CHECK(distance_high_screening < distance);
     }
 
     SECTION("QuickExact simulation of a Y-shape SiDB OR gate with input 01, using cube coordinate")

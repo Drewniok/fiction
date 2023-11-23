@@ -70,6 +70,13 @@ class maximum_defect_influence_position_and_distance_impl
         collect_all_defect_cells();
     }
 
+    /**
+     * Calculates the position and the minimal distance to the SiDB layout/gate at which the given atomic defect still
+     * changes the ground state.
+     *
+     * @return Pair of position and distance at which the given atomic defect still changes the ground state of the SiDB
+     * layout.
+     */
     std::pair<typename Lyt::cell, double> run() noexcept
     {
         const quickexact_params<sidb_surface<Lyt>> params_defect{
@@ -100,7 +107,7 @@ class maximum_defect_influence_position_and_distance_impl
         {
             if (layout.get_cell_type(defect) == Lyt::technology::cell_type::EMPTY)
             {
-                sidb_surface<Lyt> lyt_defect{};
+                sidb_surface<Lyt> lyt_defect{layout.clone()};
 
                 layout.foreach_cell([this, &lyt_defect](const auto& cell)
                                     { lyt_defect.assign_cell_type(cell, layout.get_cell_type(cell)); });
