@@ -87,6 +87,8 @@ struct design_sidb_gates_params
      * The parameters used to calculate the SiDB gate value for a given metric.
      */
     simulate_metric_value_of_sidb_gate_params metric_params{};
+
+    bool stop_after_first_solution = false;
 };
 
 namespace detail
@@ -152,39 +154,44 @@ class design_sidb_gates_impl
         {
             for (const auto& comb : combination)
             {
-                if (!solution_found && !are_sidbs_too_close(comb, sidbs_affected_by_defects) &&
+                if (!are_sidbs_too_close(comb, sidbs_affected_by_defects) &&
                     global_iteration_counter <
                         static_cast<uint64_t>(parameter.procentual_maximum_attemps * static_cast<double>(total_comb)))
                 {
                     // canvas SiDBs are added to the skeleton
                     auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(comb);
 
-                    if (!solution_found)
+                    if (const auto [status, sim_calls] =
+                            is_operational(layout_with_added_cells, truth_table, params_is_operational);
+                        status == operational_status::OPERATIONAL)
                     {
-                        if (const auto [status, sim_calls] =
-                                is_operational(layout_with_added_cells, truth_table, params_is_operational);
-                            status == operational_status::OPERATIONAL)
+                        if (gate_metric_and_threshold.has_value())
                         {
-                            if (gate_metric_and_threshold.has_value())
+                            if (gate_metric_and_threshold.value().first != gate_metric::NONE)
                             {
-                                if (gate_metric_and_threshold.value().first != gate_metric::NONE)
+                                if (fulfill_metric_threshold(layout_with_added_cells,
+                                                             gate_metric_and_threshold.value()))
                                 {
-                                    if (fulfill_metric_threshold(layout_with_added_cells,
-                                                                 gate_metric_and_threshold.value()))
-                                    {
-                                        const std::lock_guard lock{mutex_to_protect_designer_gate_layouts};
-                                        designed_gate_layouts.push_back(layout_with_added_cells);
-                                    }
-                                    solution_found = true;
+                                    const std::lock_guard lock{mutex_to_protect_designer_gate_layouts};
+                                    designed_gate_layouts.push_back(layout_with_added_cells);
                                 }
-                            }
-                            else
-                            {
-                                const std::lock_guard lock{mutex_to_protect_designer_gate_layouts};
-                                designed_gate_layouts.push_back(layout_with_added_cells);
                                 solution_found = true;
                             }
                         }
+                        else
+                        {
+                            const std::lock_guard lock{mutex_to_protect_designer_gate_layouts};
+                            designed_gate_layouts.push_back(layout_with_added_cells);
+                            solution_found = true;
+                        }
+                    }
+                    if (solution_found && parameter.stop_after_first_solution)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        continue;
                     }
                 }
                 global_iteration_counter++;
