@@ -302,7 +302,7 @@ class critical_temperature_impl
                 break;
             }
 
-            if (std::abs(temp - params.max_temperature) < 0.001)
+            if (std::abs(temp - params.max_temperature) < 0.001 && (temp < stats.critical_temperature))
             {
                 // Maximal temperature is stored as the Critical Temperature.
                 stats.critical_temperature = params.max_temperature;
@@ -375,13 +375,14 @@ class critical_temperature_impl
         for (const auto& temp : temp_values)
         {
             // If the occupation probability of erroneous states exceeds the given threshold...
-            if (occupation_probability_gate_based(energy_state_type, temp) > (1 - params.confidence_level))
+            if (occupation_probability_gate_based(energy_state_type, temp) > (1 - params.confidence_level) &&
+                (temp < stats.critical_temperature))
             {
                 // The current temperature is stored as Critical Temperature.
                 stats.critical_temperature = temp;
                 break;
             }
-            if (std::abs(temp - params.max_temperature) < 0.001)
+            if (std::abs(temp - params.max_temperature) < 0.001 && (temp < stats.critical_temperature))
             {
                 // Maximal temperature is stored as Critical Temperature.
                 stats.critical_temperature = params.max_temperature;
