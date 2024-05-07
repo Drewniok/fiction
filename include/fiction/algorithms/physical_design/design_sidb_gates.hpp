@@ -151,6 +151,48 @@ class design_sidb_gates_impl
         return designed_gate_layouts;
     }
 
+    [[nodiscard]] std::vector<Lyt> run_exhaustive_candidate_design() noexcept
+    {
+        const is_operational_params params_is_operational{params.simulation_parameters, params.sim_engine};
+
+        const auto all_combinations = determine_all_combinations_of_distributing_k_entities_on_n_positions(
+            params.number_of_sidbs, static_cast<std::size_t>(all_sidbs_in_canvas.size()));
+
+        std::vector<Lyt> designed_gate_layouts = {};
+
+        std::mutex mutex_to_protect_designer_gate_layouts;  // Mutex for protecting shared resources
+
+        const auto add_combination_to_layout_and_check_operation =
+            [this, &mutex_to_protect_designer_gate_layouts, &params_is_operational,
+             &designed_gate_layouts](const auto& combination) noexcept
+        {
+            if (!are_sidbs_too_close(combination))
+            {
+                auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(combination);
+                    const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};  // Lock the mutex
+                    designed_gate_layouts.push_back(layout_with_added_cells);
+            }
+        };
+
+        std::vector<std::future<void>> futures{};
+        futures.reserve(all_combinations.size());
+
+        // Start asynchronous tasks to process combinations in parallel
+        for (const auto& combination : all_combinations)
+        {
+            futures.emplace_back(
+                std::async(std::launch::async, add_combination_to_layout_and_check_operation, combination));
+        }
+
+        // Wait for all tasks to finish
+        for (auto& future : futures)
+        {
+            future.wait();
+        }
+
+        return designed_gate_layouts;
+    }
+
     /**
      * Design gates randomly and in parallel.
      *
@@ -328,6 +370,28 @@ template <typename Lyt, typename TT>
     }
 
     return p.run_random_design();
+}
+
+template <typename Lyt, typename TT>
+[[nodiscard]] std::vector<Lyt> design_sidb_gate_candidates(const Lyt& skeleton, const std::vector<TT>& spec,
+                                                 const design_sidb_gates_params<Lyt>& params = {}) noexcept
+{
+    static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+    static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+    static_assert(kitty::is_truth_table<TT>::value, "TT is not a truth table");
+    static_assert(!is_charge_distribution_surface_v<Lyt>, "Lyt cannot be a charge distribution surface");
+
+    assert(skeleton.num_pis() > 0 && "skeleton needs input cells");
+    assert(skeleton.num_pos() > 0 && "skeleton needs output cells");
+
+    assert(!spec.empty());
+    // all elements in tts must have the same number of variables
+    assert(std::adjacent_find(spec.begin(), spec.end(),
+                              [](const auto& a, const auto& b) { return a.num_vars() != b.num_vars(); }) == spec.end());
+
+    detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, params};
+
+    return p.run_exhaustive_candidate_design();
 }
 
 }  // namespace fiction
