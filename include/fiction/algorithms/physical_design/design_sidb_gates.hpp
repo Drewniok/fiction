@@ -168,7 +168,7 @@ class design_sidb_gates_impl
         {
             if (!are_sidbs_too_close(combination))
             {
-                auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(combination);
+                auto layout_with_added_cells = canvas_sidbs(combination);
                     const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};  // Lock the mutex
                     designed_gate_layouts.push_back(layout_with_added_cells);
             }
@@ -313,6 +313,19 @@ class design_sidb_gates_impl
         }
 
         return lyt_copy;
+    }
+
+    [[nodiscard]] Lyt canvas_sidbs(const std::vector<std::size_t>& cell_indices) noexcept
+    {
+        Lyt lyt{};
+        for (const auto i : cell_indices)
+        {
+            assert(i < all_sidbs_in_canvas.size() && "cell indices are out-of-range");
+
+            lyt.assign_cell_type(all_sidbs_in_canvas[i], sidb_technology::cell_type::NORMAL);
+        }
+
+        return lyt;
     }
 };
 }  // namespace detail

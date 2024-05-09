@@ -794,6 +794,7 @@ Lyt two_input_one_output_skeleton_new() noexcept
     lyt.assign_cell_type({24, 5, 0}, Lyt::cell_type::NORMAL);
     lyt.assign_cell_type({14, 5, 0}, Lyt::cell_type::NORMAL);
 
+
     lyt.assign_cell_type({19, 13, 0}, Lyt::cell_type::NORMAL);
     lyt.assign_cell_type({20, 14, 0}, Lyt::cell_type::NORMAL);
 

@@ -29,15 +29,15 @@ struct bdl_pair
      * The type of the SiDBs in the pair. BDL SiDBs must be of the same type. They can either be normal, input, or
      * output SiDBs.
      */
-    const sidb_technology::cell_type type{};
+    sidb_technology::cell_type type{};
     /**
      * The upper SiDB of the pair. Upper and lower are defined relative to each other via the `operator<` overload.
      */
-    const cell<Lyt> upper{};
+    cell<Lyt> upper{};
     /**
      * The lower SiDB of the pair. Upper and lower are defined relative to each other via the `operator<` overload.
      */
-    const cell<Lyt> lower{};
+    cell<Lyt> lower{};
     /**
      * Standard constructor for empty BDL pairs.
      */
@@ -56,6 +56,48 @@ struct bdl_pair
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+    }
+
+    // Equal-to operator (==)
+    bool operator==(const bdl_pair<Lyt>& other) const {
+        return type == other.type && upper == other.upper && lower == other.lower;
+    }
+
+    // Not-equal-to operator (!=)
+    bool operator!=(const bdl_pair<Lyt>& other) const {
+        return !(*this == other);
+    }
+
+    // Less-than operator (<)
+    bool operator<(const bdl_pair<Lyt>& other) const {
+        if (upper != other.upper)
+            return upper < other.upper;
+        return lower < other.lower;
+    }
+
+    // Less-than-or-equal-to operator (<=)
+    bool operator<=(const bdl_pair<Lyt>& other) const {
+        return (*this < other) || (*this == other);
+    }
+
+    // Greater-than operator (>)
+    bool operator>(const bdl_pair<Lyt>& other) const {
+        return !(*this <= other);
+    }
+
+    // Greater-than-or-equal-to operator (>=)
+    bool operator>=(const bdl_pair<Lyt>& other) const {
+        return !(*this < other);
+    }
+
+    // Assignment operator (=)
+    bdl_pair& operator=(const bdl_pair<Lyt>& other) {
+        if (this != &other) { // Check for self-assignment
+            type = other.type;
+            upper = other.upper;
+            lower = other.lower;
+        }
+        return *this;
     }
 };
 
