@@ -33,13 +33,13 @@ using namespace fiction;
 
 TEST_CASE("Efficient gate design, AND", "[design-sidb-gates]")
 {
-    auto lyt = blueprints::two_input_one_output_skeleton_new<sidb_100_cell_clk_lyt_siqad>();
+    auto lyt = blueprints::two_input_two_output_skeleton<sidb_100_cell_clk_lyt_siqad>();
     // const auto chains = detect_wire_bdl_chains(lyt);
 
     const design_sidb_gates_params<sidb_100_cell_clk_lyt_siqad> params{
         sidb_simulation_parameters{2, -0.32},
         design_sidb_gates_params<sidb_100_cell_clk_lyt_siqad>::design_sidb_gates_mode::EXHAUSTIVE,
-        {{14, 6, 0}, {24, 12, 0}},
+        {{14, 6, 0}, {24, 13, 0}},
         3,
         sidb_simulation_engine::QUICKEXACT};
 
@@ -51,17 +51,18 @@ TEST_CASE("Efficient gate design, AND", "[design-sidb-gates]")
 //    write_sqd_layout(exhaustive_design[0], "/Users/jandrewniok/Desktop/and_efficient_gate_exh.sqd");
 
     const auto all_gate_candidates =
-        design_all_efficient_gates(lyt, std::vector<tt>{create_nor_tt()}, efficient_params);
+        design_all_efficient_gates(lyt, create_double_wire_tt(), efficient_params);
     std::cout << all_gate_candidates.size() << std::endl;
-    write_sqd_layout(all_gate_candidates[0], "/Users/jandrewniok/Desktop/and_efficient_gate.sqd");
+    //write_sqd_layout(all_gate_candidates[0], "/Users/jandrewniok/Desktop/and_efficient_gate.sqd");
 
     uint64_t counter = 0;
     for (const auto& gate : all_gate_candidates)
     {
-        if (is_operational(gate, std::vector<tt>{create_nor_tt()}, is_operational_params{params.simulation_parameters})
+        if (is_operational(gate, create_double_wire_tt(), is_operational_params{params.simulation_parameters})
                 .first == operational_status::OPERATIONAL)
         {
             counter++;
+            write_sqd_layout(gate, fmt::format("/Users/jandrewniok/Desktop/and_efficient_gate_{}.sqd", counter));
         }
     }
     std::cout << counter << std::endl;

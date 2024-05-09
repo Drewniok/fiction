@@ -200,7 +200,7 @@ class efficient_gate_design_impl
     }
 
     void set_charge_distribution_based_on_logic(charge_distribution_surface<Lyt>& layout, uint64_t current_input_index,
-                                                bool logic_value)
+                                                std::vector<bool> logic_value)
     {
         layout.assign_all_charge_states(sidb_charge_state::NEGATIVE);
 
@@ -228,7 +228,7 @@ class efficient_gate_design_impl
         {
             for (const auto& bdl : chains_output[i])
             {
-                if (logic_value)
+                if (logic_value[i])
                 {
                     layout.assign_charge_state(bdl.upper, sidb_charge_state::NEUTRAL);
                     layout.assign_charge_state(bdl.lower, sidb_charge_state::NEGATIVE);
@@ -259,7 +259,13 @@ class efficient_gate_design_impl
         for (auto i = 0u; i < truth_table.front().num_bits(); ++i, ++bii)
         {
             charge_distribution_surface cds_layout{*bii, params.design_params.simulation_parameters};
-            set_charge_distribution_based_on_logic(cds_layout, i, kitty::get_bit(truth_table[0], i));
+
+            std::vector<bool> logic = {};
+            for (const auto& tt : truth_table)
+            {
+                logic.push_back(kitty::get_bit(tt, i));
+            }
+            set_charge_distribution_based_on_logic(cds_layout, i, logic);
 
             bool physical_valid = false;
 
@@ -283,9 +289,10 @@ class efficient_gate_design_impl
                             cds_canvas.foreach_cell(
                                 [&](const auto& c)
                                 { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c)); });
-                            //print_sidb_layout(std::cout, cds_layout);
+                            // print_sidb_layout(std::cout, cds_layout);
                             cds_layout.update_after_charge_change();
-                            if (cds_layout.is_physically_valid() && cds_layout.get_system_energy() < energy)
+                            if (cds_layout.is_physically_valid() &&
+                                (cds_layout.get_system_energy()) < energy)
                             {
                                 canvas_lyt.foreach_cell(
                                     [&](const auto& c)
@@ -330,8 +337,8 @@ class efficient_gate_design_impl
                 current_layout.foreach_cell([&](const auto& c)
                                             { lyt.assign_cell_type(c, current_layout.get_cell_type(c)); });
 
-                    all_canvas_layouts[i].foreach_cell([&](const auto& c)
-                                                { lyt.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
+                all_canvas_layouts[i].foreach_cell([&](const auto& c)
+                                                   { lyt.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
 
                 all_designs.push_back(lyt);
                 // std::cout << "FOUND" << std::endl;
@@ -347,7 +354,7 @@ class efficient_gate_design_impl
     const efficient_gate_design_params<Lyt>& params;
     std::vector<std::vector<bdl_pair<Lyt>>>  chains_input;
     std::vector<std::vector<bdl_pair<Lyt>>>  chains_output;
-    std::vector<std::vector<bdl_pair<Lyt>>> all_chains;
+    std::vector<std::vector<bdl_pair<Lyt>>>  all_chains;
     bdl_input_iterator<Lyt>                  bii;
     std::vector<Lyt>                         all_canvas_layouts{};
 };
