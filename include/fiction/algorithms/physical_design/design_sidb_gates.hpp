@@ -75,6 +75,17 @@ struct design_sidb_gates_params
     sidb_simulation_engine sim_engine{sidb_simulation_engine::QUICKEXACT};
 };
 
+/**
+ * Statistics for the design of SiDB gates.
+ */
+struct design_sidb_gates_stats
+{
+    /**
+     * The total runtime of SiDB gate design process.
+     */
+    mockturtle::stopwatch<>::duration time_total{0};
+};
+
 namespace detail
 {
 
@@ -90,10 +101,12 @@ class design_sidb_gates_impl
      * @param tt Expected Boolean function of the layout given as a multi-output truth table.
      * @param ps Parameters and settings for the gate designer.
      */
-    design_sidb_gates_impl(const Lyt& skeleton, const std::vector<TT>& tt, const design_sidb_gates_params<Lyt>& ps) :
+    design_sidb_gates_impl(const Lyt& skeleton, const std::vector<TT>& tt, const design_sidb_gates_params<Lyt>& ps,
+                           design_sidb_gates_stats& st) :
             skeleton_layout{skeleton},
             truth_table{tt},
             params{ps},
+            stats{st},
             all_sidbs_in_canvas{all_coordinates_in_spanned_area(params.canvas.first, params.canvas.second)}
     {}
     /**
@@ -106,6 +119,7 @@ class design_sidb_gates_impl
      */
     [[nodiscard]] std::vector<Lyt> run_exhaustive_design() noexcept
     {
+        mockturtle::stopwatch       stop{stats.time_total};
         const is_operational_params params_is_operational{params.simulation_parameters, params.sim_engine};
 
         const auto all_combinations = determine_all_combinations_of_distributing_k_entities_on_n_positions(
@@ -153,41 +167,28 @@ class design_sidb_gates_impl
 
     [[nodiscard]] std::vector<Lyt> run_exhaustive_candidate_design() noexcept
     {
-        const is_operational_params params_is_operational{params.simulation_parameters, params.sim_engine};
-
         const auto all_combinations = determine_all_combinations_of_distributing_k_entities_on_n_positions(
             params.number_of_sidbs, static_cast<std::size_t>(all_sidbs_in_canvas.size()));
 
         std::vector<Lyt> designed_gate_layouts = {};
+        designed_gate_layouts.reserve(all_combinations.size());
 
         std::mutex mutex_to_protect_designer_gate_layouts;  // Mutex for protecting shared resources
 
         const auto add_combination_to_layout_and_check_operation =
-            [this, &mutex_to_protect_designer_gate_layouts, &params_is_operational,
-             &designed_gate_layouts](const auto& combination) noexcept
+            [this, &mutex_to_protect_designer_gate_layouts, &designed_gate_layouts](const auto& combination) noexcept
         {
             if (!are_sidbs_too_close(combination))
             {
                 auto layout_with_added_cells = canvas_sidbs(combination);
-                    const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};  // Lock the mutex
-                    designed_gate_layouts.push_back(layout_with_added_cells);
+                designed_gate_layouts.push_back(layout_with_added_cells);
             }
         };
-
-        std::vector<std::future<void>> futures{};
-        futures.reserve(all_combinations.size());
 
         // Start asynchronous tasks to process combinations in parallel
         for (const auto& combination : all_combinations)
         {
-            futures.emplace_back(
-                std::async(std::launch::async, add_combination_to_layout_and_check_operation, combination));
-        }
-
-        // Wait for all tasks to finish
-        for (auto& future : futures)
-        {
-            future.wait();
+            add_combination_to_layout_and_check_operation(combination);
         }
 
         return designed_gate_layouts;
@@ -266,6 +267,10 @@ class design_sidb_gates_impl
      * All cells within the canvas.
      */
     const std::vector<typename Lyt::cell> all_sidbs_in_canvas;
+    /**
+     * The statistics of the gate design.
+     */
+    design_sidb_gates_stats& stats;
     /**
      * Checks if any SiDBs within the specified cell indices are located too closely together, with a distance of less
      * than 0.5 nanometers.
@@ -360,7 +365,8 @@ class design_sidb_gates_impl
  */
 template <typename Lyt, typename TT>
 [[nodiscard]] std::vector<Lyt> design_sidb_gates(const Lyt& skeleton, const std::vector<TT>& spec,
-                                                 const design_sidb_gates_params<Lyt>& params = {}) noexcept
+                                                 const design_sidb_gates_params<Lyt>& params = {},
+                                                 design_sidb_gates_stats*             stats  = nullptr) noexcept
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -375,19 +381,29 @@ template <typename Lyt, typename TT>
     assert(std::adjacent_find(spec.begin(), spec.end(),
                               [](const auto& a, const auto& b) { return a.num_vars() != b.num_vars(); }) == spec.end());
 
-    detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, params};
+    design_sidb_gates_stats                 st{};
+    detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, params, st};
+
+    std::vector<Lyt> result{};
 
     if (params.design_mode == design_sidb_gates_params<Lyt>::design_sidb_gates_mode::EXHAUSTIVE)
     {
-        return p.run_exhaustive_design();
+        result = p.run_exhaustive_design();
     }
-
-    return p.run_random_design();
+    else
+    {
+        result = p.run_random_design();
+    }
+    if (stats)
+    {
+        *stats = st;
+    }
+    return result;
 }
 
 template <typename Lyt, typename TT>
 [[nodiscard]] std::vector<Lyt> design_sidb_gate_candidates(const Lyt& skeleton, const std::vector<TT>& spec,
-                                                 const design_sidb_gates_params<Lyt>& params = {}) noexcept
+                                                           const design_sidb_gates_params<Lyt>& params = {}) noexcept
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -402,7 +418,8 @@ template <typename Lyt, typename TT>
     assert(std::adjacent_find(spec.begin(), spec.end(),
                               [](const auto& a, const auto& b) { return a.num_vars() != b.num_vars(); }) == spec.end());
 
-    detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, params};
+    design_sidb_gates_stats st{};
+    detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, params, st};
 
     return p.run_exhaustive_candidate_design();
 }

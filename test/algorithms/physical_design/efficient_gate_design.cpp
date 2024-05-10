@@ -33,7 +33,7 @@ using namespace fiction;
 
 TEST_CASE("Efficient gate design, AND", "[design-sidb-gates]")
 {
-    auto lyt = blueprints::two_input_two_output_skeleton<sidb_100_cell_clk_lyt_siqad>();
+    auto lyt = blueprints::two_input_one_output_skeleton_new<sidb_100_cell_clk_lyt_siqad>();
     // const auto chains = detect_wire_bdl_chains(lyt);
 
     const design_sidb_gates_params<sidb_100_cell_clk_lyt_siqad> params{
@@ -45,21 +45,22 @@ TEST_CASE("Efficient gate design, AND", "[design-sidb-gates]")
 
     efficient_gate_design_params<sidb_100_cell_clk_lyt_siqad> efficient_params{};
     efficient_params.design_params = params;
-//
-//    const auto exhaustive_design = design_sidb_gates(lyt, std::vector<tt>{create_and_tt()}, params);
+    //
+//    design_sidb_gates_stats st{};
+//    const auto              exhaustive_design = design_sidb_gates(lyt, std::vector<tt>{create_and_tt()}, params, &st);
 //    std::cout << exhaustive_design.size() << std::endl;
+//    std::cout << mockturtle::to_seconds(st.time_total) << std::endl;
 //    write_sqd_layout(exhaustive_design[0], "/Users/jandrewniok/Desktop/and_efficient_gate_exh.sqd");
 
-    const auto all_gate_candidates =
-        design_all_efficient_gates(lyt, create_double_wire_tt(), efficient_params);
+    const auto all_gate_candidates = design_all_efficient_gates(lyt, std::vector<tt>{create_and_tt()}, efficient_params);
     std::cout << all_gate_candidates.size() << std::endl;
-    //write_sqd_layout(all_gate_candidates[0], "/Users/jandrewniok/Desktop/and_efficient_gate.sqd");
+    // write_sqd_layout(all_gate_candidates[0], "/Users/jandrewniok/Desktop/and_efficient_gate.sqd");
 
     uint64_t counter = 0;
     for (const auto& gate : all_gate_candidates)
     {
-        if (is_operational(gate, create_double_wire_tt(), is_operational_params{params.simulation_parameters})
-                .first == operational_status::OPERATIONAL)
+        if (is_operational(gate, std::vector<tt>{create_and_tt()}, is_operational_params{params.simulation_parameters}).first ==
+            operational_status::OPERATIONAL)
         {
             counter++;
             write_sqd_layout(gate, fmt::format("/Users/jandrewniok/Desktop/and_efficient_gate_{}.sqd", counter));

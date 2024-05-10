@@ -6,6 +6,9 @@
 #define FICTION_EFFICIENT_GATE_DESIGN_HPP
 
 #include "fiction/algorithms/simulation/sidb/detect_bdl_pairs.hpp"
+#include "fiction/algorithms/iter/bdl_input_iterator.hpp"
+#include "fiction/algorithms/simulation/sidb/sidb_simulation_parameters.hpp"
+#include "fiction/traits.hpp"
 
 #include <optional>
 #include <vector>
@@ -83,7 +86,9 @@ class efficient_gate_design_impl
             bii(bdl_input_iterator<Lyt>{skeleton, ps.bdl_params}),
             all_canvas_layouts{design_sidb_gate_candidates(skeleton, truth_table, params.design_params)},
             all_chains{detect_wire_bdl_chains(lyt)}
-    {}
+    {
+        std::cout << all_canvas_layouts.size() << std::endl;
+    }
 
     std::vector<std::vector<bdl_pair<Lyt>>> detect_wire_bdl_chains(const Lyt& layout,
                                                                    const WIRE wire_selection = WIRE::ALL)
@@ -244,15 +249,14 @@ class efficient_gate_design_impl
 
     bool physically_validity_is_fulfilled(const Lyt& canvas_lyt)
     {
-        current_layout = skeleton.clone();
         canvas_lyt.foreach_cell([&](const auto& c)
-                                { current_layout.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
+                                { skeleton.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
 
         // print_sidb_layout(std::cout, current_layout);
 
         charge_distribution_surface cds_canvas{canvas_lyt, params.design_params.simulation_parameters};
 
-        auto bii = bdl_input_iterator<Lyt>{current_layout, params.bdl_params};
+        auto bii = bdl_input_iterator<Lyt>{skeleton, params.bdl_params};
 
         const auto num_bits = truth_table.front().num_bits();
 
@@ -274,10 +278,11 @@ class efficient_gate_design_impl
             {
                 cds_canvas.foreach_cell([&](const auto& c)
                                         { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c)); });
-                cds_layout.update_after_charge_change();
-                const auto energy = cds_layout.get_system_energy();
+                cds_layout.update_after_charge_change(dependent_cell_mode::FIXED, energy_calculation::KEEP_OLD_ENERGY_VALUE);
                 if (cds_layout.is_physically_valid())
                 {
+                    cds_layout.recompute_system_energy();
+                    const auto energy = cds_layout.get_system_energy();
                     for (auto kink_states = 0u; kink_states < std::pow(2, (chains_input.size() + chains_output.size()));
                          ++kink_states)
                     {
@@ -290,33 +295,40 @@ class efficient_gate_design_impl
                                 [&](const auto& c)
                                 { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c)); });
                             // print_sidb_layout(std::cout, cds_layout);
-                            cds_layout.update_after_charge_change();
-                            if (cds_layout.is_physically_valid() &&
-                                (cds_layout.get_system_energy()) < energy)
+                            cds_layout.update_after_charge_change(dependent_cell_mode::FIXED, energy_calculation::KEEP_OLD_ENERGY_VALUE);
+                            if (cds_layout.is_physically_valid())
                             {
-                                canvas_lyt.foreach_cell(
-                                    [&](const auto& c)
-                                    { current_layout.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
-                                return false;
+                                cds_layout.recompute_system_energy();
+                                if (cds_layout.get_system_energy() < energy)
+                                    {
+                                        canvas_lyt.foreach_cell(
+                                            [&](const auto& c)
+                                            { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
+                                        return false;
+                                    }
                             }
-                            cds_canvas.increase_charge_index_by_one();
+                            cds_canvas.increase_charge_index_by_one(dependent_cell_mode::FIXED,
+                                                                    energy_calculation::KEEP_OLD_ENERGY_VALUE,
+                                                                    charge_distribution_history::NEGLECT);
                         }
                     }
                     physical_valid = true;
                     break;
                 }
-                cds_canvas.increase_charge_index_by_one();
+                cds_canvas.increase_charge_index_by_one(dependent_cell_mode::FIXED,
+                                                                   energy_calculation::KEEP_OLD_ENERGY_VALUE,
+                                                                   charge_distribution_history::NEGLECT);
             }
             if (!physical_valid)
             {
                 canvas_lyt.foreach_cell([&](const auto& c)
-                                        { current_layout.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
+                                        { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
                 return false;
             }
         }
 
         canvas_lyt.foreach_cell([&](const auto& c)
-                                { current_layout.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
+                                { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
 
         return true;
     }
@@ -348,7 +360,7 @@ class efficient_gate_design_impl
     }
 
   private:
-    const Lyt&                               skeleton;
+    Lyt&                               skeleton;
     Lyt&                                     current_layout;
     const std::vector<TT>&                   truth_table;
     const efficient_gate_design_params<Lyt>& params;
