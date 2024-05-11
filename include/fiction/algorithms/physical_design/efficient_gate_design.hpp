@@ -5,8 +5,8 @@
 #ifndef FICTION_EFFICIENT_GATE_DESIGN_HPP
 #define FICTION_EFFICIENT_GATE_DESIGN_HPP
 
-#include "fiction/algorithms/simulation/sidb/detect_bdl_pairs.hpp"
 #include "fiction/algorithms/iter/bdl_input_iterator.hpp"
+#include "fiction/algorithms/simulation/sidb/detect_bdl_pairs.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_parameters.hpp"
 #include "fiction/traits.hpp"
 
@@ -95,13 +95,22 @@ class efficient_gate_design_impl
     {
         std::set<bdl_pair<Lyt>> bdl_pairs{};
         const auto              normal_bdls = detect_bdl_pairs(layout, sidb_technology::cell_type::NORMAL);
-        auto                    output_bdls = detect_bdl_pairs(layout, sidb_technology::cell_type::OUTPUT);
+        auto                    input_bdls  = detect_bdl_pairs(layout, sidb_technology::cell_type::INPUT);
+        std::sort(input_bdls.begin(), input_bdls.end());
+        auto output_bdls = detect_bdl_pairs(layout, sidb_technology::cell_type::OUTPUT);
+        std::sort(output_bdls.begin(), output_bdls.end());
         for (const auto& bdl : normal_bdls)
         {
             bdl_pairs.insert(bdl);
         }
 
         for (auto& bdl : output_bdls)
+        {
+            bdl.type = sidb_technology::cell_type::NORMAL;
+            bdl_pairs.insert(bdl);
+        }
+
+        for (auto& bdl : input_bdls)
         {
             bdl.type = sidb_technology::cell_type::NORMAL;
             bdl_pairs.insert(bdl);
@@ -158,23 +167,40 @@ class efficient_gate_design_impl
 
         if (wire_selection == WIRE::INPUT)
         {
-            if (chains.size() == 2)
+            std::vector<std::vector<bdl_pair<Lyt>>> result{};
+            for (auto& bdl : input_bdls)
             {
-                return {chains[0]};
+                bdl.type = sidb_technology::cell_type::NORMAL;
+                for (auto& chain : chains)
+                {
+                    auto it = std::find(chain.begin(), chain.end(), bdl);
+                    if (it != chain.end())
+                    {
+                        chain.erase(it);
+                        result.push_back(chain);
+                        break;
+                    }
+                }
             }
-            return {chains[0], chains[1]};
+            return result;
         }
         if (wire_selection == WIRE::OUTPUT)
         {
-            if (chains.size() == 2)
+            std::vector<std::vector<bdl_pair<Lyt>>> result{};
+            for (auto& bdl : output_bdls)
             {
-                return {chains[1]};
+                bdl.type = sidb_technology::cell_type::NORMAL;
+                for (auto& chain : chains)
+                {
+                    auto it = std::find(chain.begin(), chain.end(), bdl);
+                    if (it != chain.end())
+                    {
+                        result.push_back(chain);
+                        break;
+                    }
+                }
             }
-            else if (chains.size() == 3)
-            {
-                return {chains[2]};
-            }
-            return {chains[2], chains[3]};
+            return result;
         }
         return chains;
     }
@@ -278,7 +304,8 @@ class efficient_gate_design_impl
             {
                 cds_canvas.foreach_cell([&](const auto& c)
                                         { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c)); });
-                cds_layout.update_after_charge_change(dependent_cell_mode::FIXED, energy_calculation::KEEP_OLD_ENERGY_VALUE);
+                cds_layout.update_after_charge_change(dependent_cell_mode::FIXED,
+                                                      energy_calculation::KEEP_OLD_ENERGY_VALUE);
                 if (cds_layout.is_physically_valid())
                 {
                     cds_layout.recompute_system_energy();
@@ -295,17 +322,18 @@ class efficient_gate_design_impl
                                 [&](const auto& c)
                                 { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c)); });
                             // print_sidb_layout(std::cout, cds_layout);
-                            cds_layout.update_after_charge_change(dependent_cell_mode::FIXED, energy_calculation::KEEP_OLD_ENERGY_VALUE);
+                            cds_layout.update_after_charge_change(dependent_cell_mode::FIXED,
+                                                                  energy_calculation::KEEP_OLD_ENERGY_VALUE);
                             if (cds_layout.is_physically_valid())
                             {
                                 cds_layout.recompute_system_energy();
                                 if (cds_layout.get_system_energy() < energy)
-                                    {
-                                        canvas_lyt.foreach_cell(
-                                            [&](const auto& c)
-                                            { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
-                                        return false;
-                                    }
+                                {
+                                    canvas_lyt.foreach_cell(
+                                        [&](const auto& c)
+                                        { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
+                                    return false;
+                                }
                             }
                             cds_canvas.increase_charge_index_by_one(dependent_cell_mode::FIXED,
                                                                     energy_calculation::KEEP_OLD_ENERGY_VALUE,
@@ -316,8 +344,8 @@ class efficient_gate_design_impl
                     break;
                 }
                 cds_canvas.increase_charge_index_by_one(dependent_cell_mode::FIXED,
-                                                                   energy_calculation::KEEP_OLD_ENERGY_VALUE,
-                                                                   charge_distribution_history::NEGLECT);
+                                                        energy_calculation::KEEP_OLD_ENERGY_VALUE,
+                                                        charge_distribution_history::NEGLECT);
             }
             if (!physical_valid)
             {
@@ -360,7 +388,7 @@ class efficient_gate_design_impl
     }
 
   private:
-    Lyt&                               skeleton;
+    Lyt&                                     skeleton;
     Lyt&                                     current_layout;
     const std::vector<TT>&                   truth_table;
     const efficient_gate_design_params<Lyt>& params;

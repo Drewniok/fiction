@@ -89,16 +89,6 @@ struct bdl_pair
     bool operator>=(const bdl_pair<Lyt>& other) const {
         return !(*this < other);
     }
-
-    // Assignment operator (=)
-    bdl_pair& operator=(const bdl_pair<Lyt>& other) {
-        if (this != &other) { // Check for self-assignment
-            type = other.type;
-            upper = other.upper;
-            lower = other.lower;
-        }
-        return *this;
-    }
 };
 
 /**

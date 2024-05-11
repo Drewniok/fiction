@@ -106,8 +106,8 @@ class design_sidb_gates_impl
             skeleton_layout{skeleton},
             truth_table{tt},
             params{ps},
-            stats{st},
-            all_sidbs_in_canvas{all_coordinates_in_spanned_area(params.canvas.first, params.canvas.second)}
+            all_sidbs_in_canvas{all_coordinates_in_spanned_area(params.canvas.first, params.canvas.second)},
+            stats{st}
     {}
     /**
      * Design gates exhaustively and in parallel.
@@ -173,10 +173,8 @@ class design_sidb_gates_impl
         std::vector<Lyt> designed_gate_layouts = {};
         designed_gate_layouts.reserve(all_combinations.size());
 
-        std::mutex mutex_to_protect_designer_gate_layouts;  // Mutex for protecting shared resources
-
         const auto add_combination_to_layout_and_check_operation =
-            [this, &mutex_to_protect_designer_gate_layouts, &designed_gate_layouts](const auto& combination) noexcept
+            [this,  &designed_gate_layouts](const auto& combination) noexcept
         {
             if (!are_sidbs_too_close(combination))
             {

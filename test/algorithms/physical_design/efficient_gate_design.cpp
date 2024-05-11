@@ -53,7 +53,8 @@ TEST_CASE("Efficient gate design, AND", "[design-sidb-gates]")
 //    write_sqd_layout(exhaustive_design[0], "/Users/jandrewniok/Desktop/and_efficient_gate_exh.sqd");
 
     const auto all_gate_candidates = design_all_efficient_gates(lyt, std::vector<tt>{create_and_tt()}, efficient_params);
-    std::cout << all_gate_candidates.size() << std::endl;
+    CHECK(all_gate_candidates.size() == 707);
+    // std::cout << all_gate_candidates.size() << std::endl;
     // write_sqd_layout(all_gate_candidates[0], "/Users/jandrewniok/Desktop/and_efficient_gate.sqd");
 
     uint64_t counter = 0;
@@ -63,7 +64,7 @@ TEST_CASE("Efficient gate design, AND", "[design-sidb-gates]")
             operational_status::OPERATIONAL)
         {
             counter++;
-            write_sqd_layout(gate, fmt::format("/Users/jandrewniok/Desktop/and_efficient_gate_{}.sqd", counter));
+            //write_sqd_layout(gate, fmt::format("/Users/jandrewniok/Desktop/and_efficient_gate_{}.sqd", counter));
         }
     }
     std::cout << counter << std::endl;
