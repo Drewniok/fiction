@@ -59,34 +59,40 @@ struct bdl_pair
     }
 
     // Equal-to operator (==)
-    bool operator==(const bdl_pair<Lyt>& other) const {
+    bool operator==(const bdl_pair<Lyt>& other) const
+    {
         return type == other.type && upper == other.upper && lower == other.lower;
     }
 
     // Not-equal-to operator (!=)
-    bool operator!=(const bdl_pair<Lyt>& other) const {
+    bool operator!=(const bdl_pair<Lyt>& other) const
+    {
         return !(*this == other);
     }
 
     // Less-than operator (<)
-    bool operator<(const bdl_pair<Lyt>& other) const {
+    bool operator<(const bdl_pair<Lyt>& other) const
+    {
         if (upper != other.upper)
             return upper < other.upper;
         return lower < other.lower;
     }
 
     // Less-than-or-equal-to operator (<=)
-    bool operator<=(const bdl_pair<Lyt>& other) const {
+    bool operator<=(const bdl_pair<Lyt>& other) const
+    {
         return (*this < other) || (*this == other);
     }
 
     // Greater-than operator (>)
-    bool operator>(const bdl_pair<Lyt>& other) const {
+    bool operator>(const bdl_pair<Lyt>& other) const
+    {
         return !(*this <= other);
     }
 
     // Greater-than-or-equal-to operator (>=)
-    bool operator>=(const bdl_pair<Lyt>& other) const {
+    bool operator>=(const bdl_pair<Lyt>& other) const
+    {
         return !(*this < other);
     }
 };
@@ -250,6 +256,16 @@ std::vector<bdl_pair<Lyt>> detect_bdl_pairs(const Lyt& lyt, const typename techn
             paired_dots.insert(potential_bdl_pair.sidb1);
             paired_dots.insert(potential_bdl_pair.sidb2);
         }
+
+        std::sort(bdl_pairs.begin(), bdl_pairs.end(),
+                  [](const auto& bdl_one, const auto& bdl_two)
+                  {
+                      if (bdl_one.upper.x == bdl_two.upper.x)
+                      {
+                          return bdl_one.upper.y > bdl_two.upper.y;
+                      }
+                      return bdl_one.upper.x < bdl_two.upper.x;
+                  });
 
         return bdl_pairs;
     };

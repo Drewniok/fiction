@@ -304,7 +304,7 @@ class bdl_input_iterator
     {
         for (uint8_t i = 0; i < num_inputs; ++i)
         {
-            const auto& input_i = input_pairs[i];
+            const auto& input_i = input_pairs[num_inputs - 1 - i];
 
             if ((current_input_index & (uint64_t{1ull} << i)) != 0ull)
             {

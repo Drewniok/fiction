@@ -173,21 +173,44 @@ class design_sidb_gates_impl
         std::vector<Lyt> designed_gate_layouts = {};
         designed_gate_layouts.reserve(all_combinations.size());
 
+        std::vector<std::future<void>> futures{};
+        futures.reserve(designed_gate_layouts.size());
+
+        std::mutex mutex_to_protect_designer_gate_layouts;
+
         const auto add_combination_to_layout_and_check_operation =
-            [this,  &designed_gate_layouts](const auto& combination) noexcept
+            [this,  &designed_gate_layouts, &mutex_to_protect_designer_gate_layouts](const auto& combination) noexcept
         {
             if (!are_sidbs_too_close(combination))
             {
                 auto layout_with_added_cells = canvas_sidbs(combination);
+                //const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
                 designed_gate_layouts.push_back(layout_with_added_cells);
             }
         };
 
         // Start asynchronous tasks to process combinations in parallel
+//        for (const auto& combination : all_combinations)
+//        {
+//            add_combination_to_layout_and_check_operation(combination);
+//        }
+
+        // Launch async tasks
+//        for (const auto& combination : all_combinations)
+//        {
+//            futures.emplace_back(std::async(std::launch::async, add_combination_to_layout_and_check_operation, combination));
+//        }
+
         for (const auto& combination : all_combinations)
         {
             add_combination_to_layout_and_check_operation(combination);
         }
+
+//        // Wait for all tasks to finish
+//        for (auto& future : futures)
+//        {
+//            future.wait();
+//        }
 
         return designed_gate_layouts;
     }

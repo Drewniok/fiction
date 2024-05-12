@@ -7,10 +7,17 @@
 
 #include "fiction/algorithms/iter/bdl_input_iterator.hpp"
 #include "fiction/algorithms/simulation/sidb/detect_bdl_pairs.hpp"
-#include "fiction/algorithms/simulation/sidb/sidb_simulation_parameters.hpp"
+#include "fiction/technology/cell_technologies.hpp"
+#include "fiction/technology/charge_distribution_surface.hpp"
+#include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
 
+#include <atomic>
+#include <cstdint>
+#include <future>
+#include <mutex>
 #include <optional>
+#include <set>
 #include <vector>
 
 namespace fiction
@@ -78,12 +85,10 @@ class efficient_gate_design_impl
     efficient_gate_design_impl(Lyt& lyt, const std::vector<TT>& tt,
                                const efficient_gate_design_params<Lyt>& ps) noexcept :
             skeleton{lyt},
-            current_layout{lyt},
             truth_table{tt},
             params{ps},
             chains_input{detect_wire_bdl_chains(skeleton, WIRE::INPUT)},
             chains_output{detect_wire_bdl_chains(skeleton, WIRE::OUTPUT)},
-            bii(bdl_input_iterator<Lyt>{skeleton, ps.bdl_params}),
             all_canvas_layouts{design_sidb_gate_candidates(skeleton, truth_table, params.design_params)},
             all_chains{detect_wire_bdl_chains(lyt)}
     {
@@ -202,7 +207,27 @@ class efficient_gate_design_impl
             }
             return result;
         }
-        return chains;
+
+        std::vector<std::vector<bdl_pair<Lyt>>> result{};
+
+        for (auto& chain : chains)
+        {
+            for (auto& bdl : input_bdls)
+            {
+                bdl.type = sidb_technology::cell_type::NORMAL;
+                auto it  = std::find(chain.begin(), chain.end(), bdl);
+                if (it != chain.end())
+                {
+                    chain.erase(it);
+                    result.push_back(chain);
+                    break;
+                }
+                result.push_back(chain);
+                break;
+            }
+        }
+
+        return result;
     }
 
     void set_charge_distribution(charge_distribution_surface<Lyt>& layout, uint64_t current_input_index)
@@ -230,8 +255,8 @@ class efficient_gate_design_impl
         }
     }
 
-    void set_charge_distribution_based_on_logic(charge_distribution_surface<Lyt>& layout, uint64_t current_input_index,
-                                                std::vector<bool> logic_value)
+    void set_charge_distribution_based_on_logic(charge_distribution_surface<Lyt>& layout,
+                                                const uint64_t                    current_input_index)
     {
         layout.assign_all_charge_states(sidb_charge_state::NEGATIVE);
 
@@ -259,7 +284,7 @@ class efficient_gate_design_impl
         {
             for (const auto& bdl : chains_output[i])
             {
-                if (logic_value[i])
+                if (kitty::get_bit(truth_table[i], current_input_index))
                 {
                     layout.assign_charge_state(bdl.upper, sidb_charge_state::NEUTRAL);
                     layout.assign_charge_state(bdl.lower, sidb_charge_state::NEGATIVE);
@@ -275,27 +300,19 @@ class efficient_gate_design_impl
 
     bool physically_validity_is_fulfilled(const Lyt& canvas_lyt)
     {
+        auto current_layout = skeleton.clone();
         canvas_lyt.foreach_cell([&](const auto& c)
-                                { skeleton.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
-
-        // print_sidb_layout(std::cout, current_layout);
+                                { current_layout.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
 
         charge_distribution_surface cds_canvas{canvas_lyt, params.design_params.simulation_parameters};
 
-        auto bii = bdl_input_iterator<Lyt>{skeleton, params.bdl_params};
-
-        const auto num_bits = truth_table.front().num_bits();
+        auto bii = bdl_input_iterator<Lyt>{current_layout, params.bdl_params};
 
         for (auto i = 0u; i < truth_table.front().num_bits(); ++i, ++bii)
         {
             charge_distribution_surface cds_layout{*bii, params.design_params.simulation_parameters};
 
-            std::vector<bool> logic = {};
-            for (const auto& tt : truth_table)
-            {
-                logic.push_back(kitty::get_bit(tt, i));
-            }
-            set_charge_distribution_based_on_logic(cds_layout, i, logic);
+            set_charge_distribution_based_on_logic(cds_layout, i);
 
             bool physical_valid = false;
 
@@ -316,6 +333,8 @@ class efficient_gate_design_impl
                         set_charge_distribution(cds_layout, kink_states);
                         cds_canvas.assign_charge_index(0);
 
+                        //print_sidb_layout(std::cout, cds_layout);
+
                         while (cds_canvas.get_charge_index_and_base().first < cds_canvas.get_max_charge_index())
                         {
                             cds_canvas.foreach_cell(
@@ -327,11 +346,8 @@ class efficient_gate_design_impl
                             if (cds_layout.is_physically_valid())
                             {
                                 cds_layout.recompute_system_energy();
-                                if (cds_layout.get_system_energy() < energy)
+                                if (cds_layout.get_system_energy() + physical_constants::POP_STABILITY_ERR < energy)
                                 {
-                                    canvas_lyt.foreach_cell(
-                                        [&](const auto& c)
-                                        { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
                                     return false;
                                 }
                             }
@@ -349,53 +365,64 @@ class efficient_gate_design_impl
             }
             if (!physical_valid)
             {
-                canvas_lyt.foreach_cell([&](const auto& c)
-                                        { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
                 return false;
             }
         }
-
-        canvas_lyt.foreach_cell([&](const auto& c)
-                                { skeleton.assign_cell_type(c, Lyt::technology::cell_type::EMPTY); });
-
         return true;
     }
 
-    std::vector<Lyt> design()
+    [[nodiscard]] std::vector<Lyt> design() noexcept
     {
-        std::vector<Lyt> all_designs{};
+        std::vector<Lyt>               all_designs{};
+        std::vector<std::future<void>> futures{};
+        futures.reserve(all_canvas_layouts.size());
 
-        for (auto i = 0u; i < all_canvas_layouts.size(); ++i)
+        std::mutex mutex_to_protect_designer_gate_layouts;  // Mutex for protecting shared resources
+
+        // Function to check validity and add layout to all_designs
+        auto add_valid_layout = [&](const Lyt& canvas_lyt)
         {
-            if (i % 10000 == 0)
+            if (physically_validity_is_fulfilled(canvas_lyt))
             {
-                std::cout << i << std::endl;
-            }
-            if (physically_validity_is_fulfilled(all_canvas_layouts[i]))
-            {
-                Lyt lyt{};
-                current_layout.foreach_cell([&](const auto& c)
-                                            { lyt.assign_cell_type(c, current_layout.get_cell_type(c)); });
+                Lyt modified_skeleton = skeleton.clone();  // Make a copy of skeleton_lyt to avoid data race
+                canvas_lyt.foreach_cell([&](const auto& c)
+                                        { modified_skeleton.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
 
-                all_canvas_layouts[i].foreach_cell([&](const auto& c)
-                                                   { lyt.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
-
-                all_designs.push_back(lyt);
+                // Lock mutex before modifying shared resource
+                const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
+                all_designs.push_back(modified_skeleton);
                 // std::cout << "FOUND" << std::endl;
             }
+        };
+
+        //        // Launch async tasks
+                for (const auto& combination : all_canvas_layouts)
+                {
+                    futures.emplace_back(std::async(std::launch::async, add_valid_layout, combination));
+                }
+
+        // Launch async tasks
+//        for (const auto& combination : all_canvas_layouts)
+//        {
+//            add_valid_layout(combination);
+//        }
+
+        // Wait for all tasks to finish
+        for (auto& future : futures)
+        {
+            future.wait();
         }
+
         return all_designs;
     }
 
   private:
     Lyt&                                     skeleton;
-    Lyt&                                     current_layout;
     const std::vector<TT>&                   truth_table;
     const efficient_gate_design_params<Lyt>& params;
     std::vector<std::vector<bdl_pair<Lyt>>>  chains_input;
     std::vector<std::vector<bdl_pair<Lyt>>>  chains_output;
     std::vector<std::vector<bdl_pair<Lyt>>>  all_chains;
-    bdl_input_iterator<Lyt>                  bii;
     std::vector<Lyt>                         all_canvas_layouts{};
 };
 
