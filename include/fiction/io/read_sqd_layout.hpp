@@ -102,7 +102,10 @@ class read_sqd_layout_impl
         if (name != nullptr)
         {
             const auto* const text = name->GetText();
-            lattice_orientation    = std::string{text};
+            if (text != nullptr)
+            {
+                lattice_orientation = std::string{text};
+            }
         }
 
         parse_lat_type(lattice_orientation);

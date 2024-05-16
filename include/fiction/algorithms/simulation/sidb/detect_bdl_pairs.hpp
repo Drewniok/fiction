@@ -257,6 +257,9 @@ std::vector<bdl_pair<Lyt>> detect_bdl_pairs(const Lyt& lyt, const typename techn
             paired_dots.insert(potential_bdl_pair.sidb2);
         }
 
+        // Sort the vector of BDL pairs to ensure a specific ordering. BDL pairs are sorted based on their upper coordinates.
+        // Pairs with lower x-coordinates are stored first. If two pairs have the same x-coordinate, the pair with a higher
+        // y-coordinate is stored first.
         std::sort(bdl_pairs.begin(), bdl_pairs.end(),
                   [](const auto& bdl_one, const auto& bdl_two)
                   {

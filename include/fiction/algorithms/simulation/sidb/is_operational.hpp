@@ -89,12 +89,12 @@ class is_operational_impl
      * @param spec Expected Boolean function of the layout given as a multi-output truth table.
      * @param params Parameters for the `is_operational` algorithm.
      */
-    is_operational_impl(const Lyt& lyt, const std::vector<TT>& tt, const is_operational_params& params) :
+    is_operational_impl(const Lyt& lyt, const Lyt& skeleton, const std::vector<TT>& tt, const is_operational_params& params) :
             layout{lyt},
             truth_table{tt},
             parameters{params},
             output_bdl_pairs(detect_bdl_pairs(layout, sidb_technology::cell_type::OUTPUT, parameters.bdl_params)),
-            bii(bdl_input_iterator<Lyt>{layout, parameters.bdl_params})
+            bii(bdl_input_iterator<Lyt>{layout, skeleton, parameters.bdl_params})
     {}
 
     /**
@@ -357,7 +357,7 @@ class is_operational_impl
  */
 template <typename Lyt, typename TT>
 [[nodiscard]] std::pair<operational_status, std::size_t>
-is_operational(const Lyt& lyt, const std::vector<TT>& spec, const is_operational_params& params = {}) noexcept
+is_operational(const Lyt& lyt, const Lyt& skeleton, const std::vector<TT>& spec, const is_operational_params& params = {}) noexcept
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -371,7 +371,7 @@ is_operational(const Lyt& lyt, const std::vector<TT>& spec, const is_operational
     assert(std::adjacent_find(spec.cbegin(), spec.cend(), [](const auto& a, const auto& b)
                               { return a.num_vars() != b.num_vars(); }) == spec.cend());
 
-    detail::is_operational_impl<Lyt, TT> p{lyt, spec, params};
+    detail::is_operational_impl<Lyt, TT> p{lyt, skeleton, spec, params};
 
     return {p.run(), p.get_number_of_simulator_invocations()};
 }

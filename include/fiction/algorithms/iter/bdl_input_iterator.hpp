@@ -6,7 +6,9 @@
 #define FICTION_BDL_INPUT_ITERATOR_HPP
 
 #include "fiction/algorithms/simulation/sidb/detect_bdl_pairs.hpp"
+#include "fiction/algorithms/simulation/sidb/detect_bdl_wires.hpp"
 #include "fiction/technology/cell_technologies.hpp"
+#include "fiction/traits.hpp"
 #include "fiction/types.hpp"
 
 #include <cstdint>
@@ -40,16 +42,33 @@ class bdl_input_iterator
      * @param lyt The SiDB BDL layout to iterate over.
      * @param params Parameters for the BDL pair detection.
      */
-    explicit bdl_input_iterator(const Lyt& lyt, const detect_bdl_pairs_params& params = {}) noexcept :
+    explicit bdl_input_iterator(const Lyt& lyt, const Lyt& skeleton,
+                                const detect_bdl_pairs_params& params = {}) noexcept :
             layout{lyt.clone()},
-            input_pairs{detect_bdl_pairs<Lyt>(layout, sidb_technology::cell_type::INPUT, params)},
+            input_pairs{detect_bdl_pairs<Lyt>(lyt, sidb_technology::cell_type::INPUT, params)},
+            bdl_wires{detect_bdl_wires<Lyt>(skeleton, WIRE::INPUT_W_INPUT_BDL)},
+            wire_directions{determine_wire_direction(input_pairs, bdl_wires)},
             num_inputs{static_cast<uint8_t>(input_pairs.size())}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
-
         set_all_inputs();
     }
+
+    explicit bdl_input_iterator(const Lyt& lyt, const std::vector<bdl_wire<Lyt>>& wires,
+                                const std::vector<bdl_wire_direction>& wire_directions,
+                                const detect_bdl_pairs_params&         params = {}) noexcept :
+            layout{lyt.clone()},
+            input_pairs{detect_bdl_pairs<Lyt>(lyt, sidb_technology::cell_type::INPUT, params)},
+            bdl_wires{wires},
+            wire_directions{wire_directions},
+            num_inputs{static_cast<uint8_t>(input_pairs.size())}
+    {
+        static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
+        static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
+        set_all_inputs();
+    }
+
     /**
      * Dereference operator. Returns a reference to the layout with the current input state.
      *
@@ -285,6 +304,10 @@ class bdl_input_iterator
      * The detected input BDL pairs.
      */
     const std::vector<bdl_pair<Lyt>> input_pairs;
+
+    const std::vector<bdl_wire<Lyt>> bdl_wires;
+
+    std::vector<bdl_wire_direction> wire_directions;
     /**
      * The amount of input BDL pairs.
      */
@@ -306,17 +329,35 @@ class bdl_input_iterator
         {
             const auto& input_i = input_pairs[num_inputs - 1 - i];
 
-            if ((current_input_index & (uint64_t{1ull} << i)) != 0ull)
+            if (wire_directions[num_inputs - 1 - i] == bdl_wire_direction::TOP_DOWN)
             {
-                // set input i to 1
-                layout.assign_cell_type(input_i.upper, technology<Lyt>::cell_type::EMPTY);
-                layout.assign_cell_type(input_i.lower, technology<Lyt>::cell_type::INPUT);
+                if ((current_input_index & (uint64_t{1ull} << i)) != 0ull)
+                {
+                    // set input i to 1
+                    layout.assign_cell_type(input_i.upper, technology<Lyt>::cell_type::EMPTY);
+                    layout.assign_cell_type(input_i.lower, technology<Lyt>::cell_type::INPUT);
+                }
+                else
+                {
+                    // set input i to 0
+                    layout.assign_cell_type(input_i.upper, technology<Lyt>::cell_type::INPUT);
+                    layout.assign_cell_type(input_i.lower, technology<Lyt>::cell_type::EMPTY);
+                }
             }
             else
             {
-                // set input i to 0
-                layout.assign_cell_type(input_i.upper, technology<Lyt>::cell_type::INPUT);
-                layout.assign_cell_type(input_i.lower, technology<Lyt>::cell_type::EMPTY);
+                if ((current_input_index & (uint64_t{1ull} << i)) != 0ull)
+                {
+                    // set input i to 1
+                    layout.assign_cell_type(input_i.upper, technology<Lyt>::cell_type::INPUT);
+                    layout.assign_cell_type(input_i.lower, technology<Lyt>::cell_type::EMPTY);
+                }
+                else
+                {
+                    // set input i to 0
+                    layout.assign_cell_type(input_i.upper, technology<Lyt>::cell_type::EMPTY);
+                    layout.assign_cell_type(input_i.lower, technology<Lyt>::cell_type::INPUT);
+                }
             }
         }
     }

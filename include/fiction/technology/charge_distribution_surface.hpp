@@ -277,15 +277,17 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     explicit charge_distribution_surface(const Lyt&                        lyt,
                                          const sidb_simulation_parameters& params = sidb_simulation_parameters{},
-                                         const sidb_charge_state           cs     = sidb_charge_state::NEGATIVE) :
+                                         const sidb_charge_state           cs     = sidb_charge_state::NEGATIVE,
+                                         bool                              electrostatic_calculation = true) :
             Lyt(lyt),
             strg{std::make_shared<charge_distribution_storage>(params)}
     {
         static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
         static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
 
-        initialize(cs);
+        initialize(cs, electrostatic_calculation);
     };
+
     /**
      * Copy constructor.
      *
@@ -442,13 +444,16 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @param cs The charge state to be assigned to all the SiDBs.
      */
-    void assign_all_charge_states(const sidb_charge_state cs) noexcept
+    void assign_all_charge_states(const sidb_charge_state cs, const bool update_charge_index = true) noexcept
     {
         for (uint64_t i = 0u; i < strg->cell_charge.size(); ++i)
         {
             strg->cell_charge[i] = cs;
         }
-        this->charge_distribution_to_index();
+        if (update_charge_index)
+        {
+            this->charge_distribution_to_index();
+        }
     }
     /**
      * This function assigns the dependent cell (i.e., cell which charge state is set based on the neighbor cells
@@ -1284,8 +1289,10 @@ class charge_distribution_surface<Lyt, false> : public Lyt
     {
         if (potential_value != 0.0)
         {
-            this->foreach_cell([this, &potential_value](const auto& c)
-                               { strg->local_external_pot.insert({c, potential_value}); });
+            this->foreach_cell(
+                [this, &potential_value](const auto& c) {
+                    strg->local_external_pot.insert({c, potential_value});
+                });
             this->update_after_charge_change(dep_cell);
         }
     }
@@ -1837,7 +1844,8 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      *
      * @param cs The charge state assigned to all SiDBs.
      */
-    void initialize(const sidb_charge_state cs = sidb_charge_state::NEGATIVE) noexcept
+    void initialize(const sidb_charge_state cs                          = sidb_charge_state::NEGATIVE,
+                    bool                    interested_in_electrostatic = true) noexcept
     {
         strg->sidb_order  = {};
         strg->cell_charge = {};
@@ -1852,13 +1860,17 @@ class charge_distribution_surface<Lyt, false> : public Lyt
                "number of SiDBs is too large");
 
         this->charge_distribution_to_index();
-        this->initialize_nm_distance_matrix();
-        this->initialize_potential_matrix();
         strg->max_charge_index = static_cast<uint64_t>(
             std::pow(static_cast<double>(strg->simulation_parameters.base), this->num_cells()) - 1);
-        this->update_local_potential();
-        this->recompute_system_energy();
-        this->validity_check();
+
+        if (interested_in_electrostatic)
+        {
+            this->initialize_nm_distance_matrix();
+            this->initialize_potential_matrix();
+            this->update_local_potential();
+            this->recompute_system_energy();
+            this->validity_check();
+        }
     };
     /**
      * This function is used when three state simulations are required (i.e., is_three_state_simulation_required = true)
@@ -2084,8 +2096,12 @@ template <class T>
 charge_distribution_surface(const T&, const sidb_simulation_parameters&) -> charge_distribution_surface<T>;
 
 template <class T>
-charge_distribution_surface(const T&, const sidb_simulation_parameters&,
-                            sidb_charge_state cs) -> charge_distribution_surface<T>;
+charge_distribution_surface(const T&, const sidb_simulation_parameters&, sidb_charge_state cs)
+    -> charge_distribution_surface<T>;
+
+template <class T>
+charge_distribution_surface(const T&, const sidb_simulation_parameters&, sidb_charge_state cs,
+                            bool electrostatic_calculation) -> charge_distribution_surface<T>;
 
 }  // namespace fiction
 

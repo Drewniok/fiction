@@ -15,6 +15,7 @@
 #include "fiction/utils/math_utils.hpp"
 
 #include <kitty/traits.hpp>
+#include <mockturtle/utils/stopwatch.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -84,6 +85,8 @@ struct design_sidb_gates_stats
      * The total runtime of SiDB gate design process.
      */
     mockturtle::stopwatch<>::duration time_total{0};
+
+    std::size_t all_possible_layouts{0};
 };
 
 namespace detail
@@ -125,6 +128,10 @@ class design_sidb_gates_impl
         const auto all_combinations = determine_all_combinations_of_distributing_k_entities_on_n_positions(
             params.number_of_sidbs, static_cast<std::size_t>(all_sidbs_in_canvas.size()));
 
+        stats.all_possible_layouts = all_combinations.size();
+
+        std::cout << all_combinations.size() << std::endl;
+
         std::vector<Lyt> designed_gate_layouts = {};
 
         std::mutex mutex_to_protect_designer_gate_layouts;  // Mutex for protecting shared resources
@@ -133,17 +140,17 @@ class design_sidb_gates_impl
             [this, &mutex_to_protect_designer_gate_layouts, &params_is_operational,
              &designed_gate_layouts](const auto& combination) noexcept
         {
-            if (!are_sidbs_too_close(combination))
+            //            if (!are_sidbs_too_close(combination))
+            //            {
+            auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(combination);
+            if (const auto [status, sim_calls] =
+                    is_operational(layout_with_added_cells, skeleton_layout, truth_table, params_is_operational);
+                status == operational_status::OPERATIONAL)
             {
-                auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(combination);
-                if (const auto [status, sim_calls] =
-                        is_operational(layout_with_added_cells, truth_table, params_is_operational);
-                    status == operational_status::OPERATIONAL)
-                {
-                    const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};  // Lock the mutex
-                    designed_gate_layouts.push_back(layout_with_added_cells);
-                }
+                const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};  // Lock the mutex
+                designed_gate_layouts.push_back(layout_with_added_cells);
             }
+            //          }
         };
 
         std::vector<std::future<void>> futures{};
@@ -173,47 +180,65 @@ class design_sidb_gates_impl
         std::vector<Lyt> designed_gate_layouts = {};
         designed_gate_layouts.reserve(all_combinations.size());
 
-        std::vector<std::future<void>> futures{};
-        futures.reserve(designed_gate_layouts.size());
-
-        std::mutex mutex_to_protect_designer_gate_layouts;
-
         const auto add_combination_to_layout_and_check_operation =
-            [this,  &designed_gate_layouts, &mutex_to_protect_designer_gate_layouts](const auto& combination) noexcept
+            [this, &designed_gate_layouts](const auto& combination) noexcept
         {
-            if (!are_sidbs_too_close(combination))
-            {
-                auto layout_with_added_cells = canvas_sidbs(combination);
-                //const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
-                designed_gate_layouts.push_back(layout_with_added_cells);
-            }
+            //            if (!are_sidbs_too_close(combination))
+            //            {
+            auto layout_with_added_cells = canvas_sidbs(combination);
+            designed_gate_layouts.push_back(layout_with_added_cells);
+            //            }
         };
-
-        // Start asynchronous tasks to process combinations in parallel
-//        for (const auto& combination : all_combinations)
-//        {
-//            add_combination_to_layout_and_check_operation(combination);
-//        }
-
-        // Launch async tasks
-//        for (const auto& combination : all_combinations)
-//        {
-//            futures.emplace_back(std::async(std::launch::async, add_combination_to_layout_and_check_operation, combination));
-//        }
 
         for (const auto& combination : all_combinations)
         {
             add_combination_to_layout_and_check_operation(combination);
         }
 
-//        // Wait for all tasks to finish
-//        for (auto& future : futures)
-//        {
-//            future.wait();
-//        }
-
         return designed_gate_layouts;
     }
+
+    //    [[nodiscard]] std::vector<Lyt> run_exhaustive_candidate_design() noexcept
+    //    {
+    //        const auto all_combinations = determine_all_combinations_of_distributing_k_entities_on_n_positions(
+    //            params.number_of_sidbs, static_cast<std::size_t>(all_sidbs_in_canvas.size()));
+    //
+    //        std::vector<Lyt> designed_gate_layouts = {};
+    //        designed_gate_layouts.reserve(all_combinations.size());
+    //
+    //        std::mutex mutex_to_protect_designer_gate_layouts;
+    //
+    //        const auto add_combination_to_layout_and_check_operation =
+    //            [this, &designed_gate_layouts,  &mutex_to_protect_designer_gate_layouts](const auto& combination)
+    //            noexcept
+    //        {
+    //            if (!are_sidbs_too_close(combination))
+    //            {
+    //                auto layout_with_added_cells = canvas_sidbs(combination);
+    //                const std::lock_guard lock_vector{mutex_to_protect_designer_gate_layouts};
+    //                designed_gate_layouts.push_back(layout_with_added_cells);
+    //            }
+    //        };
+    //
+    //        std::vector<std::future<void>> futures{};
+    //        futures.reserve(all_combinations.size());
+    //
+    //
+    //        // Start asynchronous tasks to process combinations in parallel
+    //        for (const auto& combination : all_combinations)
+    //        {
+    //            futures.emplace_back(
+    //                std::async(std::launch::async, add_combination_to_layout_and_check_operation, combination));
+    //        }
+    //
+    //        // Wait for all tasks to finish
+    //        for (auto& future : futures)
+    //        {
+    //            future.wait();
+    //        }
+    //
+    //        return designed_gate_layouts;
+    //    }
 
     /**
      * Design gates randomly and in parallel.
@@ -250,7 +275,7 @@ class design_sidb_gates_impl
                     {
                         const auto result_lyt = generate_random_sidb_layout<Lyt>(skeleton_layout, parameter);
                         if (const auto [status, sim_calls] =
-                                is_operational(result_lyt, truth_table, params_is_operational);
+                                is_operational(result_lyt, skeleton_layout, truth_table, params_is_operational);
                             status == operational_status::OPERATIONAL)
                         {
                             const std::lock_guard lock{mutex_to_protect_designed_gate_layouts};
@@ -439,7 +464,7 @@ template <typename Lyt, typename TT>
     assert(std::adjacent_find(spec.begin(), spec.end(),
                               [](const auto& a, const auto& b) { return a.num_vars() != b.num_vars(); }) == spec.end());
 
-    design_sidb_gates_stats st{};
+    design_sidb_gates_stats                 st{};
     detail::design_sidb_gates_impl<Lyt, TT> p{skeleton, spec, params, st};
 
     return p.run_exhaustive_candidate_design();
