@@ -35,6 +35,10 @@ struct efficient_gate_design_stats
      */
     mockturtle::stopwatch<>::duration time_total{0};
 
+    mockturtle::stopwatch<>::duration time_total_pruning{0};
+
+    mockturtle::stopwatch<>::duration time_total_operational_check{0};
+
     uint64_t all_possible_layouts{};
 
     uint64_t lp1{};
@@ -44,11 +48,18 @@ struct efficient_gate_design_stats
     uint64_t lp3{};
 };
 
+enum class DESIGN_MODE
+{
+    PRUNING,
+    PRUNING_AND_OPERATIONAL_CHECK,
+};
+
 template <typename Lyt>
 struct efficient_gate_design_params
 {
     detect_bdl_pairs_params       bdl_params{};
     design_sidb_gates_params<Lyt> design_params{};
+    DESIGN_MODE                   mode = DESIGN_MODE::PRUNING_AND_OPERATIONAL_CHECK;
 };
 
 template <typename Lyt>
@@ -289,6 +300,7 @@ class efficient_gate_design_impl
 
     [[nodiscard]] std::vector<Lyt> design() noexcept
     {
+        mockturtle::stopwatch stop{stats.time_total_pruning};
         stats.all_possible_layouts = all_canvas_layouts.size();
         std::vector<Lyt> all_designs{};
         all_designs.reserve(all_canvas_layouts.size());
@@ -320,10 +332,10 @@ class efficient_gate_design_impl
             futures.emplace_back(std::async(std::launch::async, add_valid_layout, combination));
         }
 
-//                        for (const auto& combination : all_canvas_layouts)
-//                        {
-//                            add_valid_layout(combination);
-//                        }
+        //                        for (const auto& combination : all_canvas_layouts)
+        //                        {
+        //                            add_valid_layout(combination);
+        //                        }
 
         // Wait for all tasks to finish
         for (auto& future : futures)
@@ -332,6 +344,45 @@ class efficient_gate_design_impl
         }
 
         return all_designs;
+    }
+
+    [[nodiscard]] std::vector<Lyt> select_all_operational_gates(const std::vector<Lyt>& all_left_over_layouts) noexcept
+    {
+        mockturtle::stopwatch stop{stats.time_total_operational_check};
+        std::vector<Lyt>      all_design_after_operational_check{};
+        all_design_after_operational_check.reserve(all_left_over_layouts.size());
+
+        std::mutex mutex_to_protect_designer_gate_layouts;  // Mutex for protecting shared resources
+
+        const auto op_params = is_operational_params{params.design_params.simulation_parameters};
+
+        std::vector<std::future<void>> futures{};
+        futures.reserve(all_left_over_layouts.size());
+
+        auto add_valid_layout = [&](const Lyt& canvas_lyt)
+        {
+            if (is_operational(canvas_lyt, skeleton, truth_table, op_params).first == operational_status::OPERATIONAL)
+            {
+                // Lock mutex before modifying shared resource
+                const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
+                all_design_after_operational_check.push_back(canvas_lyt);
+                // std::cout << "FOUND" << std::endl;
+            }
+        };
+
+        //        Launch async tasks
+        for (const auto& combination : all_canvas_layouts)
+        {
+            futures.emplace_back(std::async(std::launch::async, add_valid_layout, combination));
+        }
+
+        // Wait for all tasks to finish
+        for (auto& future : futures)
+        {
+            future.wait();
+        }
+
+        return all_design_after_operational_check;
     }
 
   private:
@@ -349,9 +400,9 @@ class efficient_gate_design_impl
 }  // namespace detail
 
 template <typename Lyt, typename TT>
-[[nodiscard]] std::vector<Lyt> design_all_efficient_gates(Lyt& skeleton, const std::vector<TT>& truth_table,
-                                                          const efficient_gate_design_params<Lyt>& params,
-                                                          efficient_gate_design_stats*             stats = nullptr)
+[[nodiscard]] std::vector<Lyt> efficient_gate_design(Lyt& skeleton, const std::vector<TT>& truth_table,
+                                                     const efficient_gate_design_params<Lyt>& params,
+                                                     efficient_gate_design_stats*             stats = nullptr)
 {
     efficient_gate_design_stats st{};
     std::vector<Lyt>            result{};
@@ -359,6 +410,10 @@ template <typename Lyt, typename TT>
         mockturtle::stopwatch                       stop{st.time_total};
         detail::efficient_gate_design_impl<Lyt, TT> gate_design{skeleton, truth_table, params, st};
         result = gate_design.design();
+        if (params.mode == DESIGN_MODE::PRUNING_AND_OPERATIONAL_CHECK)
+        {
+            result = gate_design.select_all_operational_gates(result);
+        }
     }
 
     if (stats)

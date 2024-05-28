@@ -77,7 +77,7 @@ using namespace fiction;
 //    "/Users/jandrewniok/Desktop/and_efficient_gate_exh.sqd");
 //
 //    efficient_gate_design_stats stats{};
-//    const auto all_gate_candidates = design_all_efficient_gates(lyt, std::vector<tt>{create_and_tt()},
+//    const auto all_gate_candidates = pruning(lyt, std::vector<tt>{create_and_tt()},
 //    efficient_params, &stats); CHECK(all_gate_candidates.size() == 1173); std::cout <<
 //    mockturtle::to_seconds(stats.time_total) << std::endl;
 //    // std::cout << all_gate_candidates.size() << std::endl;
@@ -142,8 +142,7 @@ TEST_CASE("Efficient gate design, 3-input", "[design-sidb-gates]")
             efficient_params.design_params.simulation_parameters.mu_minus -= 0.01;
             std::cout << efficient_params.design_params.simulation_parameters.mu_minus << std::endl;
             efficient_gate_design_stats stats{};
-            const auto                  all_gate_candidates =
-                design_all_efficient_gates(lyt, std::vector<tt>{table}, efficient_params, &stats);
+            const auto                  all_gate_candidates = pruning(lyt, std::vector<tt>{table}, efficient_params, &stats);
             CHECK(all_gate_candidates.size() == 1173);
             std::cout << mockturtle::to_seconds(stats.time_total) << std::endl;
             // std::cout << all_gate_candidates.size() << std::endl;
