@@ -41,6 +41,8 @@ struct efficient_gate_design_stats
 
     uint64_t all_possible_layouts{};
 
+    uint64_t all_possible_layouts_after_pruning{};
+
     uint64_t lp1{};
 
     uint64_t lp2{};
@@ -188,7 +190,7 @@ class efficient_gate_design_impl
         }
     }
 
-    [[nodiscard]] bool is_physical_validity_feasible(const Lyt& canvas_lyt)
+    [[nodiscard]] std::pair<bool, uint8_t> is_physical_validity_feasible(const Lyt& canvas_lyt)
     {
         std::mutex mutex_to_protect_stats;
         auto       current_layout = skeleton.clone();
@@ -214,9 +216,9 @@ class efficient_gate_design_impl
 
             if (can_positive_charges_occur(cds_layout, params.design_params.simulation_parameters))
             {
-                const std::lock_guard lock(mutex_to_protect_stats);
-                stats.lp1++;
-                return false;
+//                const std::lock_guard lock(mutex_to_protect_stats);
+                // stats.lp1++;
+                return {false, 1};
             }
 
             cds_layout.assign_dependent_cell(dependent_cell);
@@ -225,11 +227,16 @@ class efficient_gate_design_impl
 
             set_charge_distribution_based_on_logic(cds_layout, i);
 
+            const auto cds_layout_copy = charge_distribution_surface{cds_layout};
+
             bool physical_valid = false;
 
             cds_canvas.assign_charge_index(0);
             uint64_t counter_cds_first = 0;
-            while (cds_canvas.get_charge_index_and_base().first < cds_canvas.get_max_charge_index())
+
+            auto min_energy = std::numeric_limits<double>::infinity();
+
+            while (cds_canvas.get_charge_index_and_base().first <= cds_canvas.get_max_charge_index())
             {
                 cds_canvas.foreach_cell([&](const auto& c)
                                         { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c), false); });
@@ -240,62 +247,59 @@ class efficient_gate_design_impl
 
                 if (cds_layout.is_physically_valid())
                 {
-                    // print_sidb_layout(std::cout, cds_layout);
-
-                    cds_layout.recompute_system_energy();
-                    const auto energy = cds_layout.get_system_energy();
-                    for (auto kink_states = 0u; kink_states < std::pow(2, (input_wires.size() + output_wires.size()));
-                         ++kink_states)
-                    {
-                        set_charge_distribution(cds_layout, kink_states);
-                        cds_canvas.assign_charge_index(0);
-
-                        // vprint_sidb_layout(std::cout, cds_layout);
-
-                        uint64_t charge_index_counter = 0;
-                        while (cds_canvas.get_charge_index_and_base().first < cds_canvas.get_max_charge_index())
-                        {
-                            cds_canvas.foreach_cell(
-                                [&](const auto& c)
-                                { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c), false); });
-
-                            cds_layout.update_after_charge_change(dependent_cell_mode::VARIABLE,
-                                                                  energy_calculation::KEEP_OLD_ENERGY_VALUE,
-                                                                  charge_distribution_history::NEGLECT);
-                            if (cds_layout.is_physically_valid())
-                            {
-                                cds_layout.recompute_system_energy();
-                                if (cds_layout.get_system_energy() + physical_constants::POP_STABILITY_ERR < energy)
-                                {
-                                    const std::lock_guard lock(mutex_to_protect_stats);
-                                    stats.lp3++;
-                                    return false;
-                                }
-                            }
-                            charge_index_counter++;
-                            cds_canvas.assign_charge_index(charge_index_counter);
-                            //                            cds_canvas.increase_charge_index_by_one(dependent_cell_mode::FIXED,
-                            //                                                                    energy_calculation::KEEP_OLD_ENERGY_VALUE,
-                            //                                                                    charge_distribution_history::NEGLECT);
-                        }
-                    }
                     physical_valid = true;
-                    break;
+                    // print_sidb_layout(std::cout, cds_layout);
+                    cds_layout.recompute_system_energy();
+                    if (cds_layout.get_system_energy() < min_energy)
+                    {
+                        min_energy = cds_layout.get_system_energy();
+                    }
                 }
                 counter_cds_first++;
-                //                cds_canvas.increase_charge_index_by_one(dependent_cell_mode::FIXED,
-                //                                                        energy_calculation::KEEP_OLD_ENERGY_VALUE,
-                //                                                        charge_distribution_history::NEGLECT);
                 cds_canvas.assign_charge_index(counter_cds_first);
             }
+
             if (!physical_valid)
             {
-                const std::lock_guard lock(mutex_to_protect_stats);
-                stats.lp2++;
-                return false;
+                // std::cout << "not valid" << std::endl;
+                // print_sidb_layout(std::cout, cds_layout);
+//                const std::lock_guard lock(mutex_to_protect_stats);
+//                stats.lp2++;
+                return {false, 2};
+            }
+
+            for (auto kink_states = 0u; kink_states < std::pow(2, (input_wires.size() + output_wires.size()));
+                 ++kink_states)
+            {
+                set_charge_distribution(cds_layout, kink_states);
+                cds_canvas.assign_charge_index(0);
+
+                uint64_t charge_index_counter = 0;
+                while (cds_canvas.get_charge_index_and_base().first <= cds_canvas.get_max_charge_index())
+                {
+                    cds_canvas.foreach_cell(
+                        [&](const auto& c)
+                        { cds_layout.assign_charge_state(c, cds_canvas.get_charge_state(c), false); });
+
+                    cds_layout.update_after_charge_change(dependent_cell_mode::VARIABLE,
+                                                          energy_calculation::KEEP_OLD_ENERGY_VALUE,
+                                                          charge_distribution_history::NEGLECT);
+                    if (cds_layout.is_physically_valid())
+                    {
+                        cds_layout.recompute_system_energy();
+                        if (cds_layout.get_system_energy() + physical_constants::POP_STABILITY_ERR < min_energy)
+                        {
+//                            const std::lock_guard lock(mutex_to_protect_stats);
+                            // stats.lp3++;
+                            return {false, 3};
+                        }
+                    }
+                    charge_index_counter++;
+                    cds_canvas.assign_charge_index(charge_index_counter);
+                }
             }
         }
-        return true;
+        return {true, 0};
     }
 
     [[nodiscard]] std::vector<Lyt> design() noexcept
@@ -313,17 +317,35 @@ class efficient_gate_design_impl
         // Function to check validity and add layout to all_designs
         auto add_valid_layout = [&](const Lyt& canvas_lyt)
         {
-            if (is_physical_validity_feasible(canvas_lyt))
+            const auto check = is_physical_validity_feasible(canvas_lyt);
+            if (check.second == 1)
             {
-                Lyt modified_skeleton = skeleton.clone();  // Make a copy of skeleton_lyt to avoid data race
-                canvas_lyt.foreach_cell([&](const auto& c)
-                                        { modified_skeleton.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
+                const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
+                stats.lp1++;
+                return;
+            }
+            if (check.second == 2)
+            {
+                const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
+                stats.lp2++;
+                return;
+            }
+            if (check.second == 3)
+            {
+                const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
+                stats.lp3++;
+                return;
+            }
+            Lyt modified_skeleton = skeleton.clone();  // Make a copy of skeleton_lyt to avoid data race
+            canvas_lyt.foreach_cell([&](const auto& c)
+                                    { modified_skeleton.assign_cell_type(c, Lyt::technology::cell_type::NORMAL); });
 
-                // Lock mutex before modifying shared resource
+            // Lock mutex before modifying shared resource
+            {
                 const std::lock_guard lock(mutex_to_protect_designer_gate_layouts);
                 all_designs.push_back(modified_skeleton);
-                // std::cout << "FOUND" << std::endl;
             }
+            // std::cout << "FOUND" << std::endl;
         };
 
         //        Launch async tasks
@@ -332,12 +354,6 @@ class efficient_gate_design_impl
             futures.emplace_back(std::async(std::launch::async, add_valid_layout, combination));
         }
 
-        //                        for (const auto& combination : all_canvas_layouts)
-        //                        {
-        //                            add_valid_layout(combination);
-        //                        }
-
-        // Wait for all tasks to finish
         for (auto& future : futures)
         {
             future.wait();
@@ -371,7 +387,7 @@ class efficient_gate_design_impl
         };
 
         //        Launch async tasks
-        for (const auto& combination : all_canvas_layouts)
+        for (const auto& combination : all_left_over_layouts)
         {
             futures.emplace_back(std::async(std::launch::async, add_valid_layout, combination));
         }
@@ -409,7 +425,11 @@ template <typename Lyt, typename TT>
     {
         mockturtle::stopwatch                       stop{st.time_total};
         detail::efficient_gate_design_impl<Lyt, TT> gate_design{skeleton, truth_table, params, st};
-        result = gate_design.design();
+        result                                = gate_design.design();
+        st.all_possible_layouts_after_pruning = result.size();
+        //std::cout << "pruning completed" << std::endl;
+        //std::cout << fmt::format("all possible layouts after pruning: {}\n", st.all_possible_layouts_after_pruning);
+        //write_sqd_layout(result[0], fmt::format("/Users/jandrewniok/Desktop/candidates.sqd"));
         if (params.mode == DESIGN_MODE::PRUNING_AND_OPERATIONAL_CHECK)
         {
             result = gate_design.select_all_operational_gates(result);

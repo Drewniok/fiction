@@ -18,6 +18,7 @@
 #include "fiction/technology/cell_technologies.hpp"
 #include "fiction/technology/sidb_charge_state.hpp"
 #include "fiction/traits.hpp"
+#include "fiction/algorithms/simulation/sidb/detect_bdl_wires.hpp"
 
 #include <kitty/bit_operations.hpp>
 #include <kitty/traits.hpp>
@@ -46,6 +47,18 @@ enum class operational_status
      */
     NON_OPERATIONAL
 };
+
+enum class operation_ctiterium
+{
+    /**
+     * The layout is operational.
+     */
+    ALLOW_KINKS,
+    /**
+     * The layout is non-operational.
+     */
+    FORBID_KINKS
+};
 /**
  * Parameters for the `is_operational` algorithm.
  */
@@ -63,6 +76,8 @@ struct is_operational_params
      * Parameters for the BDL pair detection algorithms.
      */
     detect_bdl_pairs_params bdl_params{};
+
+    operation_ctiterium condition = operation_ctiterium::FORBID_KINKS;
 };
 
 namespace detail
@@ -89,12 +104,19 @@ class is_operational_impl
      * @param spec Expected Boolean function of the layout given as a multi-output truth table.
      * @param params Parameters for the `is_operational` algorithm.
      */
-    is_operational_impl(const Lyt& lyt, const Lyt& skeleton, const std::vector<TT>& tt, const is_operational_params& params) :
-            layout{lyt},
+    is_operational_impl(const Lyt& lyt, const Lyt& skeleton_lyt, const std::vector<TT>& tt,
+                        const is_operational_params& params) :
+            layout{lyt.clone()},
+            skeleton{skeleton_lyt.clone()},
             truth_table{tt},
             parameters{params},
-            output_bdl_pairs(detect_bdl_pairs(layout, sidb_technology::cell_type::OUTPUT, parameters.bdl_params)),
-            bii(bdl_input_iterator<Lyt>{layout, skeleton, parameters.bdl_params})
+            output_bdl_pairs(detect_bdl_pairs(skeleton, sidb_technology::cell_type::OUTPUT, parameters.bdl_params)),
+            bii(bdl_input_iterator<Lyt>{layout, skeleton, parameters.bdl_params}),
+            input_wires{detect_bdl_wires(skeleton, WIRE::INPUT_WO_INPUT_BDL)},
+            output_wires{detect_bdl_wires(skeleton, WIRE::OUTPUT)},
+            all_wires{detect_bdl_wires(skeleton)},
+            wire_directions{determine_wire_direction(detect_bdl_pairs(skeleton, sidb_technology::cell_type::INPUT),
+                                                     detect_bdl_wires(skeleton, WIRE::INPUT_W_INPUT_BDL))}
     {}
 
     /**
@@ -172,6 +194,139 @@ class is_operational_impl
                         return operational_status::NON_OPERATIONAL;
                     }
                 }
+            }
+        }
+
+        // if we made it here, the layout is operational
+        return operational_status::OPERATIONAL;
+    }
+
+    void set_charge_distribution_based_on_logic(charge_distribution_surface<Lyt>& layout,
+                                                const uint64_t                    current_input_index)
+    {
+        layout.assign_all_charge_states(sidb_charge_state::NEGATIVE, false);
+
+        for (auto i = 0u; i < input_wires.size(); i++)
+        {
+            if (wire_directions[input_wires.size() - 1 - i] == bdl_wire_direction::TOP_DOWN)
+            {
+                if ((current_input_index & (uint64_t{1ull} << i)) != 0ull)
+                {
+                    for (const auto& bdl : input_wires[input_wires.size() - 1 - i])
+                    {
+                        layout.assign_charge_state(bdl.upper, sidb_charge_state::NEUTRAL, false);
+                        layout.assign_charge_state(bdl.lower, sidb_charge_state::NEGATIVE, false);
+                    }
+                }
+                else
+                {
+                    for (const auto& bdl : input_wires[input_wires.size() - 1 - i])
+                    {
+                        layout.assign_charge_state(bdl.upper, sidb_charge_state::NEGATIVE, false);
+                        layout.assign_charge_state(bdl.lower, sidb_charge_state::NEUTRAL, false);
+                    }
+                }
+            }
+            else if (wire_directions[input_wires.size() - 1 - i] == bdl_wire_direction::DOWN_TOP)
+            {
+                if ((current_input_index & (uint64_t{1ull} << i)) != 0ull)
+                {
+                    for (const auto& bdl : input_wires[input_wires.size() - 1 - i])
+                    {
+                        layout.assign_charge_state(bdl.upper, sidb_charge_state::NEGATIVE, false);
+                        layout.assign_charge_state(bdl.lower, sidb_charge_state::NEUTRAL, false);
+                    }
+                }
+                else
+                {
+                    for (const auto& bdl : input_wires[input_wires.size() - 1 - i])
+                    {
+                        layout.assign_charge_state(bdl.upper, sidb_charge_state::NEUTRAL, false);
+                        layout.assign_charge_state(bdl.lower, sidb_charge_state::NEGATIVE, false);
+                    }
+                }
+            }
+        }
+
+        for (auto i = 0u; i < output_wires.size(); i++)
+        {
+            for (const auto& bdl : output_wires[i])
+            {
+                if (kitty::get_bit(truth_table[i], current_input_index))
+                {
+                    layout.assign_charge_state(bdl.upper, sidb_charge_state::NEUTRAL, false);
+                    layout.assign_charge_state(bdl.lower, sidb_charge_state::NEGATIVE, false);
+                }
+                else
+                {
+                    layout.assign_charge_state(bdl.upper, sidb_charge_state::NEGATIVE, false);
+                    layout.assign_charge_state(bdl.lower, sidb_charge_state::NEUTRAL, false);
+                }
+            }
+        }
+    }
+
+    [[nodiscard]] operational_status run_kinks_are_forbidden() noexcept
+    {
+        assert(!output_bdl_pairs.empty() && "No output cell provided.");
+        assert((truth_table.size() == output_bdl_pairs.size()) &&
+               "Number of truth tables and output BDL pairs does not match");
+
+        // number of different input combinations
+        for (auto i = 0u; i < truth_table.front().num_bits(); ++i, ++bii)
+        {
+            ++simulator_invocations;
+
+            // if positively charged SiDBs can occur, the SiDB layout is considered as non-operational
+            if (can_positive_charges_occur(*bii, parameters.simulation_parameters))
+            {
+                return operational_status::NON_OPERATIONAL;
+            }
+
+            // performs physical simulation of a given SiDB layout at a given input combination
+            const auto simulation_results = physical_simulation_of_layout(bii);
+
+            // if no physically valid charge distributions were found, the layout is non-operational
+            if (simulation_results.charge_distributions.empty())
+            {
+                return operational_status::NON_OPERATIONAL;
+            }
+
+            // find the ground state, which is the charge distribution with the lowest energy
+            const auto ground_state = std::min_element(
+                simulation_results.charge_distributions.cbegin(), simulation_results.charge_distributions.cend(),
+                [](const auto& lhs, const auto& rhs) { return lhs.get_system_energy() < rhs.get_system_energy(); });
+
+            // ground state is degenerate
+            if ((energy_distribution(simulation_results.charge_distributions).begin()->second) > 1)
+            {
+                return operational_status::NON_OPERATIONAL;
+            }
+
+            auto charge_layout = charge_distribution_surface<Lyt>{skeleton.clone()};
+            set_charge_distribution_based_on_logic(charge_layout, i);
+
+            //print_sidb_layout(std::cout, *ground_state);
+            //print_sidb_layout(std::cout, charge_layout);
+
+            bool non_operational = false;
+            charge_layout.foreach_cell(
+                [this, &non_operational, &charge_layout, &ground_state](const auto& c)
+                {
+                    if ((*bii).get_cell_type(c) != Lyt::technology::cell_type::INPUT &&
+                        (*bii).get_cell_type(c) != Lyt::technology::cell_type::EMPTY)
+                    {
+                        if (ground_state->get_charge_state(c) != charge_layout.get_charge_state(c))
+                        {
+                            non_operational = true;
+                            return;
+                        }
+                    }
+                });
+            if (non_operational)
+            {
+                //std::cout << "non operational" << std::endl;
+                return operational_status::NON_OPERATIONAL;
             }
         }
 
@@ -278,7 +433,9 @@ class is_operational_impl
     /**
      * SiDB cell-level layout.
      */
-    const Lyt& layout;
+    const Lyt layout;
+
+    const Lyt skeleton;
     /**
      * The specification of the layout.
      */
@@ -288,6 +445,11 @@ class is_operational_impl
      * Parameters for the `is_operational` algorithm.
      */
     is_operational_params parameters;
+
+    std::vector<bdl_wire<Lyt>>            input_wires;
+    std::vector<bdl_wire<Lyt>>            output_wires;
+    std::vector<bdl_wire<Lyt>>            all_wires;
+    const std::vector<bdl_wire_direction> wire_directions;
     /**
      * Output BDL pairs.
      */
@@ -357,7 +519,8 @@ class is_operational_impl
  */
 template <typename Lyt, typename TT>
 [[nodiscard]] std::pair<operational_status, std::size_t>
-is_operational(const Lyt& lyt, const Lyt& skeleton, const std::vector<TT>& spec, const is_operational_params& params = {}) noexcept
+is_operational(const Lyt& lyt, const Lyt& skeleton, const std::vector<TT>& spec,
+               const is_operational_params& params = {}) noexcept
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt is not an SiDB layout");
@@ -368,12 +531,18 @@ is_operational(const Lyt& lyt, const Lyt& skeleton, const std::vector<TT>& spec,
 
     assert(!spec.empty());
     // all elements in tts must have the same number of variables
-    assert(std::adjacent_find(spec.cbegin(), spec.cend(), [](const auto& a, const auto& b)
+    assert(std::adjacent_find(spec.cbegin(), spec.cend(),
+                              [](const auto& a, const auto& b)
                               { return a.num_vars() != b.num_vars(); }) == spec.cend());
 
     detail::is_operational_impl<Lyt, TT> p{lyt, skeleton, spec, params};
 
-    return {p.run(), p.get_number_of_simulator_invocations()};
+    if (params.condition == operation_ctiterium::ALLOW_KINKS)
+    {
+        return {p.run(), p.get_number_of_simulator_invocations()};
+    }
+
+    return {p.run_kinks_are_forbidden(), p.get_number_of_simulator_invocations()};
 }
 /**
  * This function determines the input combinations for which the SiDB-based logic, represented by the
