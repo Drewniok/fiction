@@ -122,7 +122,7 @@ class design_sidb_gates_impl
      */
     [[nodiscard]] std::vector<Lyt> run_exhaustive_design() noexcept
     {
-        mockturtle::stopwatch       stop{stats.time_total};
+        mockturtle::stopwatch stop{stats.time_total};
         is_operational_params params_is_operational{params.simulation_parameters, params.sim_engine};
         params_is_operational.condition = operation_ctiterium::FORBID_KINKS;
 
@@ -151,20 +151,32 @@ class design_sidb_gates_impl
             }
         };
 
-        std::vector<std::future<void>> futures{};
-        futures.reserve(all_combinations.size());
+        const size_t num_threads =
+            std::min(static_cast<size_t>(std::thread::hardware_concurrency()), all_combinations.size());
+        const size_t chunk_size = (all_combinations.size() + num_threads - 1) / num_threads;  // Ceiling division
 
-        // Start asynchronous tasks to process combinations in parallel
-        for (const auto& combination : all_combinations)
+        std::vector<std::thread> threads;
+        threads.reserve(num_threads);
+
+        for (size_t i = 0; i < num_threads; ++i)
         {
-            futures.emplace_back(
-                std::async(std::launch::async, add_combination_to_layout_and_check_operation, combination));
+            threads.emplace_back(
+                [i, chunk_size, &all_combinations, &add_combination_to_layout_and_check_operation]()
+                {
+                    size_t start_index = i * chunk_size;
+                    size_t end_index   = std::min(start_index + chunk_size, all_combinations.size());
+
+                    for (size_t j = start_index; j < end_index; ++j)
+                    {
+                        add_combination_to_layout_and_check_operation(all_combinations[j]);
+                        //add_valid_layout(lyt);
+                    }
+                });
         }
-        //
-        // Wait for all tasks to finish
-        for (auto& future : futures)
+
+        for (auto& thread : threads)
         {
-            future.wait();
+            thread.join();
         }
 
         return designed_gate_layouts;
