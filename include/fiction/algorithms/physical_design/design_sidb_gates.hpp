@@ -151,22 +151,22 @@ class design_sidb_gates_impl
             }
         };
 
-        const size_t num_threads =
-            std::min(static_cast<size_t>(std::thread::hardware_concurrency()), all_combinations.size());
-        const size_t chunk_size = (all_combinations.size() + num_threads - 1) / num_threads;  // Ceiling division
+        const std::size_t num_threads =
+            std::min(static_cast<std::size_t>(std::thread::hardware_concurrency()), all_combinations.size());
+        const std::size_t chunk_size = (all_combinations.size() + num_threads - 1) / num_threads;  // Ceiling division
 
         std::vector<std::thread> threads;
         threads.reserve(num_threads);
 
-        for (size_t i = 0; i < num_threads; ++i)
+        for (std::size_t i = 0; i < num_threads; ++i)
         {
             threads.emplace_back(
                 [i, chunk_size, &all_combinations, &add_combination_to_layout_and_check_operation]()
                 {
-                    size_t start_index = i * chunk_size;
-                    size_t end_index   = std::min(start_index + chunk_size, all_combinations.size());
+                    std::size_t start_index = i * chunk_size;
+                    std::size_t end_index   = std::min(start_index + chunk_size, all_combinations.size());
 
-                    for (size_t j = start_index; j < end_index; ++j)
+                    for (std::size_t j = start_index; j < end_index; ++j)
                     {
                         add_combination_to_layout_and_check_operation(all_combinations[j]);
                         //add_valid_layout(lyt);
