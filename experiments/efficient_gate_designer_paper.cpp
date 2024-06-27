@@ -137,8 +137,8 @@ int main()  // NOLINT
         const auto layouts_after_p3 = layouts_after_p2 - efficent_stats.lp3;
         const auto delta_p3         = static_cast<double>(layouts_after_p3) / all_layouts * 100;
 
-        const auto time_efficient   = mockturtle::to_seconds(efficent_stats.time_total);
-        const auto time_pruning     = mockturtle::to_seconds(efficent_stats.time_total_pruning);
+        const auto time_efficient = mockturtle::to_seconds(efficent_stats.time_total);
+        const auto time_pruning   = mockturtle::to_seconds(efficent_stats.time_total_pruning);
 
         const auto time_reduction = time_exhaustive / time_efficient;
 
@@ -156,7 +156,8 @@ int main()  // NOLINT
 
     const auto total_time_reduction = sum_exhaustive_runtime / sum_efficient_runtime;
 
-    simulation_exp("", 0, sum_exhaustive_runtime, 0, 0, 0, 0, 0, 0, 0, 0, 0, sum_efficient_runtime, total_time_reduction);
+    simulation_exp("", 0, sum_exhaustive_runtime, 0, 0, 0, 0, 0, 0, 0, 0, 0, sum_efficient_runtime,
+                   total_time_reduction);
 
     simulation_exp.save();
     simulation_exp.table();
