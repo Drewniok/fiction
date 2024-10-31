@@ -8,8 +8,8 @@
 #include "fiction/algorithms/physical_design/apply_gate_library.hpp"
 #include "fiction/algorithms/physical_design/exact.hpp"
 #include "fiction/technology/sidb_defect_surface.hpp"
-#include "fiction/technology/sidb_on_the_fly_gate_library.hpp"
-#include "fiction/technology/sidb_skeleton_bestagon_library.hpp"
+#include "fiction/technology/sidb_on_the_fly_mini_gate_library.hpp"
+#include "fiction/technology/sidb_skeleton_bestagon_mini_library.hpp"
 #include "fiction/technology/sidb_surface_analysis.hpp"
 #include "fiction/traits.hpp"
 #include "fiction/types.hpp"
@@ -85,8 +85,12 @@ class on_the_fly_circuit_design_impl
 
         // generating the blacklist based on neutral defects. The long-range electrostatic influence of charged defects
         // is not considered as gates are designed on-the-fly.
-        auto black_list = sidb_surface_analysis<sidb_skeleton_bestagon_library>(
-            lattice_tiling, params.sidb_on_the_fly_gate_library_parameters.defect_surface, std::make_pair(0, 0));
+//        auto black_list = sidb_surface_analysis<sidb_skeleton_bestagon_mini_library>(
+//            lattice_tiling, params.sidb_on_the_fly_gate_library_parameters.defect_surface, std::make_pair(0, 0));
+
+        using port_type = typename decltype(sidb_skeleton_bestagon_mini_library::get_gate_ports())::mapped_type::value_type::port_type;
+
+        surface_black_list<GateLyt, port_type> black_list{};
 
         while (!gate_level_layout.has_value())
         {
@@ -98,7 +102,7 @@ class on_the_fly_circuit_design_impl
             {
                 try
                 {
-                    lyt = apply_parameterized_gate_library<CellLyt, sidb_on_the_fly_gate_library, GateLyt,
+                    lyt = apply_parameterized_gate_library<CellLyt, sidb_on_the_fly_mini_gate_library, GateLyt,
                                                            sidb_on_the_fly_gate_library_params<CellLyt>>(
                         *gate_level_layout, params.sidb_on_the_fly_gate_library_parameters);
                 }

@@ -18,6 +18,7 @@
 #include <fiction/technology/sidb_defects.hpp>
 #include <fiction/traits.hpp>
 #include <fiction/types.hpp>
+#include <fiction/io/write_sqd_layout.hpp>
 
 #include <fmt/format.h>
 #include <lorina/lorina.hpp>
@@ -50,9 +51,9 @@ int main()  // NOLINT
     fiction::design_sidb_gates_params<fiction::cell<cell_lyt>> design_gate_params{};
     design_gate_params.operational_params.simulation_parameters = fiction::sidb_simulation_parameters{2, -0.32};
     // needs to be changed if a different skeleton is used.
-    design_gate_params.canvas = {{24, 17}, {34, 28}};
+    design_gate_params.canvas = {{14, 10}, {21, 19}};
 
-    design_gate_params.number_of_sidbs               = 3;
+    design_gate_params.number_of_sidbs               = 4;
     design_gate_params.operational_params.sim_engine = fiction::sidb_simulation_engine::QUICKEXACT;
     design_gate_params.termination_cond =
         fiction::design_sidb_gates_params<fiction::cell<cell_lyt>>::termination_condition::AFTER_FIRST_SOLUTION;
@@ -67,8 +68,10 @@ int main()  // NOLINT
         fmt::format("{}/physical_design_with_on_the_fly_gate_design/layouts", EXPERIMENTS_PATH);
 
     // read-in the initial defects. Physical parameters of the defects are not stored yet.
-    auto surface_lattice_initial = fiction::read_sidb_surface_defects<cell_lyt>(
-        "../../experiments/physical_design_with_on_the_fly_gate_design/1_percent_with_charged_surface.txt");
+//    auto surface_lattice_initial = fiction::read_sidb_surface_defects<cell_lyt>(
+//        "../../experiments/physical_design_with_on_the_fly_gate_design/1_percent_with_charged_surface.txt");
+
+    auto surface_lattice_initial = fiction::sidb_defect_surface<cell_lyt>{};
 
     // create an empty surface.
     fiction::sidb_defect_surface<cell_lyt> surface_lattice{};
@@ -173,7 +176,7 @@ int main()  // NOLINT
         sidb_circuits_with_defects.table();
 
         // write a SiQAD simulation file
-        // fiction::write_sqd_layout(result, fmt::format("{}/{}.sqd", layouts_folder, benchmark));
+        fiction::write_sqd_layout(result, fmt::format("{}/{}_test_1.sqd", layouts_folder, benchmark));
     }
 
     return EXIT_SUCCESS;
