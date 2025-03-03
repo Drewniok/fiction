@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-int main()
+int main()  // NOLINT
 {
     const uint64_t num_samples = 1000000000;
 
