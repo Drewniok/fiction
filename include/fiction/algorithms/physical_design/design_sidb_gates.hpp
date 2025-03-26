@@ -10,6 +10,7 @@
 #include "fiction/algorithms/simulation/sidb/is_operational.hpp"
 #include "fiction/algorithms/simulation/sidb/random_sidb_layout_generator.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_engine.hpp"
+#include "fiction/io/write_svg_layout.hpp"
 #include "fiction/technology/cell_ports.hpp"
 #include "fiction/technology/cell_technologies.hpp"
 #include "fiction/technology/charge_distribution_surface.hpp"
@@ -228,12 +229,22 @@ class design_sidb_gates_impl
         std::shuffle(all_combinations.begin(), all_combinations.end(),
                      std::default_random_engine(std::random_device{}()));
 
-        const auto add_combination_to_layout_and_check_operation = [this, &mutex_to_protect_designed_gate_layouts,
-                                                                    &designed_gate_layouts,
-                                                                    &solution_found](const auto& combination) noexcept
+        uint64_t counter = 0;
+
+        const auto add_combination_to_layout_and_check_operation =
+            [this, &mutex_to_protect_designed_gate_layouts, &designed_gate_layouts,
+             &solution_found](const auto& combination, uint64_t& counter) noexcept
         {
             // canvas SiDBs are added to the skeleton
             const auto layout_with_added_cells = skeleton_layout_with_canvas_sidbs(combination);
+
+            write_sidb_layout_svg_params svg_params{};
+            svg_params.lattice_mode = write_sidb_layout_svg_params::sidb_lattice_mode::HIDE_LATTICE;
+
+            write_sidb_layout_svg(
+                layout_with_added_cells,
+                fmt::format("/Users/jandrewniok/Documents/PhD/DATE_25/phd_forum/ipad/logic_design/and/{}.svg", counter),
+                svg_params);
 
             if (const auto [status, sim_calls] = is_operational(
                     layout_with_added_cells, truth_table, params.operational_params, input_bdl_wires, output_bdl_wires);
@@ -254,41 +265,10 @@ class design_sidb_gates_impl
             }
         };
 
-        const std::size_t num_threads = std::min(number_of_threads, all_combinations.size());
-
-        const std::size_t chunk_size = (all_combinations.size() + num_threads - 1) / num_threads;  // Ceiling division
-
-        std::vector<std::thread> threads{};
-        threads.reserve(num_threads);
-
-        for (std::size_t i = 0; i < num_threads; ++i)
+        for (uint64_t j = 0; j < all_combinations.size(); j++)
         {
-            threads.emplace_back(
-                [i, chunk_size, &all_combinations, &add_combination_to_layout_and_check_operation, &solution_found,
-                 this]()
-                {
-                    const std::size_t start_index = i * chunk_size;
-                    const std::size_t end_index   = std::min(start_index + chunk_size, all_combinations.size());
-
-                    for (std::size_t j = start_index; j < end_index; ++j)
-                    {
-                        if (solution_found &&
-                            (params.termination_cond ==
-                             design_sidb_gates_params<cell<Lyt>>::termination_condition::AFTER_FIRST_SOLUTION))
-                        {
-                            return;
-                        }
-                        add_combination_to_layout_and_check_operation(all_combinations[j]);
-                    }
-                });
-        }
-
-        for (auto& thread : threads)
-        {
-            if (thread.joinable())
-            {
-                thread.join();
-            }
+            add_combination_to_layout_and_check_operation(all_combinations[j], counter);
+            counter++;
         }
 
         return designed_gate_layouts;

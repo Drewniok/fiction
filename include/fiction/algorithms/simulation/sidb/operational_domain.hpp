@@ -16,6 +16,7 @@
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_engine.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_parameters.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_result.hpp"
+#include "fiction/io/write_operational_domain.hpp"
 #include "fiction/technology/cell_technologies.hpp"
 #include "fiction/technology/constants.hpp"
 #include "fiction/traits.hpp"
@@ -523,7 +524,9 @@ class operational_domain_impl
         // expensive operational points
         std::shuffle(all_step_points.begin(), all_step_points.end(), std::mt19937_64{std::random_device{}()});
 
-        simulate_operational_status_in_parallel(all_step_points);
+        uint64_t counter = 0;
+
+        simulate_operational_status_in_parallel(all_step_points, counter);
 
         log_stats();
 
@@ -542,7 +545,9 @@ class operational_domain_impl
 
         const auto step_point_samples = generate_random_step_points(samples);
 
-        simulate_operational_status_in_parallel(step_point_samples);
+        uint64_t counter = 0;
+
+        simulate_operational_status_in_parallel(step_point_samples, counter);
 
         log_stats();
 
@@ -564,6 +569,8 @@ class operational_domain_impl
     flood_fill(const std::size_t                     samples,
                const std::optional<parameter_point>& given_parameter_point = std::nullopt) noexcept
     {
+        uint64_t counter = 0;
+
         assert((num_dimensions == 2 || num_dimensions == 3) &&
                "Flood fill is only supported for two and three dimensions");
 
@@ -576,7 +583,7 @@ class operational_domain_impl
             step_point_samples.push_back(to_step_point(given_parameter_point.value()));
         }
 
-        simulate_operational_status_in_parallel(step_point_samples);
+        simulate_operational_status_in_parallel(step_point_samples, counter);
 
         // a queue of (x, y[, z]) dimension step points to be evaluated
         std::queue<step_point> queue{};
@@ -630,7 +637,7 @@ class operational_domain_impl
             }
 
             // check if the point is operational
-            const auto operational_status = is_step_point_operational(sp);
+            const auto operational_status = is_step_point_operational(sp, counter);
 
             // if the point is operational, add its eight neighbors to the queue
             if (operational_status == operational_status::OPERATIONAL)
@@ -662,7 +669,9 @@ class operational_domain_impl
 
         const auto step_point_samples = generate_random_step_points(samples);
 
-        simulate_operational_status_in_parallel(step_point_samples);
+        uint64_t counter = 0;
+
+        simulate_operational_status_in_parallel(step_point_samples, counter);
 
         const auto next_clockwise_point = [](std::vector<step_point>& neighborhood,
                                              const step_point&        backtrack) noexcept -> step_point
@@ -698,7 +707,7 @@ class operational_domain_impl
             }
 
             // find an operational point on the contour starting from the randomly determined starting point
-            const auto contour_starting_point = find_operational_contour_step_point(starting_point);
+            const auto contour_starting_point = find_operational_contour_step_point(starting_point, counter);
 
             auto current_contour_point = contour_starting_point;
 
@@ -720,7 +729,7 @@ class operational_domain_impl
 
             while (next_point != contour_starting_point)
             {
-                const auto operational_status = is_step_point_operational(next_point);
+                const auto operational_status = is_step_point_operational(next_point, counter);
 
                 if (operational_status == operational_status::OPERATIONAL)
                 {
@@ -930,7 +939,7 @@ class operational_domain_impl
     /**
      * Number of available hardware threads.
      */
-    const std::size_t number_of_threads{std::thread::hardware_concurrency()};
+    const std::size_t number_of_threads{1};
     /**
      * Input BDL wires.
      */
@@ -1097,7 +1106,7 @@ class operational_domain_impl
      * @param sp Step point to be investigated.
      * @return The operational status of the layout under the given simulation parameters.
      */
-    operational_status is_step_point_operational(const step_point& sp) noexcept
+    operational_status is_step_point_operational(const step_point& sp, uint64_t& counter) noexcept
     {
         if (const auto op_value = op_domain.contains(to_parameter_point(sp)); op_value.has_value())
         {
@@ -1106,7 +1115,8 @@ class operational_domain_impl
 
         const auto param_point = to_parameter_point(sp);
 
-        const auto operational = [this, &param_point](const std::optional<double>& ct_value = std::nullopt) noexcept
+        const auto operational =
+            [this, &param_point, &counter](const std::optional<double>& ct_value = std::nullopt) noexcept
         {
             if constexpr (std::is_same_v<OpDomain, critical_temperature_domain>)
             {
@@ -1118,12 +1128,17 @@ class operational_domain_impl
             else
             {
                 op_domain.add_value(param_point, std::make_tuple(operational_status::OPERATIONAL));
+                write_operational_domain(
+                    op_domain,
+                    fmt::format("/Users/jandrewniok/Documents/PhD/DATE_25/phd_forum/ipad/op_domain/csv_grid/{}.csv",
+                                counter));
+                counter++;
             }
 
             return operational_status::OPERATIONAL;
         };
 
-        const auto non_operational = [this, &param_point]() noexcept
+        const auto non_operational = [this, &param_point, &counter]() noexcept
         {
             if constexpr (std::is_same_v<OpDomain, critical_temperature_domain>)
             {
@@ -1132,6 +1147,11 @@ class operational_domain_impl
             else
             {
                 op_domain.add_value(param_point, std::make_tuple(operational_status::NON_OPERATIONAL));
+                write_operational_domain(
+                    op_domain,
+                    fmt::format("/Users/jandrewniok/Documents/PhD/DATE_25/phd_forum/ipad/op_domain/csv_grid/{}.csv",
+                                counter));
+                counter++;
             }
 
             return operational_status::NON_OPERATIONAL;
@@ -1274,7 +1294,11 @@ class operational_domain_impl
             step_point_samples.insert(step_point{dimension_samples});
         }
 
-        return std::vector<step_point>(step_point_samples.cbegin(), step_point_samples.cend());
+        auto samples_merge = std::vector<step_point>(step_point_samples.cbegin(), step_point_samples.cend());
+
+        std::shuffle(samples_merge.begin(), samples_merge.end(), std::mt19937_64{std::random_device{}()});
+
+        return samples_merge;
     }
     /**
      * Simulates the operational status of the given points in parallel. It divides the work among multiple threads to
@@ -1287,45 +1311,11 @@ class operational_domain_impl
      *
      * @param step_points A vector of step points for which the operational status is to be simulated.
      */
-    void simulate_operational_status_in_parallel(const std::vector<step_point>& step_points) noexcept
+    void simulate_operational_status_in_parallel(const std::vector<step_point>& step_points, uint64_t& counter) noexcept
     {
-        // calculate the size of each slice
-        const std::size_t num_threads = std::min(number_of_threads, step_points.size());
-
-        const auto slice_size = (step_points.size() + num_threads - 1) / num_threads;
-
-        std::vector<std::thread> threads{};
-        threads.reserve(num_threads);
-
-        // launch threads, each with its own slice of random step points
-        for (auto i = 0ul; i < num_threads; ++i)
+        for (const auto& sp : step_points)
         {
-            const auto start = i * slice_size;
-            const auto end   = std::min(start + slice_size, step_points.size());
-
-            if (start >= end)
-            {
-                break;  // no more work to distribute
-            }
-
-            threads.emplace_back(
-                [this, start, end, &step_points]
-                {
-                    for (auto it = step_points.cbegin() + static_cast<int64_t>(start);
-                         it != step_points.cbegin() + static_cast<int64_t>(end); ++it)
-                    {
-                        is_step_point_operational(*it);
-                    }
-                });
-        }
-
-        // wait for all threads to complete
-        for (auto& thread : threads)
-        {
-            if (thread.joinable())
-            {
-                thread.join();
-            }
+            is_step_point_operational(sp, counter);
         }
     }
     /**
@@ -1366,7 +1356,8 @@ class operational_domain_impl
      * @param starting_point Starting step point for the boundary search.
      * @return An operational step point at the edge of the operational domain `starting_point` is located in.
      */
-    [[nodiscard]] step_point find_operational_contour_step_point(const step_point& starting_point) noexcept
+    [[nodiscard]] step_point find_operational_contour_step_point(const step_point& starting_point,
+                                                                 uint64_t&         counter) noexcept
     {
         assert(num_dimensions == 2 && "Contour tracing is only supported for two dimensions");
         assert(starting_point.step_values.size() == 2 && "Given step point must have 2 dimensions");
@@ -1380,7 +1371,7 @@ class operational_domain_impl
 
             const auto left_step = step_point{{x, y}};
 
-            const auto operational_status = is_step_point_operational(left_step);
+            const auto operational_status = is_step_point_operational(left_step, counter);
 
             if (operational_status == operational_status::OPERATIONAL)
             {
@@ -2109,6 +2100,262 @@ struct hash<fiction::parameter_point>
         return h;
     }
 };
+
+/**
+ * Parameters for writing an operational domain to a CSV file.
+ */
+struct write_operational_domain_params
+{
+    /**
+     * Mode selector for writing samples to file.
+     */
+    enum class sample_writing_mode : uint8_t
+    {
+        /**
+         * Write all samples, including non-operational ones. This may lead to large file sizes.
+         */
+        ALL_SAMPLES,
+        /**
+         * Write operational samples only. This can drastically reduce file size and help with visibility in 3D plots.
+         */
+        OPERATIONAL_ONLY
+    };
+    /**
+     * The tag used to represent the operational value of a parameter set.
+     */
+    std::string_view operational_tag = "1";
+    /**
+     * The tag used to represent the non-operational value of a parameter set.
+     */
+    std::string_view non_operational_tag = "0";
+    /**
+     * Whether to write non-operational samples to the CSV file. If set to `OPERATIONAL_ONLY`, operational samples are
+     * written exclusively. This yields a significantly smaller CSV file. It is recommended to set this option for 3D
+     * plots because the non-operational samples would shadow the operational samples anyway.
+     */
+    sample_writing_mode writing_mode = sample_writing_mode::ALL_SAMPLES;
+};
+
+namespace detail
+{
+
+/**
+ * Converts a sweep parameter to a string representation. This is used to write the parameter name to the CSV file.
+ *
+ * @param param The sweep parameter to be converted.
+ * @return The string representation of the sweep parameter.
+ */
+[[nodiscard]] static inline std::string sweep_parameter_to_string(const fiction::sweep_parameter& param) noexcept
+{
+    switch (param)
+    {
+        case fiction::sweep_parameter::EPSILON_R:
+        {
+            return "epsilon_r";
+        }
+        case fiction::sweep_parameter::LAMBDA_TF:
+        {
+            return "lambda_tf";
+        }
+        case fiction::sweep_parameter::MU_MINUS:
+        {
+            return "mu_minus";
+        }
+    }
+
+    return "";
+}
+
+}  // namespace detail
+
+/**
+ * Writes a CSV representation of an operational domain to the specified output stream. The data are written
+ * as rows, each corresponding to one set of simulation parameters and their corresponding operational status.
+ *
+ * The output CSV format is e.g. as follows:
+    \verbatim embed:rst
+    .. code-block:: RST
+
+     epsilon_r, lambda_tf, operational status
+     0.0, 0.0, 0
+     0.1, 0.0, 1
+     ... subsequent rows for each set of simulation parameters
+    \endverbatim
+ *
+ * The operational status is a binary value represented by specified tags in `params` indicating whether the simulation
+ * parameters are within the operational domain or not.
+ *
+ * @tparam OpDomain The type of the operational domain.
+ * @param opdom The operational domain to be written. It represents a mapping between sets of simulation parameters
+ * (defined as a pair of sweep parameters for the X, Y, and Z dimensions) and a tuple containing detailed  information
+ * about the SiDB layout associated with those simulation parameters.
+ * @param os The output stream where the CSV representation of the operational domain is written to.
+ * @param params The parameters used for writing, including the operational and non-operational tags. Defaults to an
+ * empty `write_operational_domain_params` object, which provides standard tags.
+ * @throws std::invalid_argument if the number of dimensions in the operational domain is 0 or greater than 3.
+ */
+template <typename OpDomain>
+void write_operational_domain(const OpDomain& opdom, std::ostream& os,
+                              const write_operational_domain_params& params = {})
+{
+    fiction::csv_writer writer{os};
+
+    const auto num_dimensions = opdom.get_number_of_dimensions();
+
+    if (num_dimensions == 0 || num_dimensions > 3)
+    {
+        throw std::invalid_argument("unsupported number of dimensions in the given operational domain");
+    }
+
+    if constexpr (std::is_same_v<OpDomain, fiction::critical_temperature_domain>)
+    {
+        if (num_dimensions == 1)
+        {
+            writer.write_line(detail::sweep_parameter_to_string(opdom.get_dimension(0)), "operational status",
+                              "critical temperature");
+        }
+        else if (num_dimensions == 2)
+        {
+            writer.write_line(detail::sweep_parameter_to_string(opdom.get_dimension(0)),
+                              detail::sweep_parameter_to_string(opdom.get_dimension(1)), "operational status",
+                              "critical temperature");
+        }
+        else if (num_dimensions == 3)  // num_dimensions == 3
+        {
+            writer.write_line(detail::sweep_parameter_to_string(opdom.get_dimension(0)),
+                              detail::sweep_parameter_to_string(opdom.get_dimension(1)),
+                              detail::sweep_parameter_to_string(opdom.get_dimension(2)), "operational status",
+                              "critical temperature");
+        }
+
+        else
+        {
+            throw std::invalid_argument(fmt::format("Unsupported number of dimensions: {}", num_dimensions));
+        }
+
+        opdom.for_each(
+            [&params, &writer, &num_dimensions](const auto& sim_param, const auto& op_val)
+            {
+                // skip non-operational samples if the respective flag is set
+                if (params.writing_mode == write_operational_domain_params::sample_writing_mode::OPERATIONAL_ONLY &&
+                    std::get<0>(op_val) == fiction::operational_status::NON_OPERATIONAL)
+                {
+                    return;
+                }
+
+                const auto tag = std::get<0>(op_val) == fiction::operational_status::OPERATIONAL ?
+                                     params.operational_tag :
+                                     params.non_operational_tag;
+                const auto pp  = sim_param.get_parameters();
+
+                if (num_dimensions == 1)
+                {
+                    writer.write_line(pp[0], tag, std::get<1>(op_val));
+                }
+                else if (num_dimensions == 2)
+                {
+                    writer.write_line(pp[0], pp[1], tag, std::get<1>(op_val));
+                }
+                else  // num_dimensions == 3
+                {
+                    writer.write_line(pp[0], pp[1], pp[2], tag, std::get<1>(op_val));
+                }
+            });
+    }
+    else if constexpr (std::is_same_v<OpDomain, fiction::operational_domain>)
+    {
+        if (num_dimensions == 1)
+        {
+            writer.write_line(detail::sweep_parameter_to_string(opdom.get_dimension(0)), "operational status");
+        }
+        else if (num_dimensions == 2)
+        {
+            writer.write_line(detail::sweep_parameter_to_string(opdom.get_dimension(0)),
+                              detail::sweep_parameter_to_string(opdom.get_dimension(1)), "operational status");
+        }
+        else if (num_dimensions == 3)  // num_dimensions == 3
+        {
+            writer.write_line(detail::sweep_parameter_to_string(opdom.get_dimension(0)),
+                              detail::sweep_parameter_to_string(opdom.get_dimension(1)),
+                              detail::sweep_parameter_to_string(opdom.get_dimension(2)), "operational status");
+        }
+
+        else
+        {
+            throw std::invalid_argument(fmt::format("Unsupported number of dimensions: {}", num_dimensions));
+        }
+
+        opdom.for_each(
+            [&params, &writer, &num_dimensions](const auto& sim_param, const auto& op_val)
+            {
+                // skip non-operational samples if the respective flag is set
+                if (params.writing_mode == write_operational_domain_params::sample_writing_mode::OPERATIONAL_ONLY &&
+                    std::get<0>(op_val) == fiction::operational_status::NON_OPERATIONAL)
+                {
+                    return;
+                }
+
+                const auto tag = std::get<0>(op_val) == fiction::operational_status::OPERATIONAL ?
+                                     params.operational_tag :
+                                     params.non_operational_tag;
+
+                const auto pp = sim_param.get_parameters();
+
+                if (num_dimensions == 1)
+                {
+                    writer.write_line(pp[0], tag);
+                }
+                else if (num_dimensions == 2)
+                {
+                    writer.write_line(pp[0], pp[1], tag);
+                }
+                else  // num_dimensions == 3
+                {
+                    writer.write_line(pp[0], pp[1], pp[2], tag);
+                }
+            });
+    }
+}
+/**
+ * Writes a CSV representation of an operational domain to the specified file. The data are written as rows, each
+ * corresponding to one set of simulation parameters and their corresponding operational status.
+ *
+ * The output CSV format is e.g. as follows:
+    \verbatim embed:rst
+    .. code-block:: RST
+
+     epsilon_r, lambda_tf, operational status
+     0.0, 0.0, 0
+     0.1, 0.0, 1
+     ... subsequent rows for each set of simulation parameters
+    \endverbatim
+ *
+ * The operational status is a binary value represented by specified tags in `params` indicating whether the simulation
+ * parameters are within the operational domain or not.
+ *
+ * @tparam OpDomain The type of the operational domain.
+ * @param opdom The operational domain to be written. It represents a mapping between sets of simulation parameters
+ * (defined as a pair of sweep parameters for the X, Y, and Z dimensions) and a tuple containing detailed information
+ * about the SiDB layout associated with those simulation parameters.
+ * @param filename The filename where the CSV representation of the operational domain is written to.
+ * @param params The parameters used for writing, including the operational and non-operational tags. Defaults to an
+ * empty `write_operational_domain_params` object, which provides standard tags.
+ * @throws std::ofstream::failure if the file could not be opened.
+ */
+template <typename OpDomain>
+void write_operational_domain(const OpDomain& opdom, const std::string_view& filename,
+                              const write_operational_domain_params& params = {})
+{
+    std::ofstream os{filename.data(), std::ofstream::out};
+
+    if (!os.is_open())
+    {
+        throw std::ofstream::failure("could not open file");
+    }
+
+    write_operational_domain(opdom, os, params);
+    os.close();
+}
 
 }  // namespace std
 

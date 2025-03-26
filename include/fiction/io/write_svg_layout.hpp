@@ -596,9 +596,16 @@ class write_sidb_layout_svg_impl
             fmt::format(fiction::detail::svg::PATH_DEFINITION_TEMPLATE, ps.lattice_point_size, ps.sidb_size);
 
         // Compute the bounding box of the layout
-        const auto bb        = bounding_box_2d{lyt};
-        const auto min_coord = bb.get_min();
-        const auto max_coord = bb.get_max();
+        const auto bb             = bounding_box_2d{lyt};
+        auto       min_coord_copy = bb.get_min();
+        auto       min_coord      = min_coord_copy;
+        min_coord.x -= 1;
+        min_coord.y -= 1;
+
+        auto max_coord_copy = bb.get_max();
+        auto max_coord      = max_coord_copy;
+        max_coord.x += 1;
+        max_coord.y += 1;
 
         if (ps.lattice_mode == write_sidb_layout_svg_params::sidb_lattice_mode::SHOW_LATTICE)
         {
