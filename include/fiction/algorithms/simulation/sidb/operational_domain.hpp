@@ -1170,9 +1170,9 @@ class operational_domain_impl
             {
                 op_domain.add_value(param_point, std::make_tuple(operational_status::OPERATIONAL));
                 write_operational_domain(
-                    op_domain,
-                    fmt::format("/Users/jandrewniok/Documents/PhD/DATE_25/phd_forum/ipad/op_domain/csv_grid/{}.csv",
-                                counter));
+                    op_domain, fmt::format("/Users/jandrewniok/CLionProjects/fiction_copy/fiction/experiments/"
+                                           "operational_domain_picture_for_video/grid/grid_csv/{}.csv",
+                                           counter));
                 counter++;
             }
 
@@ -1189,9 +1189,9 @@ class operational_domain_impl
             {
                 op_domain.add_value(param_point, std::make_tuple(operational_status::NON_OPERATIONAL));
                 write_operational_domain(
-                    op_domain,
-                    fmt::format("/Users/jandrewniok/Documents/PhD/DATE_25/phd_forum/ipad/op_domain/csv_grid/{}.csv",
-                                counter));
+                    op_domain, fmt::format("/Users/jandrewniok/CLionProjects/fiction_copy/fiction/experiments/"
+                                           "operational_domain_picture_for_video/grid/grid_csv/{}.csv",
+                                           counter));
                 counter++;
             }
 

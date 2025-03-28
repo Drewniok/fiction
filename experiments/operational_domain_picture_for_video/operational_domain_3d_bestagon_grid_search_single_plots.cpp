@@ -36,19 +36,28 @@ int main()  // NOLINT
     // operational domain parameters
     operational_domain_params op_domain_params{};
     op_domain_params.operational_params.simulation_parameters = sim_params;
-    op_domain_params.operational_params.sim_engine            = sidb_simulation_engine::QUICKEXACT;
+    op_domain_params.operational_params.sim_engine            = sidb_simulation_engine::CLUSTERCOMPLETE;
     op_domain_params.sweep_dimensions         = {{sweep_parameter::EPSILON_R}, {sweep_parameter::LAMBDA_TF}};
     op_domain_params.sweep_dimensions[0].min  = 1.0;
     op_domain_params.sweep_dimensions[0].max  = 10.0;
-    op_domain_params.sweep_dimensions[0].step = 0.2;
+    op_domain_params.sweep_dimensions[0].step = 0.1;
     op_domain_params.sweep_dimensions[1].min  = 1.0;
     op_domain_params.sweep_dimensions[1].max  = 10.0;
-    op_domain_params.sweep_dimensions[1].step = 0.2;
+    op_domain_params.sweep_dimensions[1].step = 0.1;
 
     static const std::string folder = fmt::format("{}sidb_gate_libraries/bestagon_gates/", EXPERIMENTS_PATH);
 
-    static const std::array<std::pair<std::string, std::vector<tt>>, 1> gates = {
-        std::make_pair("and", std::vector<tt>{create_and_tt()})};
+    static const std::array<std::pair<std::string, std::vector<tt>>, 10> gates = {
+        std::make_pair("and", std::vector<tt>{create_and_tt()}),
+        std::make_pair("nand", std::vector<tt>{create_nand_tt()}),
+        std::make_pair("or", std::vector<tt>{create_or_tt()}),
+        std::make_pair("nor", std::vector<tt>{create_nor_tt()}),
+        std::make_pair("xor", std::vector<tt>{create_xor_tt()}),
+        std::make_pair("xnor", std::vector<tt>{create_xnor_tt()}),
+        std::make_pair("wire", std::vector<tt>{create_id_tt()}),
+        std::make_pair("wire_diag", std::vector<tt>{create_id_tt()}),
+        std::make_pair("inv", std::vector<tt>{create_not_tt()}),
+        std::make_pair("inv_diag", std::vector<tt>{create_not_tt()})};
 
     for (const auto& [gate, truth_table] : gates)
     {

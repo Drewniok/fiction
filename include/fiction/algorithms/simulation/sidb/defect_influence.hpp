@@ -99,8 +99,65 @@ enum class defect_influence_status : uint8_t
  * or the ground state of the layout is changed due to the presence of the defect.
  */
 template <typename Lyt>
-class defect_influence_domain : public sidb_simulation_domain<typename Lyt::cell, defect_influence_status>
-{};
+class defect_influence_domain
+{
+  public:
+    using cell_type   = typename Lyt::cell;
+    using status_type = defect_influence_status;
+    using entry_type  = std::pair<cell_type, status_type>;
+
+    std::vector<entry_type> domain_values{};
+
+    /**
+     * Default constructor
+     */
+    defect_influence_domain() = default;
+
+    /**
+     * Adds a key-value pair to the domain.
+     * @param cell The cell to associate with the status.
+     * @param status The defect influence status.
+     */
+    void add_value(const cell_type& cell, const status_type& status)
+    {
+        domain_values.emplace_back(cell, status);
+    }
+
+    /**
+     * Checks if a specific cell exists in the domain and returns its associated status.
+     * @param cell The cell to search for.
+     * @return std::optional containing the defect_influence_status if found, std::nullopt otherwise.
+     */
+    std::optional<status_type> contains(const cell_type& cell) const
+    {
+        auto it = std::find_if(domain_values.begin(), domain_values.end(),
+                               [&cell](const entry_type& entry) { return entry.first == cell; });
+
+        if (it != domain_values.end())
+        {
+            return it->second;  // Return the status
+        }
+        return std::nullopt;  // Not found
+    }
+
+    /**
+     * Returns the number of entries in the domain.
+     * @return Size of the domain_values vector.
+     */
+    std::size_t size() const noexcept
+    {
+        return domain_values.size();
+    }
+
+    /**
+     * Checks if the domain is empty.
+     * @return true if empty, false otherwise.
+     */
+    bool empty() const noexcept
+    {
+        return domain_values.empty();
+    }
+};
 
 /**
  * Statistics.
@@ -540,7 +597,7 @@ class defect_influence_impl
 
         if (const auto op_value = influence_domain.contains(defect_cell); op_value.has_value())
         {
-            return std::get<0>(*op_value);
+            return *op_value;
         }
 
         const auto non_influential = [this, &defect_cell]()
@@ -737,19 +794,6 @@ class defect_influence_impl
     {
         stats.num_simulator_invocations      = num_simulator_invocations.load();
         stats.num_evaluated_defect_positions = num_evaluated_defect_positions.load();
-
-        influence_domain.for_each(
-            [this](const auto& defect_pos [[maybe_unused]], const auto& status)
-            {
-                if (std::get<0>(status) == defect_influence_status::INFLUENTIAL)
-                {
-                    ++stats.num_influencing_defect_positions;
-                }
-                else
-                {
-                    ++stats.num_non_influencing_defect_positions;
-                }
-            });
     }
 
     /**

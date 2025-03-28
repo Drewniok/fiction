@@ -1167,7 +1167,6 @@ void write_sidb_layout_svg(const Lyt& lyt, std::ostream& os, const write_sidb_la
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt must be a SiDB layout");
-    static_assert(!is_sidb_defect_surface_v<Lyt>, "SiDB defects are not supported");
 
     detail::write_sidb_layout_svg_impl<Lyt> p{lyt, os, ps};
     p.run();
@@ -1189,7 +1188,6 @@ void write_sidb_layout_svg(const Lyt& lyt, const std::string_view& filename,
 {
     static_assert(is_cell_level_layout_v<Lyt>, "Lyt is not a cell-level layout");
     static_assert(has_sidb_technology_v<Lyt>, "Lyt must be a SiDB layout");
-    static_assert(!is_sidb_defect_surface_v<Lyt>, "SiDB defects are not supported");
 
     std::ofstream os{filename.data(), std::ofstream::out};
 

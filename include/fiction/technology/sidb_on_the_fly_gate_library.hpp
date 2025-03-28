@@ -183,8 +183,8 @@ class sidb_on_the_fly_gate_library : public fcn_gate_library<sidb_technology, 60
         auto absolute_cell = relative_to_absolute_cell_position<gate_x_size(), gate_y_size(), GateLyt, CellLyt>(
             lyt, t, cell<CellLyt>{0, 0});
 
-        auto complex_gate_param                                      = params;
-        complex_gate_param.design_gate_params.number_of_canvas_sidbs = params.canvas_sidb_complex_gates;
+        auto complex_gate_param                               = params;
+        complex_gate_param.design_gate_params.number_of_sidbs = params.canvas_sidb_complex_gates;
 
         try
         {

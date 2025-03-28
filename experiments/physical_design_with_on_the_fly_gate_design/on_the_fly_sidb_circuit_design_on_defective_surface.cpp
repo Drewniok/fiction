@@ -52,10 +52,12 @@ int main()  // NOLINT
     // needs to be changed if a different skeleton is used.
     design_gate_params.canvas = {{24, 17}, {34, 28}};
 
-    design_gate_params.number_of_canvas_sidbs        = 3;
+    design_gate_params.number_of_sidbs               = 3;
     design_gate_params.operational_params.sim_engine = fiction::sidb_simulation_engine::QUICKEXACT;
     design_gate_params.termination_cond =
         fiction::design_sidb_gates_params<fiction::cell<cell_lyt>>::termination_condition::AFTER_FIRST_SOLUTION;
+    design_gate_params.design_mode =
+        fiction::design_sidb_gates_params<fiction::cell<cell_lyt>>::design_sidb_gates_mode::QUICKCELL;
 
     // save atomic defects which their respective physical parameters as experimentally determined by T. R. Huff, T.
     // Dienel, M. Rashidi, R. Achal, L. Livadaru, J. Croshaw, and R. A. Wolkow, "Electrostatic landscape of a
@@ -68,7 +70,7 @@ int main()  // NOLINT
 
     // read-in the initial defects. Physical parameters of the defects are not stored yet.
     auto surface_lattice_initial = fiction::read_sidb_surface_defects<cell_lyt>(
-        "../../experiments/physical_design_with_on_the_fly_gate_design/0.5_percent_with_charged_surface.txt");
+        "../../experiments/physical_design_with_on_the_fly_gate_design/1_percent_with_charged_surface.txt");
 
     // create an empty surface.
     fiction::sidb_defect_surface<cell_lyt> surface_lattice{};
