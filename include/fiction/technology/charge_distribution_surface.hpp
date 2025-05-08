@@ -1479,63 +1479,78 @@ class charge_distribution_surface<Lyt, false> : public Lyt
      */
     void adjacent_search(const double alpha, std::vector<uint64_t>& negative_indices) noexcept
     {
-        double     dist_max     = 0.0;
-        const auto reserve_size = this->num_cells() - negative_indices.size();
+        // before the loops, grab references so we don’t re‑bind them each iteration
+        const auto&  cell_charge = strg->cell_charge;
+        const auto&  nm_mat      = strg->nm_dist_mat;
+        const size_t N           = cell_charge.size();
+        const size_t M           = negative_indices.size();
+        const auto   alpha_thr   = alpha;  // if alpha is not constexpr
 
-        std::vector<uint64_t> index_vector{};
-        index_vector.reserve(reserve_size);
-        std::vector<double> distance{};
-        distance.reserve(reserve_size);
+        // reserve once
+        std::vector<uint64_t> index_vector;
+        index_vector.reserve(N - M);
+        std::vector<double> distance;
+        distance.reserve(N - M);
 
-        for (uint64_t unocc = 0u; unocc < strg->cell_charge.size(); unocc++)
+        double dist_max = 0.0;
+
+        // 1) avoid std::accumulate overhead
+        // 2) cache row reference
+        for (uint64_t unocc = 0; unocc < N; ++unocc)
         {
-            if (strg->cell_charge[unocc] != sidb_charge_state::NEUTRAL)
+            if (cell_charge[unocc] != sidb_charge_state::NEUTRAL)
             {
                 continue;
             }
 
-            const auto dist_min =
-                std::accumulate(negative_indices.begin(), negative_indices.end(), std::numeric_limits<double>::max(),
-                                [&](const double acc, const uint64_t occ)
-                                { return std::min(acc, this->get_nm_distance_by_indices(unocc, occ)); });
+            // const auto& row      = nm_mat[unocc];
+            double dist_min = std::numeric_limits<double>::max();
+            for (auto occ : negative_indices)
+            {
+                // one fewer indirection than row[occ]
+                if (const double d = nm_mat[unocc][occ]; d < dist_min)
+                {
+                    dist_min = d;
+                }
+            }
 
             index_vector.push_back(unocc);
             distance.push_back(dist_min);
-
             if (dist_min > dist_max)
             {
                 dist_max = dist_min;
             }
         }
 
-        std::vector<uint64_t> candidates{};
-        candidates.reserve(reserve_size);
-
-        for (uint64_t i = 0u; i < distance.size(); ++i)
+        // now filter in‑place (avoids a third allocation)
+        size_t write = 0;
+        for (size_t i = 0; i < distance.size(); ++i)
         {
-            if (distance[i] >= (alpha * dist_max))
+            if (distance[i] >= alpha_thr * dist_max)
             {
-                candidates.push_back(i);
+                index_vector[write] = index_vector[i];
+                ++write;
             }
         }
+        // shrink to actual
+        index_vector.resize(write);
 
-        if (candidates.empty())
+        if (write == 0)
         {
             return;
         }
 
         static std::mt19937_64                  generator(std::random_device{}());
-        std::uniform_int_distribution<uint64_t> dist(0, candidates.size() - 1);
-        const auto                              random_element = index_vector[candidates[dist(generator)]];
+        std::uniform_int_distribution<uint64_t> dist(0, write - 1);
+        const auto                              random_element = index_vector[dist(generator)];
         strg->cell_charge[random_element]                      = sidb_charge_state::NEGATIVE;
         negative_indices.push_back(random_element);
 
         strg->system_energy += -strg->local_int_pot[random_element];
 
-        for (uint64_t i = 0u; i < strg->pot_mat.size(); ++i)
+        for (uint64_t i = 0u; i < strg->sidb_order.size(); ++i)
         {
-            strg->local_int_pot[i] += -this->get_chargeless_potential_by_indices(i, random_element);
-            // strg->local_pot[i] += -(this->get_chargeless_potential_by_indices(i, random_element));
+            strg->local_int_pot[i] += -strg->pot_mat[i][random_element];
         }
     }
     /**
