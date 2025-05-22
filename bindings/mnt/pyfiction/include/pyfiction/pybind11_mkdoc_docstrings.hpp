@@ -4272,6 +4272,42 @@ definition of influence, this can either mean that the operational
 status or the ground state of the layout is changed due to the
 presence of the defect.)doc";
 
+static const char *__doc_fiction_defect_influence_domain_add_value =
+R"doc(Adds a key-value pair to the domain.
+
+Parameter ``cell``:
+    The cell to associate with the status.
+
+Parameter ``status``:
+    The defect influence status.)doc";
+
+static const char *__doc_fiction_defect_influence_domain_contains =
+R"doc(Checks if a specific cell exists in the domain and returns its
+associated status.
+
+Parameter ``cell``:
+    The cell to search for.
+
+Returns:
+    std::optional containing the defect_influence_status if found,
+    std::nullopt otherwise.)doc";
+
+static const char *__doc_fiction_defect_influence_domain_defect_influence_domain = R"doc(Default constructor)doc";
+
+static const char *__doc_fiction_defect_influence_domain_domain_values = R"doc()doc";
+
+static const char *__doc_fiction_defect_influence_domain_empty =
+R"doc(Checks if the domain is empty.
+
+Returns:
+    true if empty, false otherwise.)doc";
+
+static const char *__doc_fiction_defect_influence_domain_size =
+R"doc(Returns the number of entries in the domain.
+
+Returns:
+    Size of the domain_values vector.)doc";
+
 static const char *__doc_fiction_defect_influence_grid_search =
 R"doc(This algorithm uses a grid search to determine the defect influence
 domain. The grid search is performed by exhaustively sweeping all
@@ -4584,23 +4620,22 @@ canvas size, and a predetermined number of canvas SiDBs. Two different
 design modes are implemented: `exhaustive` and `random design`.
 
 The `exhaustive design` is composed of three steps: 1. In the initial
-step, all possible distributions of `number_of_canvas_sidbs` SiDBs
-within a given canvas are exhaustively determined. This ensures
-exhaustive coverage of every potential arrangement of
-`number_of_canvas_sidbs` SiDBs across the canvas. 2. The calculated
-SiDB distributions are then incorporated into the skeleton, resulting
-in the generation of distinct SiDB layouts. 3. The generated SiDB
-layouts then undergo an extensive simulation process. All input
-combinations possible for the given Boolean function are used to
-verify if the logic is fulfilled.
+step, all possible distributions of `number_of_sidbs` SiDBs within a
+given canvas are exhaustively determined. This ensures exhaustive
+coverage of every potential arrangement of ``number_of_sidbs`` SiDBs
+across the canvas. 2. The calculated SiDB distributions are then
+incorporated into the skeleton, resulting in the generation of
+distinct SiDB layouts. 3. The generated SiDB layouts then undergo an
+extensive simulation process. All input combinations possible for the
+given Boolean function are used to verify if the logic is fulfilled.
 
 The `random design` is composed of four steps: 1. A specified number
-of canvas SiDBs (`number_of_canvas_sidbs`) are randomly added to the
-skeleton layout. 2. The operation status of the layout is simulated
-based on a given Boolean function. 3. If the layout is `operational`,
-it is returned as the result, and the process terminates successfully.
-4. If the layout is `non-operational`, the process is repeated from
-the first step until an operational layout is found.
+of canvas SiDBs (`number_of_sidbs`) are randomly added to the skeleton
+layout. 2. The operation status of the layout is simulated based on a
+given Boolean function. 3. If the layout is `operational`, it is
+returned as the result, and the process terminates successfully. 4. If
+the layout is `non-operational`, the process is repeated from the
+first step until an operational layout is found.
 
 Template parameter ``Lyt``:
     SiDB cell-level layout type.
@@ -4642,7 +4677,7 @@ static const char *__doc_fiction_design_sidb_gates_params_design_sidb_gates_mode
 
 static const char *__doc_fiction_design_sidb_gates_params_design_sidb_gates_mode_RANDOM = R"doc(Gate layouts are designed randomly.)doc";
 
-static const char *__doc_fiction_design_sidb_gates_params_number_of_canvas_sidbs = R"doc(Number of SiDBs placed in the canvas to create a working gate.)doc";
+static const char *__doc_fiction_design_sidb_gates_params_number_of_sidbs = R"doc(Number of SiDBs placed in the canvas to create a working gate.)doc";
 
 static const char *__doc_fiction_design_sidb_gates_params_operational_params = R"doc(Parameters for the `is_operational` function.)doc";
 
@@ -10175,16 +10210,6 @@ R"doc(Enum indicating if primary inputs (PIs) can be placed at the top or
 left.)doc";
 
 static const char *__doc_fiction_detail_search_space_graph_planar = R"doc(Create planar layouts.)doc";
-
-static const char *__doc_fiction_detail_sweep_parameter_to_string =
-R"doc(Converts a sweep parameter to a string representation. This is used to
-write the parameter name to the CSV file.
-
-Parameter ``param``:
-    The sweep parameter to be converted.
-
-Returns:
-    The string representation of the sweep parameter.)doc";
 
 static const char *__doc_fiction_detail_technology_mapping_impl = R"doc()doc";
 
@@ -22335,109 +22360,6 @@ Template parameter ``sim_result``:
 Parameter ``filename``:
     The file name to create and write into.)doc";
 
-static const char *__doc_fiction_write_operational_domain =
-R"doc(Writes a CSV representation of an operational domain to the specified
-output stream. The data are written as rows, each corresponding to one
-set of simulation parameters and their corresponding operational
-status.
-
-The output CSV format is e.g. as follows: \verbatim embed:rst .. code-
-block:: RST
-
-epsilon_r, lambda_tf, operational status 0.0, 0.0, 0 0.1, 0.0, 1 ...
-subsequent rows for each set of simulation parameters \endverbatim
-
-The operational status is a binary value represented by specified tags
-in `params` indicating whether the simulation parameters are within
-the operational domain or not.
-
-Template parameter ``OpDomain``:
-    The type of the operational domain.
-
-Parameter ``opdom``:
-    The operational domain to be written. It represents a mapping
-    between sets of simulation parameters (defined as a pair of sweep
-    parameters for the X, Y, and Z dimensions) and a tuple containing
-    detailed information about the SiDB layout associated with those
-    simulation parameters.
-
-Parameter ``os``:
-    The output stream where the CSV representation of the operational
-    domain is written to.
-
-Parameter ``params``:
-    The parameters used for writing, including the operational and
-    non-operational tags. Defaults to an empty
-    `write_operational_domain_params` object, which provides standard
-    tags.
-
-Throws:
-    std::invalid_argument if the number of dimensions in the
-    operational domain is 0 or greater than 3.)doc";
-
-static const char *__doc_fiction_write_operational_domain_2 =
-R"doc(Writes a CSV representation of an operational domain to the specified
-file. The data are written as rows, each corresponding to one set of
-simulation parameters and their corresponding operational status.
-
-The output CSV format is e.g. as follows: \verbatim embed:rst .. code-
-block:: RST
-
-epsilon_r, lambda_tf, operational status 0.0, 0.0, 0 0.1, 0.0, 1 ...
-subsequent rows for each set of simulation parameters \endverbatim
-
-The operational status is a binary value represented by specified tags
-in `params` indicating whether the simulation parameters are within
-the operational domain or not.
-
-Template parameter ``OpDomain``:
-    The type of the operational domain.
-
-Parameter ``opdom``:
-    The operational domain to be written. It represents a mapping
-    between sets of simulation parameters (defined as a pair of sweep
-    parameters for the X, Y, and Z dimensions) and a tuple containing
-    detailed information about the SiDB layout associated with those
-    simulation parameters.
-
-Parameter ``filename``:
-    The filename where the CSV representation of the operational
-    domain is written to.
-
-Parameter ``params``:
-    The parameters used for writing, including the operational and
-    non-operational tags. Defaults to an empty
-    `write_operational_domain_params` object, which provides standard
-    tags.
-
-Throws:
-    std::ofstream::failure if the file could not be opened.)doc";
-
-static const char *__doc_fiction_write_operational_domain_params = R"doc(Parameters for writing an operational domain to a CSV file.)doc";
-
-static const char *__doc_fiction_write_operational_domain_params_non_operational_tag =
-R"doc(The tag used to represent the non-operational value of a parameter
-set.)doc";
-
-static const char *__doc_fiction_write_operational_domain_params_operational_tag = R"doc(The tag used to represent the operational value of a parameter set.)doc";
-
-static const char *__doc_fiction_write_operational_domain_params_sample_writing_mode = R"doc(Mode selector for writing samples to file.)doc";
-
-static const char *__doc_fiction_write_operational_domain_params_sample_writing_mode_ALL_SAMPLES =
-R"doc(Write all samples, including non-operational ones. This may lead to
-large file sizes.)doc";
-
-static const char *__doc_fiction_write_operational_domain_params_sample_writing_mode_OPERATIONAL_ONLY =
-R"doc(Write operational samples only. This can drastically reduce file size
-and help with visibility in 3D plots.)doc";
-
-static const char *__doc_fiction_write_operational_domain_params_writing_mode =
-R"doc(Whether to write non-operational samples to the CSV file. If set to
-`OPERATIONAL_ONLY`, operational samples are written exclusively. This
-yields a significantly smaller CSV file. It is recommended to set this
-option for 3D plots because the non-operational samples would shadow
-the operational samples anyway.)doc";
-
 static const char *__doc_fiction_write_qca_layout =
 R"doc(Writes a cell-level QCA layout to a qca file that is used by
 QCADesigner (https://waluslab.ece.ubc.ca/qcadesigner/), a physical
@@ -22877,6 +22799,16 @@ static const char *__doc_mockturtle_edge_source = R"doc()doc";
 
 static const char *__doc_mockturtle_edge_target = R"doc()doc";
 
+static const char *__doc_std_detail_sweep_parameter_to_string =
+R"doc(Converts a sweep parameter to a string representation. This is used to
+write the parameter name to the CSV file.
+
+Parameter ``param``:
+    The sweep parameter to be converted.
+
+Returns:
+    The string representation of the sweep parameter.)doc";
+
 static const char *__doc_std_hash = R"doc()doc";
 
 static const char *__doc_std_hash_2 = R"doc()doc";
@@ -22904,6 +22836,109 @@ static const char *__doc_std_hash_operator_call_6 = R"doc()doc";
 static const char *__doc_std_iterator_traits = R"doc()doc";
 
 static const char *__doc_std_tuple_size = R"doc()doc";
+
+static const char *__doc_std_write_operational_domain =
+R"doc(Writes a CSV representation of an operational domain to the specified
+output stream. The data are written as rows, each corresponding to one
+set of simulation parameters and their corresponding operational
+status.
+
+The output CSV format is e.g. as follows: \verbatim embed:rst .. code-
+block:: RST
+
+epsilon_r, lambda_tf, operational status 0.0, 0.0, 0 0.1, 0.0, 1 ...
+subsequent rows for each set of simulation parameters \endverbatim
+
+The operational status is a binary value represented by specified tags
+in `params` indicating whether the simulation parameters are within
+the operational domain or not.
+
+Template parameter ``OpDomain``:
+    The type of the operational domain.
+
+Parameter ``opdom``:
+    The operational domain to be written. It represents a mapping
+    between sets of simulation parameters (defined as a pair of sweep
+    parameters for the X, Y, and Z dimensions) and a tuple containing
+    detailed information about the SiDB layout associated with those
+    simulation parameters.
+
+Parameter ``os``:
+    The output stream where the CSV representation of the operational
+    domain is written to.
+
+Parameter ``params``:
+    The parameters used for writing, including the operational and
+    non-operational tags. Defaults to an empty
+    `write_operational_domain_params` object, which provides standard
+    tags.
+
+Throws:
+    std::invalid_argument if the number of dimensions in the
+    operational domain is 0 or greater than 3.)doc";
+
+static const char *__doc_std_write_operational_domain_2 =
+R"doc(Writes a CSV representation of an operational domain to the specified
+file. The data are written as rows, each corresponding to one set of
+simulation parameters and their corresponding operational status.
+
+The output CSV format is e.g. as follows: \verbatim embed:rst .. code-
+block:: RST
+
+epsilon_r, lambda_tf, operational status 0.0, 0.0, 0 0.1, 0.0, 1 ...
+subsequent rows for each set of simulation parameters \endverbatim
+
+The operational status is a binary value represented by specified tags
+in `params` indicating whether the simulation parameters are within
+the operational domain or not.
+
+Template parameter ``OpDomain``:
+    The type of the operational domain.
+
+Parameter ``opdom``:
+    The operational domain to be written. It represents a mapping
+    between sets of simulation parameters (defined as a pair of sweep
+    parameters for the X, Y, and Z dimensions) and a tuple containing
+    detailed information about the SiDB layout associated with those
+    simulation parameters.
+
+Parameter ``filename``:
+    The filename where the CSV representation of the operational
+    domain is written to.
+
+Parameter ``params``:
+    The parameters used for writing, including the operational and
+    non-operational tags. Defaults to an empty
+    `write_operational_domain_params` object, which provides standard
+    tags.
+
+Throws:
+    std::ofstream::failure if the file could not be opened.)doc";
+
+static const char *__doc_std_write_operational_domain_params = R"doc(Parameters for writing an operational domain to a CSV file.)doc";
+
+static const char *__doc_std_write_operational_domain_params_non_operational_tag =
+R"doc(The tag used to represent the non-operational value of a parameter
+set.)doc";
+
+static const char *__doc_std_write_operational_domain_params_operational_tag = R"doc(The tag used to represent the operational value of a parameter set.)doc";
+
+static const char *__doc_std_write_operational_domain_params_sample_writing_mode = R"doc(Mode selector for writing samples to file.)doc";
+
+static const char *__doc_std_write_operational_domain_params_sample_writing_mode_ALL_SAMPLES =
+R"doc(Write all samples, including non-operational ones. This may lead to
+large file sizes.)doc";
+
+static const char *__doc_std_write_operational_domain_params_sample_writing_mode_OPERATIONAL_ONLY =
+R"doc(Write operational samples only. This can drastically reduce file size
+and help with visibility in 3D plots.)doc";
+
+static const char *__doc_std_write_operational_domain_params_writing_mode =
+R"doc(Whether to write non-operational samples to the CSV file. If set to
+`OPERATIONAL_ONLY`, operational samples are written exclusively. This
+yields a significantly smaller CSV file. It is recommended to set this
+option for 3D plots because the non-operational samples would shadow
+the operational samples anyway.)doc";
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
