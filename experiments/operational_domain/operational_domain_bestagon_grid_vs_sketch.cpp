@@ -62,7 +62,7 @@ int main()  // NOLINT
     op_domain_params.sweep_dimensions[1].max  = 10.0;
     op_domain_params.sweep_dimensions[1].step = 0.05;
 
-    static const std::string folder = fmt::format("{}sidb_gate_libraries/bestagon_gates/", EXPERIMENTS_PATH);
+    static const std::string folder = fmt::format("{}sidb_standard_cell_libraries/bestagon/", EXPERIMENTS_PATH);
 
     const auto truth_tables_and_names =
         std::array<std::pair<std::vector<tt>, std::string>, 14>{{{std::vector<tt>{create_id_tt()}, "wire"},

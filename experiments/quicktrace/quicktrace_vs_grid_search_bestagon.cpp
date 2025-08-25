@@ -37,8 +37,9 @@ int main()  // NOLINT
             "distance_contour", "#samples_contour",
         };
 
-    static const std::string bestagon_folder = fmt::format("{}sidb_gate_libraries/bestagon_gates/", EXPERIMENTS_PATH);
-    static const std::string plot_folder     = fmt::format("{}quicktrace/plots/", EXPERIMENTS_PATH);
+    static const std::string bestagon_folder =
+        fmt::format("{}sidb_standard_cell_libraries/bestagon/", EXPERIMENTS_PATH);
+    static const std::string plot_folder = fmt::format("{}quicktrace/plots/", EXPERIMENTS_PATH);
 
     static const std::array<std::pair<std::string, std::vector<tt>>, 10> gates = {
         std::make_pair("and", std::vector<tt>{create_and_tt()}),
