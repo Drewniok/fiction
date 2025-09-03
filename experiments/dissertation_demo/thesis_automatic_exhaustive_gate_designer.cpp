@@ -17,15 +17,19 @@ using namespace fiction;
 
 int main()  // NOLINT
 {
-    const auto                       skeleton = read_sqd_layout<sidb_100_cell_clk_lyt_siqad>("skeleton_2i1o.sqd");
-    const sidb_simulation_parameters sim_params{2, -0.32};
-    design_sidb_gates_params<siqad::coord_t> params{
+    using lyt_typ = sidb_100_cell_clk_lyt_siqad;
+
+    const auto skeleton =
+        read_sqd_layout<lyt_typ>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "skeleton_2i1o.sqd"));
+    const sidb_simulation_parameters              sim_params{2, -0.32};
+    design_sidb_gates_params<coordinate<lyt_typ>> params{
         is_operational_params{sim_params, sidb_simulation_engine::QUICKEXACT}};
     params.number_of_canvas_sidbs = 4;
     params.canvas                 = {{15, 8, 0}, {23, 14, 0}};
     params.termination_cond =
-        design_sidb_gates_params<siqad::coord_t>::termination_condition::ALL_COMBINATIONS_ENUMERATED;
+        design_sidb_gates_params<coordinate<lyt_typ>>::termination_condition::ALL_COMBINATIONS_ENUMERATED;
     params.design_mode =
-        design_sidb_gates_params<siqad::coord_t>::design_sidb_gates_mode::AUTOMATIC_EXHAUSTIVE_GATE_DESIGNER;
+        design_sidb_gates_params<coordinate<lyt_typ>>::design_sidb_gates_mode::AUTOMATIC_EXHAUSTIVE_GATE_DESIGNER;
     const auto standard_cells = design_sidb_gates(skeleton, std::vector<tt>{create_and_tt()}, params);
+    std::cout << "Number of found standard cells: " << standard_cells.size() << std::endl;
 }
