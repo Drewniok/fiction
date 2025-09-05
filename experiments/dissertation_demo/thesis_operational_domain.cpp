@@ -21,12 +21,22 @@ int main()  // NOLINT
 
     const auto cell = read_sqd_layout<lyt_typ>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
 
-    const sidb_simulation_parameters sim_params{2, -0.32};
-    operational_domain_params        op_params{
-        is_operational_params{sim_params, sidb_simulation_engine::QUICKEXACT, bdl_input_iterator_params{},
-                              is_operational_params::operational_condition::TOLERATE_KINKS}};
+    sidb_simulation_parameters sim_params{};
+
+    sim_params.base      = 2;
+    sim_params.mu_minus  = -0.32;
+    sim_params.epsilon_r = 5.6;
+    sim_params.lambda_tf = 5.0;
+
+    operational_domain_params op_params{};
+
+    op_params.operational_params.simulation_parameters = sim_params;
+    op_params.operational_params.sim_engine            = sidb_simulation_engine::QUICKEXACT;
+    op_params.operational_params.op_condition          = is_operational_params::operational_condition::TOLERATE_KINKS;
+
     op_params.sweep_dimensions = {{sweep_parameter::EPSILON_R, 1.0, 10.0, 0.05},
                                   {sweep_parameter::LAMBDA_TF, 1.0, 10.0, 0.05}};
+
     operational_domain_stats op_stats{};
 
     const auto op_gs = operational_domain_grid_search(cell, std::vector<tt>{create_and_tt()}, op_params, &op_stats);
