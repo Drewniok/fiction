@@ -15,8 +15,18 @@ int main()  // NOLINT
 
     const auto cell = read_sqd_layout<lyt_typ>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
 
-    const sidb_simulation_parameters sim_params{2, -0.32, 5.6, 5.0};
-    const quicksim_params            qs_params{sim_params, 300, 0.6};
-    const auto                       results = quicksim(cell, qs_params);
-    const auto                       gs      = results.value().groundstates();
+    sidb_simulation_parameters sim_params{};
+    sim_params.base      = 2;
+    sim_params.mu_minus  = -0.32;
+    sim_params.epsilon_r = 5.6;
+    sim_params.lambda_tf = 5.0;
+    sim_params.mu_minus  = -0.32;
+
+    quicksim_params qs_params{};
+    qs_params.simulation_parameters = sim_params;
+    qs_params.iteration_steps       = 300;
+    qs_params.alpha                 = 0.6;
+
+    const auto result_qs = quicksim(cell, qs_params);
+    const auto gs        = result_qs.value().groundstates();
 }
