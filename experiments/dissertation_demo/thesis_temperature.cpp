@@ -7,6 +7,7 @@
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_parameters.hpp"
 #include "fiction/io/read_sqd_layout.hpp"
 #include "fiction/types.hpp"
+#include "fiction/utils/truth_table_utils.hpp"
 
 #include <vector>
 
@@ -26,6 +27,7 @@ int main()  // NOLINT
 
     critical_temperature_params ct_params{};
     ct_params.operational_params.simulation_parameters = sim_params;
+    ct_params.max_temperature                          = 300.0;  // K
 
     critical_temperature_stats ct_stats{};
     const auto ct = critical_temperature_gate_based(cell, std::vector<tt>{create_and_tt()}, ct_params, &ct_stats);
