@@ -18,10 +18,10 @@ using namespace fiction;
 
 int main()  // NOLINT
 {
-    using lyt_typ = sidb_100_cell_clk_lyt;
+    using lyt_t = sidb_100_cell_clk_lyt;
 
     const auto skeleton =
-        read_sqd_layout<lyt_typ>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "skeleton_2i1o.sqd"));
+        read_sqd_layout<lyt_t>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "skeleton_2i1o.sqd"));
 
     sidb_simulation_parameters sim_params{};
     sim_params.base      = 2;

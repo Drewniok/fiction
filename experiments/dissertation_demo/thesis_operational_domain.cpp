@@ -2,7 +2,6 @@
 // Created by Jan Drewniok on 25.08.25.
 //
 
-#include "fiction/algorithms/iter/bdl_input_iterator.hpp"
 #include "fiction/algorithms/simulation/sidb/is_operational.hpp"
 #include "fiction/algorithms/simulation/sidb/operational_domain.hpp"
 #include "fiction/algorithms/simulation/sidb/sidb_simulation_engine.hpp"
@@ -17,9 +16,9 @@ using namespace fiction;
 
 int main()  // NOLINT
 {
-    using lyt_typ = sidb_100_cell_clk_lyt_siqad;
+    using lyt_t = sidb_100_cell_clk_lyt_siqad;
 
-    const auto cell = read_sqd_layout<lyt_typ>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
+    const auto cell = read_sqd_layout<lyt_t>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
 
     sidb_simulation_parameters sim_params{};
 

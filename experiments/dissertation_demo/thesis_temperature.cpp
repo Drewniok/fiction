@@ -15,8 +15,9 @@ using namespace fiction;
 
 int main()  // NOLINT
 {
-    const auto cell = read_sqd_layout<sidb_100_cell_clk_lyt_siqad>(
-        fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
+    using lyt_t = sidb_100_cell_clk_lyt_siqad;
+
+    const auto cell = read_sqd_layout<lyt_t>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
 
     sidb_simulation_parameters sim_params{};
 

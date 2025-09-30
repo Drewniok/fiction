@@ -9,11 +9,11 @@
 
 using namespace fiction;
 
-int main()  // NOLINT
+int main()
 {
-    using lyt_typ = sidb_100_cell_clk_lyt_siqad;
+    using lyt_t = sidb_100_cell_clk_lyt_siqad;
 
-    const auto cell = read_sqd_layout<lyt_typ>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
+    const auto cell = read_sqd_layout<lyt_t>(fmt::format("{}/dissertation_demo/{}", EXPERIMENTS_PATH, "and.sqd"));
 
     sidb_simulation_parameters sim_params{};
     sim_params.base      = 2;
